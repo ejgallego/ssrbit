@@ -1,5 +1,6 @@
 (******************************************************************************)
 (* (c) Emilio J. Gallego Arias, MINES ParisTech                               *)
+(* CECILL-B                                                                   *)
 (******************************************************************************)
 From mathcomp
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq div.
@@ -59,6 +60,83 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+(* Zip with a default. It is worth defining our own version of zip
+   such that preserves the lenght of the greatest list.  An
+   alternative is using the regular list + padding but we'd like to
+   have a nice computational interpretatoin.  *)
+Section ZipD.
+
+Variables S T : Type.
+Variables (sd : S) (td : T).
+
+Fixpoint zipd (s : seq S) (t : seq T) {struct t} :=
+  match s, t with
+  | x :: s', y :: t' => (x, y)  :: zipd s' t'
+  | s, [::]          => zip s (nseq (size s) td)
+  | [::], t          => zip (nseq (size t) sd) t
+  end.
+
+Lemma size_zipd s t : size (zipd s t) = maxn (size s) (size t).
+Proof.
+elim: s t => [|x s IHs] [|y t] //=; last by rewrite IHs maxnSS.
+  by rewrite size_zip max0n size_nseq minnn.
+by rewrite size_zip maxn0 size_nseq minnn.
+Qed.
+
+Lemma zipd_zip s t : size s = size t ->
+                     zipd s t = zip s t.
+Proof. by elim: s t => [|x s IHs] [|y t] //= [/IHs]->. Qed.
+
+End ZipD.
+
+Section LiftZ.
+
+Variable (T : Type) (d : T) (op : T -> T -> T).
+Implicit Types (s t : seq T).
+
+Definition liftb s t :=
+  [seq op x.1 x.2 | x <- zipd d d s t].
+
+Lemma liftb_cons x y s t :
+  liftb (x :: s) (y :: t) = (op x y) :: liftb s t.
+Proof. by []. Qed.
+
+Lemma liftb_nil : liftb [::] [::] = [::].
+Proof. by []. Qed.
+
+Lemma lift0b y t :
+  liftb [::] (y :: t) = (op d y) :: liftb [::] t.
+Proof. by case: t. Qed.
+
+Lemma liftb0 x s :
+  liftb (x :: s) [::] = (op x d) :: liftb s [::].
+Proof. by case: s. Qed.
+
+Definition liftE := (lift0b, liftb0, liftb_cons, liftb_nil).
+
+(* XXX: This can be improved *)
+Lemma liftBC (hC : commutative op) : commutative liftb.
+Proof.
+elim=> [|x s IHs] [|y t]; rewrite ?liftE 1?hC ?IHs //.
+by congr cons; elim: t => //= z t IHt; rewrite liftb0 lift0b hC IHt.
+Qed.
+
+Lemma lift0B (hIl : left_id d op) : left_id [::] liftb.
+Proof. by elim=> [|x s IHs]; rewrite // !liftE IHs hIl. Qed.
+
+Lemma liftB0 (hIr : right_id d op) : right_id [::] liftb.
+Proof. by elim=> [|x s IHs]; rewrite // !liftE IHs hIr. Qed.
+
+Definition liftA := (lift0B, liftB0).
+
+Lemma liftBA (hIl : left_id  d op) (hIr : right_id d op) (hA : associative op) :
+  associative liftb.
+Proof.
+by elim=> [|x s IHs] [|y t] [|z u]; rewrite ?(liftE, liftA, hIl, hIr) 1?hA ?IHs.
+Qed.
+
+End LiftZ.
+
 Delimit Scope bits_scope with B.
 Local Open Scope bits_scope.
 
@@ -75,23 +153,46 @@ Notation "''B_' n" := (n.+1.-tuple bool)
 Section BitOps.
 
 Variable k : nat.
-Implicit Types (s : bitseq) (bv : 'B_k) (b : bool).
+Implicit Types (i : nat) (j : 'I_k.+1) (bs : bitseq) (bv : 'B_k) (b : bool).
 
-(* Size-preserving set *)
-Definition setb s i b :=
-  if i < size s then set_nth false s i b else s.
+(* Untyped versions *)
+Definition setb bs i b := set_nth false bs i b.
+Definition getb bs i   := nth false bs i.
 
-Lemma setb_tupleP bv i b : size (setb bv i b) == k.+1.
+Lemma setb_tupleP bv j b :
+  size (setb bv j b) == k.+1.
+Proof. by rewrite size_set_nth size_tuple; apply/eqP/maxn_idPr. Qed.
+
+Canonical setB bv j b := Tuple (setb_tupleP bv j b).
+
+(* Size-preserving version *)
+Definition setlb bs i b :=
+  if i < size bs then set_nth false bs i b else bs.
+
+Lemma setlb_tupleP bv i b : size (setlb bv i b) == k.+1.
 Proof.
-rewrite fun_if size_set_nth size_tuple.
-by case: ifP => // /maxn_idPr ->.
+by rewrite fun_if size_set_nth size_tuple; case: ifP => // /maxn_idPr ->.
 Qed.
 
-Canonical setB bv i b := Tuple (setb_tupleP bv i b).
+Canonical setlB bv j b := Tuple (setlb_tupleP bv j b).
 
 (* Properties of bget bset wrt to bit operations *)
-
 (* Bigops? *)
+
+Definition orB  := liftb false orb.
+Definition andB := liftb true andb.
+
+Lemma orbC : commutative orB.
+Proof. exact: (liftBC _ orbC). Qed.
+
+Lemma andbC : commutative andB.
+Proof. exact: (liftBC _ andbC). Qed.
+
+Lemma orbA : associative orB.
+Proof. exact: (liftBA orFb orbF orbA). Qed.
+
+Lemma andbA : associative andB.
+Proof. exact: (liftBA andTb andbT andbA). Qed.
 
 End BitOps.
 
@@ -135,7 +236,7 @@ elim=> // -[] /= m ihm.
 by rewrite bitn_cons odd_double (half_bit_double _ false) ihm.
 Qed.
 
-(* We need a truncation here. *)
+(* We may want a truncation here. *)
 Lemma bitnK n k : n < 2^k -> natb (bitn k n) = n.
 Proof.
 elim: k n => //= [|k ihk] n hn; first by case: n hn.
@@ -298,4 +399,77 @@ End Defs.
 
 End Signed.
 
+(*
 
+Definition bitU m1 m2 :=
+  let lm := maxn (size m1) (size m2)    in
+  let p1 := nseq (lm - (size m1)) false in
+  let p2 := nseq (lm - (size m2)) false in
+  let ms := zip  (m1 ++ p1) (m2 ++ p2)  in
+  map (fun b => orb b.1 b.2) ms.
+
+Lemma bitU_cons x y xl yl :
+  bitU (x :: xl) (y :: yl) = [:: x || y & bitU xl yl].
+Proof. by rewrite /bitU maxnSS. Qed.
+
+(*
+Lemma bit0U y yl : bitU [::] (y :: yl) = [:: y & bitU [::] yl].
+Proof. by rewrite /bitU /= subn0 !max0n. Qed.
+
+Lemma bitU0 x xl : bitU (x :: xl) [::] = [:: x & bitU xl [::] ].
+Proof. by rewrite /bitU /= orbF subn0 !maxn0. Qed.
+*)
+(*
+(* Lemma bitU0b y : bitU [::] y = y. *)
+(* Proof. elim: y => //= y yl ihl; rewrite bit0U bitU0 ihl. Qed. *)
+*)
+Lemma bitUA : associative bitU.
+Admitted.
+
+Lemma bitUC : commutative bitU.
+Admitted.
+
+(* Oh so we indeed should pad! *)
+Lemma bit0U k : left_id (nseq k false) bitU.
+Admitted.
+
+Lemma bitU0 k : right_id (nseq k false) bitU.
+Admitted.
+
+About Monoid.Law.
+Canonical bitU_monoid k := Monoid.Law bitUA (bit0U k) (bitU0 k).
+Canonical bitU_com    k := @Monoid.ComLaw _ _ (bitU_monoid k) bitUC.
+
+(*
+Proof.
+elim=> [|x xl ihx] [|y yl]; rewrite ?bit0U ?bitU0 //.
++ by rewrite bit0C.
++ by rewrite bit0C.
+by rewrite !bitU_cons orbC ihx.
+Qed.
+
+About Monoid.Law.
+
+Lemma zip0s T U (s : seq U) : @zip T _ [::] s = [::].
+Proof. by case: s. Qed.
+
+Lemma zips0 T U (s : seq T) : @zip _ U s [::] = [::].
+Proof. by case: s. Qed.
+
+Lemma bitUA : associative bitU.
+Proof.
+elim=> [|x xl ihx] [|y yl] z //=.
++ rewrite bit0U.
+ [|z zl] //=.
++ by rewrite /bitU zip0s.
++ by rewrite /bitU !zips0.
++ by rewrite !bitU_cons orbA ihx.
+Qed.
+
+
+
+Search _ zip.
+
+Definition from_set' k s := \
+*)
+*)
