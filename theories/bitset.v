@@ -1,0 +1,227 @@
+From mathcomp
+Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq div.
+From mathcomp
+Require Import choice fintype finset tuple path bigop.
+
+(******************************************************************************)
+(* A bit library for Coq: sets encoded as bitseqs.                            *)
+(*                                                                            *)
+(*  ** Bit Operations:                                                        *)
+(*                                                                            *)
+(*                                                                            *)
+(*                                                                            *)
+(******************************************************************************)
+
+(* Import bits operations. *)
+Require Import bitseq.
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
+Hint Resolve orbb andbb.
+
+Section MemIota.
+(* Indexes *)
+Implicit Types (i j : nat).
+Implicit Types (s : seq nat).
+
+(* Auxiliary results *)
+Lemma memS_mask l i m j k : size m <= k ->
+  (l + i \in mask m (iota (l + j) k)) =
+  (    i \in mask m (iota      j  k)).
+Proof.
+elim: k m i j l => [|k ihk] [|b m] i j l hs; rewrite // !mem_mask_cons.
+by rewrite eqn_add2l -addnS ihk.
+Qed.
+
+Lemma mem_mask_gt i j k m : i < j -> (i \in mask m (iota j k)) = false.
+Proof.
+elim: k i j m => [|k ihk] i j m hij; first by rewrite mask0.
+by case: m => // -[] m; rewrite mem_mask_cons ihk ?(ltn_eqF hij) ?ltnS // ltnW.
+Qed.
+
+(* Main lemma relating bitmasks with their enumerations *)
+Lemma mem_mask_iota k i j m : j <= i < k -> size m <= k ->
+   i \in mask m (iota j k) = getb m (i - j).
+Proof.
+elim: k i j m => [|k ihk] i j [|b m] /andP [hji hik] hs //.
+  by rewrite /getb nth_nil.
+rewrite mem_mask_cons; case: eqP => [->|/eqP/negbTE neq_ij].
+  by rewrite mem_mask_gt // subnn andbT orbF.
+have hj : j < i by rewrite ltn_neqAle hji eq_sym neq_ij.
+case: i hji hik {neq_ij} hj => // i hji hik hj.
+rewrite (memS_mask 1) // andbF (ihk i) ?subSn //.
+by rewrite ltnS in hj; rewrite hj.
+Qed.
+End MemIota.
+
+(* Untyped operations, useful for computing and avoid {set _} *)
+Definition to_set   m   := mask m (iota 0 (size m)).
+(* Definition from_set k s := foldr (fun idx bs => setb bs idx true) (nseq k false) s. *)
+Definition from_set s := foldr (fun idx bs => setb bs idx true) [::] s.
+
+(* Be a bit stringent as to be commutative *)
+Lemma set_bitE bs n : setb bs n true = orB bs (setb [::] n true).
+Proof.
+(* XXX: clean up *)
+elim: bs n => [|b bs ihb] [|n] //=; first by rewrite or0B.
+  by rewrite orB_cons orB0 orbT.
+by rewrite orB_cons orbF ihb /setb set_nth_nil.
+Qed.
+
+Lemma size_from_set s : size (from_set s) = \max_(n <- s) n.+1.
+Proof.
+by elim: s => [|n s ihs]; rewrite ?big_nil ?big_cons ?size_nseq ?size_set_nth // ihs.
+Qed.
+
+Lemma from_setE s : from_set s = \big[orB/[::]]_(n <- s) setb [::] n true.
+Proof.
+elim: s => [|n s ihs]; rewrite ?(big_nil, big_cons) //=.
+by rewrite set_bitE ?size_from_set orBC ihs.
+Qed.
+
+Lemma eq_perm_from_set s1 s2 : perm_eq s1 s2 ->
+  from_set s1 = from_set s2.
+Proof. rewrite !from_setE; exact: eq_big_perm. Qed.
+
+(* TODO: We must work up to (perm_eq uniq) for the image of to_set *)
+Lemma eq_from_set s1 s2 : uniq s1 -> uniq s2 -> s1 =i s2 ->
+                  from_set s1 = from_set s2.
+Proof. by move=> ? ? ?; apply/eq_perm_from_set/uniq_perm_eq. Qed.
+
+Lemma from_set_tupleP k (s : seq 'I_k) : size (orB (from_set (map val s)) '0_k) == k.
+Proof.
+rewrite size_liftb size_nseq size_from_set big_map.
+elim/big_rec: _ => [|j n _ /eqP/maxn_idPr ihj]; first by rewrite max0n.
+by apply/eqP/maxn_idPr; rewrite geq_max ltn_ord.
+Qed.
+
+Definition seqn k (s : seq 'I_k)   := Tuple (from_set_tupleP s).
+Definition setn k (s : {set 'I_k}) := seqn (enum s).
+
+Definition seqB k (m : k.-tuple bool) := mask m (enum 'I_k).
+Definition setB k (m : k.-tuple bool) := [set x in seqB m].
+
+(* Alternative *)
+Definition setb' k (m : k.-tuple bool) := [set i in 'I_k | getb m i].
+
+Lemma val_mem_seq (T : eqType) (P : pred T) (sT : subType P)
+      (i : sT) (s : seq sT) : (i \in s) = (val i \in [seq val x | x <- s]).
+Proof. by elim: s => //= x s ihs; rewrite !inE val_eqE ihs. Qed.
+
+(* This is interesting (and true) but a bit cumbersome to prove *)
+Lemma setb_def k (m : k.-tuple bool) : setB m = [set i in 'I_k | getb m i].
+Proof.
+apply/setP=> i; rewrite !inE val_mem_seq map_mask val_enum_ord.
+by rewrite mem_mask_iota ?subn0 ?ltn_ord ?size_tuple.
+Qed.
+
+Lemma eq_seqn k (s1 s2 : seq 'I_k) :
+  uniq s1 -> uniq s2 -> s1 =i s2 -> seqn s1 = seqn s2.
+Proof.
+move=> u1 u2 hi; apply/val_inj; congr orB.
+apply/eq_from_set; rewrite ?(map_inj_uniq val_inj) //.
+by move=> u; apply/mapP/mapP=> -[v v1 ->]; exists v; rewrite ?hi // -hi.
+Qed.
+
+Lemma seqb_uniq k (s : k.-tuple bool) : uniq (seqB s).
+Proof. by rewrite mask_uniq ?enum_uniq. Qed.
+
+Lemma mem_setb k (b : k.-tuple bool) (i : 'I_k) :
+  (i \in setB b) = (getb b i).
+Proof.
+rewrite inE val_mem_seq !map_mask val_enum_ord.
+by rewrite mem_mask_iota ?subn0 ?ltn_ord ?size_tuple.
+Qed.
+
+(* XXX: Needs fixing *)
+(* Lemma seqn_cons k n (s : seq 'I_k) : *)
+(*   seqn (n :: s) = [tuple of setb (seqn s) n true]. *)
+(* Proof. exact: val_inj. Qed. *)
+
+Lemma nth_orB0 bs i k : ((orB bs '0_k)`_i)%B = (bs`_i)%B.
+Proof. by rewrite /orB nth_liftb ?getb0 ?orbF. Qed.
+
+(* Perm_eq is not enoguht as we also remove the dups *)
+Lemma seqnK k (x : seq 'I_k) : (seqB (seqn x)) =i x.
+Proof.
+move=> i; rewrite val_mem_seq map_mask val_enum_ord.
+rewrite mem_mask_iota ?ltn_ord ?size_tuple ?subn0 // /getb /seqn /= nth_orB0.
+elim: x => [|x s ihs]; first by rewrite nth_nil.
+rewrite inE nth_set_nth /=; case: (i == x) / boolP => [/eqP->|/negbTE heq].
+  by rewrite eqxx.
+by rewrite val_eqE heq ihs.
+Qed.
+
+Lemma nth_from_set s i : (nth false (from_set s)) i = (i \in s).
+Proof.
+elim: s => [|x s ihs]; first by rewrite nth_nil.
+by rewrite nth_set_nth /= !inE; case: eqP.
+Qed.
+
+Lemma seqbK k : cancel (@seqB k) (@seqn _).
+Proof.
+move=> b; apply: eq_from_tnth => i.
+rewrite !(tnth_nth false) /seqn /setB /= nth_orB0 nth_from_set ?ltn_ord //.
+by rewrite map_mask val_enum_ord mem_mask_iota ?subn0 ?ltn_ord ?size_tuple.
+Qed.
+
+Lemma setnK k : cancel (@setn k) (@setB _).
+Proof. by move=> x; apply/setP=> i; rewrite inE seqnK mem_enum. Qed.
+
+Lemma setbK k : cancel (@setB k) (@setn _).
+Proof.
+move=> t; rewrite -{2}[t]seqbK; apply/eq_seqn; rewrite ?mask_uniq ?enum_uniq //.
+by move => i; rewrite mem_enum inE.
+Qed.
+
+Prenex Implicits setnK setbK.
+
+(* Example property: union *)
+(* XXX: move to use {morph ...} notation *)
+Lemma union_morphL k (b1 b2 : k.-tuple bool) :
+  setB [tuple of orB b1 b2] = (setB b1 :|: setB b2).
+Proof. by apply/setP=> i; rewrite !mem_setb inE !mem_setb /orB !getbE nth_liftb. Qed.
+
+Print Assumptions union_morphL.
+
+(* Basically the same proof. *)
+Lemma inter_morphL k (b1 b2 : k.-tuple bool) :
+  setB [tuple of andB b1 b2] = (setB b1 :&: setB b2).
+Proof.
+apply/setP=> i; rewrite !mem_setb inE !mem_setb /andB !getbE /=.
+by rewrite /liftb zipd_zip ?(nth_map (false, false)) ?nth_zip ?size_tuple.
+Qed.
+
+(* More properties: singleton *)
+(* XXX *)
+(* Lemma setb1 k (n : 'I_k) : setb (set_bit (nseq k false) n) = [set n]. *)
+(* Proof. by apply/setP=> i; rewrite !inE seqnK inE. Qed. *)
+
+(* Cardinality *)
+Definition cardb k (s : k.-tuple bool) := count id s.
+
+(* This follows directly from the library *)
+Lemma cardbP k (s : k.-tuple bool) : #| setB s | = cardb s.
+Proof.
+rewrite cardsE; transitivity (size (seqB s)).
+  exact/card_uniqP/seqb_uniq.
+by rewrite size_mask ?size_tuple ?cardT ?size_enum_ord.
+Qed.
+
+(******************************************************************************)
+(* Taken from PE paper, we see indeed that there exists a unique repr which   *)
+(* is ours                                                                    *)
+(******************************************************************************)
+Definition s_repr k (bs : k.-tuple bool) E :=
+  E = [set x : 'I_k | getb bs x].
+
+Lemma s_reprP k (bs : k.-tuple bool) : s_repr bs (setB bs).
+Proof. by rewrite /s_repr setb_def. Qed.
+
+Lemma s_repr_uniq k (bs : k.-tuple bool) E : s_repr bs E -> E = setB bs.
+Proof. by move ->; rewrite setb_def. Qed.
+
+Lemma count_repr k (bs : k.-tuple bool) E : s_repr bs E -> count_mem true bs = #|E|.
+Proof. by move -> ; rewrite -setb_def cardbP; apply: eq_count; case. Qed.

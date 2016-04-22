@@ -1,0 +1,4 @@
+-R theories ssrbit
+
+theories/bitseq.v
+theories/bitset.v

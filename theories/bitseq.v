@@ -83,11 +83,31 @@ elim: s t => [|x s IHs] [|y t] //=; last by rewrite IHs maxnSS.
 by rewrite size_zip maxn0 size_nseq minnn.
 Qed.
 
+Lemma zipd0 s : zipd s [::] = zip s (nseq (size s) td).
+Proof. by case: s. Qed.
+
+Lemma zip0d t : zipd [::] t = zip (nseq (size t) sd) t.
+Proof. by case: t. Qed.
+
 Lemma zipd_zip s t : size s = size t ->
                      zipd s t = zip s t.
 Proof. by elim: s t => [|x s IHs] [|y t] //= [/IHs]->. Qed.
 
+Lemma nth_zipd s t i :
+   nth (sd, td) (zipd s t) i = (nth sd s i, nth td t i).
+Proof.
+elim: i s t => [|i IHi] [|x s] [|y t] //=.
+  by rewrite nth_zip ?size_nseq ?nth_nseq //; case: ifP.
+by rewrite nth_zip ?size_nseq ?nth_nseq //; case: ifP.
+Qed.
+
 End ZipD.
+
+Notation "''0_' n" := (nseq n false)
+  (at level 8, n at level 2, format "''0_' n").
+
+Notation "''1_' n" := (nseq n true)
+  (at level 8, n at level 2, format "''1_' n").
 
 Section LiftZ.
 
@@ -114,6 +134,28 @@ Proof. by case: s. Qed.
 
 Definition liftE := (lift0b, liftb0, liftb_cons, liftb_nil).
 
+Lemma size_liftb s t : size (liftb s t) = maxn (size s) (size t).
+Proof.
+elim: s t => [|x s ihs] [|y t] //=; last by rewrite ihs maxnSS.
+  by rewrite max0n size_map size_zip size_nseq minnn.
+by rewrite maxn0 size_map size_zip size_nseq minnn.
+Qed.
+
+Lemma nth_liftb s t i (op_id : idempotent op) :
+  nth d (liftb s t) i = op (nth d s i) (nth d t i).
+Proof.
+case: (i < maxn (size s) (size t)) / leqP.
+  rewrite geq_max; case/andP=> hs ht; rewrite !nth_default //.
+  by rewrite size_liftb geq_max hs.
+rewrite leq_max; case/orP=> hs.
+  by rewrite !(nth_map (d,d) _) /= ?nth_zipd ?size_zipd ?leq_max ?hs.
+by rewrite !(nth_map (d,d) _) /= ?nth_zipd ?size_zipd ?leq_max ?hs ?orbT.
+Qed.
+
+
+Lemma liftb_tupleP k (s t : k.-tuple T) : size (liftb s t) == k.
+Proof. by rewrite size_liftb !size_tuple maxnn. Qed.
+
 (* XXX: This can be improved *)
 Lemma liftBC (hC : commutative op) : commutative liftb.
 Proof.
@@ -127,6 +169,22 @@ Proof. by elim=> [|x s IHs]; rewrite // !liftE IHs hIl. Qed.
 Lemma liftB0 (hIr : right_id d op) : right_id [::] liftb.
 Proof. by elim=> [|x s IHs]; rewrite // !liftE IHs hIr. Qed.
 
+Lemma lift0B' (hIl : left_id d op) k :
+  {in [pred s | k <= size s], left_id (nseq k d) liftb}.
+Proof.
+move=> s; elim: s k => [|x s IHs] [|k]; rewrite !inE !liftE ?hIl //.
+  by rewrite (IHs 0).
+by move/IHs->.
+Qed.
+
+Lemma liftB0' (hIl : right_id d op) k :
+  {in [pred s | k <= size s], right_id (nseq k d) liftb}.
+Proof.
+move=> s; elim: s k => [|x s IHs] [|k]; rewrite !inE !liftE ?hIl //.
+  by rewrite (IHs 0).
+by move/IHs->.
+Qed.
+
 Definition liftA := (lift0B, liftB0).
 
 Lemma liftBA (hIl : left_id  d op) (hIr : right_id d op) (hA : associative op) :
@@ -137,6 +195,8 @@ Qed.
 
 End LiftZ.
 
+Canonical liftb_tuple T d op k (s t : k.-tuple T) := Tuple (liftb_tupleP d op s t).
+
 Delimit Scope bits_scope with B.
 Local Open Scope bits_scope.
 
@@ -144,7 +204,7 @@ Local Open Scope bits_scope.
 Notation "[ 'bits' 'of' s ]" := (tuple (fun sP => @Tuple _ bool s sP))
   (at level 0, format "[ 'bits'  'of'  s ]") : bits_scope.
 
-Notation "s `_ i" := (seq.nth false s i) : bits_scope.
+Notation "s `_ i" := (nth false s i) : bits_scope.
 
 (* Non-empty bit vectors *)
 Notation "''B_' n" := (n.+1.-tuple bool)
@@ -159,11 +219,17 @@ Implicit Types (i : nat) (j : 'I_k.+1) (bs : bitseq) (bv : 'B_k) (b : bool).
 Definition setb bs i b := set_nth false bs i b.
 Definition getb bs i   := nth false bs i.
 
+Lemma getbE bs i : getb bs i = bs`_i.
+Proof. by []. Qed.
+
+Lemma getb0 i : '0_k`_i = false.
+Proof. by elim: i k => [|i IHi] [|k'] //=. Qed.
+
 Lemma setb_tupleP bv j b :
   size (setb bv j b) == k.+1.
 Proof. by rewrite size_set_nth size_tuple; apply/eqP/maxn_idPr. Qed.
 
-Canonical setB bv j b := Tuple (setb_tupleP bv j b).
+Canonical setb_tuple bv j b := Tuple (setb_tupleP bv j b).
 
 (* Size-preserving version *)
 Definition setlb bs i b :=
@@ -182,19 +248,40 @@ Canonical setlB bv j b := Tuple (setlb_tupleP bv j b).
 Definition orB  := liftb false orb.
 Definition andB := liftb true andb.
 
-Lemma orbC : commutative orB.
+Lemma orB_cons b1 b2 bs1 bs2 : orB (b1 :: bs1) (b2 :: bs2) = b1 || b2 :: orB bs1 bs2.
+Proof. by []. Qed.
+
+Lemma or0B : left_id [::] orB.
+Proof. exact: lift0B. Qed.
+
+Lemma orB0 : right_id [::] orB.
+Proof. exact: (liftB0 orbF). Qed.
+
+Lemma or0B' : {in [pred s | k <= size s], left_id '0_k orB}.
+Proof. exact: lift0B'. Qed.
+
+Lemma orB0' : {in [pred s | k <= size s], right_id '0_k orB}.
+Proof. exact: (liftB0' orbF). Qed.
+
+Lemma orBC : commutative orB.
 Proof. exact: (liftBC _ orbC). Qed.
+
+Lemma orBA : associative orB.
+Proof. exact: (liftBA orFb orbF orbA). Qed.
 
 Lemma andbC : commutative andB.
 Proof. exact: (liftBC _ andbC). Qed.
-
-Lemma orbA : associative orB.
-Proof. exact: (liftBA orFb orbF orbA). Qed.
 
 Lemma andbA : associative andB.
 Proof. exact: (liftBA andTb andbT andbA). Qed.
 
 End BitOps.
+
+Canonical setb_tuple.
+
+(* Needs improvement *)
+Canonical orB_monoid := Monoid.Law orBA or0B orB0.
+Canonical orb_com    := Monoid.ComLaw orBC.
 
 (* Unsigned modular arithmetic *)
 Section Unsigned.
