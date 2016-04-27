@@ -247,8 +247,8 @@ Definition bitF b := [set enum_val x | x in setB b].
 
 Lemma finBK : cancel finB bitF.
 Proof.
-move=> A; apply/setP=> x; rewrite /finB /bitF setnK -imset_comp.
-by rewrite (eq_imset _ (@enum_rankK _)) imset_id.
+move=> A; rewrite /finB /bitF setnK -imset_comp (eq_imset _ (@enum_rankK _)).
+exact: imset_id.
 Qed.
 
 Lemma bitFK : cancel bitF finB.
