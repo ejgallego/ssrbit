@@ -57,7 +57,7 @@ Qed.
 End MemIota.
 
 (* Untyped operations, useful for computing and avoid {set _} *)
-Definition to_set   m   := mask m (iota 0 (size m)).
+Definition to_set   m := mask m (iota 0 (size m)).
 (* Definition from_set k s := foldr (fun idx bs => setb bs idx true) (nseq k false) s. *)
 Definition from_set s := foldr (fun idx bs => setb bs idx true) [::] s.
 
@@ -209,6 +209,35 @@ rewrite cardsE; transitivity (size (seqB s)).
   exact/card_uniqP/seqb_uniq.
 by rewrite size_mask ?size_tuple ?cardT ?size_enum_ord.
 Qed.
+
+(******************************************************************************)
+(* Bijection to any set of cardinality n, from an idea by Arthur Blot.        *)
+(******************************************************************************)
+Section FinSet.
+
+Variable T : finType.
+Implicit Types (A B : {set T}).
+Implicit Types (b : #|T|.-tuple bool).
+
+(* From a finite set to tuple *)
+Definition finB A := setn [set enum_rank x | x in A].
+
+(* From a tuple to a finite set *)
+Definition bitF b := [set enum_val x | x in setB b].
+
+Lemma finBK : cancel finB bitF.
+Proof.
+move=> A; apply/setP=> x; rewrite /finB /bitF setnK -imset_comp.
+by rewrite (eq_imset _ (@enum_rankK _)) imset_id.
+Qed.
+
+Lemma bitFK : cancel bitF finB.
+Proof.
+move=> b; rewrite /finB /bitF -imset_comp (eq_imset _ (@enum_valK _)) imset_id.
+exact: setbK.
+Qed.
+
+End FinSet.
 
 (******************************************************************************)
 (* Taken from PE paper, we see indeed that there exists a unique repr which   *)
