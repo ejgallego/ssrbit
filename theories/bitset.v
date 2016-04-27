@@ -209,9 +209,15 @@ by rewrite /liftb zipd_zip ?(nth_map (false, false)) ?nth_zip ?size_tuple.
 Qed.
 
 (* More properties: singleton *)
-(* XXX *)
-(* Lemma setb1 k (n : 'I_k) : setb (set_bit (nseq k false) n) = [set n]. *)
-(* Proof. by apply/setP=> i; rewrite !inE seqnK inE. Qed. *)
+(* XXX: This should be one liner as you can see with the mismatches *)
+Lemma setB1 k (n : 'I_k.+1) :
+  setB [tuple of setlB [tuple of '0_k.+1] n true] = [set n].
+Proof.
+apply/setP=> i; rewrite mem_setb /= inE /setlb size_tuple ltn_ord.
+rewrite /getb nth_set_nth /=; case: eqP => [/eqP|] heq.
+  by rewrite -val_eqE heq.
+by rewrite -val_eqE (getb0 k.+1); apply/esym/eqP.
+Qed.
 
 (* Cardinality *)
 Definition cardb k (s : k.-tuple bool) := count id s.
