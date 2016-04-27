@@ -184,7 +184,10 @@ Lemma union_morphL k (b1 b2 : k.-tuple bool) :
   setB [tuple of orB b1 b2] = (setB b1 :|: setB b2).
 Proof. by apply/setP=> i; rewrite !mem_setb inE !mem_setb /orB !getbE nth_liftb. Qed.
 
-Print Assumptions union_morphL.
+(* Example of derived property *)
+Lemma union_morphR k (s1 s2 : {set 'I_k}) :
+  [tuple of orB (setn s1) (setn s2)] = setn (s1 :|: s2).
+Proof. by apply: (can_inj setbK); rewrite union_morphL !setnK. Qed.
 
 (* Basically the same proof. *)
 Lemma inter_morphL k (b1 b2 : k.-tuple bool) :
