@@ -1,3 +1,14 @@
+(******************************************************************************)
+(* A bit library for Coq: sets encoded as bitseqs.                            *)
+(******************************************************************************)
+(*                                                                            *)
+(* (c) 2016, MINES ParisTech                                                  *)
+(*                                                                            *)
+(* Written by Emilio J. Gallego Arias                                         *)
+(*                                                                            *)
+(* LICENSE: CECILL-B                                                          *)
+(*                                                                            *)
+(******************************************************************************)
 From mathcomp
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq div.
 From mathcomp
@@ -20,6 +31,11 @@ Require Import choice fintype finset tuple path bigop.
 (*                                                                            *)
 (* Operations are designed to cancel in the proper way, the *_morphL family   *)
 (* or lemmas provide the correspondence between set and bit operations.       *)
+(*                                                                            *)
+(* This file uses the following suffix conventions (FIXME):                   *)
+(*                                                                            *)
+(*  n - operations on nat seq/seq representation.                             *)
+(*  B - operations on k.-tuple bool                                           *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -103,7 +119,7 @@ Proof. by move=> ? ? ?; apply/eq_perm_from_set/uniq_perm_eq. Qed.
 
 Lemma from_set_tupleP k (s : seq 'I_k) : size (orB (from_set (map val s)) '0_k) == k.
 Proof.
-rewrite size_liftb size_nseq size_from_set big_map.
+rewrite size_liftz size_nseq size_from_set big_map.
 elim/big_rec: _ => [|j n _ /eqP/maxn_idPr ihj]; first by rewrite max0n.
 by apply/eqP/maxn_idPr; rewrite geq_max ltn_ord.
 Qed.
@@ -152,7 +168,7 @@ Qed.
 (* Proof. exact: val_inj. Qed. *)
 
 Lemma nth_orB0 bs i k : ((orB bs '0_k)`_i)%B = (bs`_i)%B.
-Proof. by rewrite /orB nth_liftb ?getb0 ?orbF. Qed.
+Proof. by rewrite /orB nth_liftz ?getb0 ?orbF. Qed.
 
 (* Perm_eq is not enoguht as we also remove the dups *)
 Lemma seqnK k (x : seq 'I_k) : (seqB (seqn x)) =i x.
@@ -193,7 +209,7 @@ Prenex Implicits setnK setbK.
 (* XXX: move to use {morph ...} notation *)
 Lemma union_morphL k (b1 b2 : k.-tuple bool) :
   setB [tuple of orB b1 b2] = (setB b1 :|: setB b2).
-Proof. by apply/setP=> i; rewrite !mem_setb inE !mem_setb /orB !getbE nth_liftb. Qed.
+Proof. by apply/setP=> i; rewrite !mem_setb inE !mem_setb /orB !getbE nth_liftz. Qed.
 
 (* Example of derived property *)
 Lemma union_morphR k (s1 s2 : {set 'I_k}) :
@@ -205,7 +221,7 @@ Lemma inter_morphL k (b1 b2 : k.-tuple bool) :
   setB [tuple of andB b1 b2] = (setB b1 :&: setB b2).
 Proof.
 apply/setP=> i; rewrite !mem_setb inE !mem_setb /andB !getbE /=.
-by rewrite /liftb zipd_zip ?(nth_map (false, false)) ?nth_zip ?size_tuple.
+by rewrite /liftz zipd_zip ?(nth_map (false, false)) ?nth_zip ?size_tuple.
 Qed.
 
 (* More properties: singleton *)
@@ -240,18 +256,18 @@ Implicit Types (A B : {set T}).
 Implicit Types (b : #|T|.-tuple bool).
 
 (* From a finite set to tuple *)
-Definition finB A := setn [set enum_rank x | x in A].
+Definition bitF A := setn [set enum_rank x | x in A].
 
 (* From a tuple to a finite set *)
-Definition bitF b := [set enum_val x | x in setB b].
+Definition finB b := [set enum_val x | x in setB b].
 
-Lemma finBK : cancel finB bitF.
+Lemma finBK : cancel bitF finB.
 Proof.
 move=> A; rewrite /finB /bitF setnK -imset_comp (eq_imset _ (@enum_rankK _)).
 exact: imset_id.
 Qed.
 
-Lemma bitFK : cancel bitF finB.
+Lemma bitFK : cancel finB bitF.
 Proof.
 move=> b; rewrite /finB /bitF -imset_comp (eq_imset _ (@enum_valK _)) imset_id.
 exact: setbK.
@@ -274,3 +290,4 @@ Proof. by move ->; rewrite setb_def. Qed.
 
 Lemma count_repr k (bs : k.-tuple bool) E : s_repr bs E -> count_mem true bs = #|E|.
 Proof. by move -> ; rewrite -setb_def cardbP; apply: eq_count; case. Qed.
+

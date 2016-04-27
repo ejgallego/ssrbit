@@ -1,7 +1,15 @@
 (******************************************************************************)
-(* (c) Emilio J. Gallego Arias, MINES ParisTech                               *)
-(* CECILL-B                                                                   *)
+(* A bit library for Coq: bit sequences.                                      *)
 (******************************************************************************)
+(*                                                                            *)
+(* (c) 2016, MINES ParisTech                                                  *)
+(*                                                                            *)
+(* Written by Emilio J. Gallego Arias                                         *)
+(*                                                                            *)
+(* LICENSE: CECILL-B                                                          *)
+(*                                                                            *)
+(******************************************************************************)
+
 From mathcomp
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq div.
 From mathcomp
@@ -9,8 +17,6 @@ Require Import choice fintype finset tuple.
 From mathcomp
 Require Import bigop ssralg ssrnum fingroup perm finalg zmodp ssrint.
 
-(******************************************************************************)
-(* A bit library for Coq: bit sequences.                                      *)
 (******************************************************************************)
 (*                                                                            *)
 (* We only consider non-empty bit sequences:                                  *)
@@ -39,8 +45,9 @@ Require Import bigop ssralg ssrnum fingroup perm finalg zmodp ssrint.
 (*  ** Signed modular arithmetic.                                             *)
 (*                                                                            *)
 (*                                                                            *)
-(*                                                                            *)
-(*                                                                            *)
+(* This file uses the following suffix conventions:                           *)
+(*   B - operation on bitseq                                                  *)
+(*   W - operation on k.-tuple bool                                           *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -61,9 +68,10 @@ Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 (* Zip with a default. It is worth defining our own version of zip
-   such that preserves the lenght of the greatest list.  An
-   alternative is using the regular list + padding but we'd like to
-   have a nice computational interpretatoin.  *)
+ * such that preserves the length of the greatest list. An
+ * alternative is using the regular list + padding but we'd like to
+ * have a nice computational interpretation.
+ *)
 Section ZipD.
 
 Variables S T : Type.
@@ -103,99 +111,102 @@ Qed.
 
 End ZipD.
 
+
 Notation "''0_' n" := (nseq n false)
   (at level 8, n at level 2, format "''0_' n").
 
 Notation "''1_' n" := (nseq n true)
   (at level 8, n at level 2, format "''1_' n").
 
+(******************************************************************************)
+(* Lifting of a binary operator throu zipd                                    *)
+(******************************************************************************)
 Section LiftZ.
 
 Variable (T : Type) (d : T) (op : T -> T -> T).
 Implicit Types (s t : seq T).
 
-Definition liftb s t :=
+Definition liftz s t :=
   [seq op x.1 x.2 | x <- zipd d d s t].
 
-Lemma liftb_cons x y s t :
-  liftb (x :: s) (y :: t) = (op x y) :: liftb s t.
+Lemma liftz_cons x y s t :
+  liftz (x :: s) (y :: t) = (op x y) :: liftz s t.
 Proof. by []. Qed.
 
-Lemma liftb_nil : liftb [::] [::] = [::].
+Lemma liftz_nil : liftz [::] [::] = [::].
 Proof. by []. Qed.
 
-Lemma lift0b y t :
-  liftb [::] (y :: t) = (op d y) :: liftb [::] t.
+Lemma lift_nil_cons y t :
+  liftz [::] (y :: t) = (op d y) :: liftz [::] t.
 Proof. by case: t. Qed.
 
-Lemma liftb0 x s :
-  liftb (x :: s) [::] = (op x d) :: liftb s [::].
+Lemma lift_cons_nil x s :
+  liftz (x :: s) [::] = (op x d) :: liftz s [::].
 Proof. by case: s. Qed.
 
-Definition liftE := (lift0b, liftb0, liftb_cons, liftb_nil).
+Definition liftE := (lift_nil_cons, lift_cons_nil, liftz_cons, liftz_nil).
 
-Lemma size_liftb s t : size (liftb s t) = maxn (size s) (size t).
+Lemma lift0z (hIl : left_id d op) : left_id [::] liftz.
+Proof. by elim=> [|x s IHs]; rewrite // !liftE IHs hIl. Qed.
+
+Lemma liftz0 (hIr : right_id d op) : right_id [::] liftz.
+Proof. by elim=> [|x s IHs]; rewrite // !liftE IHs hIr. Qed.
+
+Lemma size_liftz s t : size (liftz s t) = maxn (size s) (size t).
 Proof.
 elim: s t => [|x s ihs] [|y t] //=; last by rewrite ihs maxnSS.
   by rewrite max0n size_map size_zip size_nseq minnn.
 by rewrite maxn0 size_map size_zip size_nseq minnn.
 Qed.
 
-Lemma nth_liftb s t i (op_id : idempotent op) :
-  nth d (liftb s t) i = op (nth d s i) (nth d t i).
+Lemma nth_liftz s t i (op_id : idempotent op) :
+  nth d (liftz s t) i = op (nth d s i) (nth d t i).
 Proof.
 case: (i < maxn (size s) (size t)) / leqP.
   rewrite geq_max; case/andP=> hs ht; rewrite !nth_default //.
-  by rewrite size_liftb geq_max hs.
+  by rewrite size_liftz geq_max hs.
 rewrite leq_max; case/orP=> hs.
   by rewrite !(nth_map (d,d) _) /= ?nth_zipd ?size_zipd ?leq_max ?hs.
 by rewrite !(nth_map (d,d) _) /= ?nth_zipd ?size_zipd ?leq_max ?hs ?orbT.
 Qed.
 
-
-Lemma liftb_tupleP k (s t : k.-tuple T) : size (liftb s t) == k.
-Proof. by rewrite size_liftb !size_tuple maxnn. Qed.
+Lemma liftz_tupleP k (s t : k.-tuple T) : size (liftz s t) == k.
+Proof. by rewrite size_liftz !size_tuple maxnn. Qed.
 
 (* XXX: This can be improved *)
-Lemma liftBC (hC : commutative op) : commutative liftb.
+Lemma liftzC (hC : commutative op) : commutative liftz.
 Proof.
 elim=> [|x s IHs] [|y t]; rewrite ?liftE 1?hC ?IHs //.
-by congr cons; elim: t => //= z t IHt; rewrite liftb0 lift0b hC IHt.
+by congr cons; elim: t => //= z t IHt; rewrite !liftE hC IHt.
 Qed.
 
-Lemma lift0B (hIl : left_id d op) : left_id [::] liftb.
-Proof. by elim=> [|x s IHs]; rewrite // !liftE IHs hIl. Qed.
-
-Lemma liftB0 (hIr : right_id d op) : right_id [::] liftb.
-Proof. by elim=> [|x s IHs]; rewrite // !liftE IHs hIr. Qed.
-
-Lemma lift0B' (hIl : left_id d op) k :
-  {in [pred s | k <= size s], left_id (nseq k d) liftb}.
+Lemma lift0z' (hIl : left_id d op) k :
+  {in [pred s | k <= size s], left_id (nseq k d) liftz}.
 Proof.
 move=> s; elim: s k => [|x s IHs] [|k]; rewrite !inE !liftE ?hIl //.
   by rewrite (IHs 0).
 by move/IHs->.
 Qed.
 
-Lemma liftB0' (hIl : right_id d op) k :
-  {in [pred s | k <= size s], right_id (nseq k d) liftb}.
+Lemma liftz0' (hIl : right_id d op) k :
+  {in [pred s | k <= size s], right_id (nseq k d) liftz}.
 Proof.
 move=> s; elim: s k => [|x s IHs] [|k]; rewrite !inE !liftE ?hIl //.
   by rewrite (IHs 0).
 by move/IHs->.
 Qed.
 
-Definition liftA := (lift0B, liftB0).
+Definition liftA := (lift0z, liftz0).
 
-Lemma liftBA (hIl : left_id  d op) (hIr : right_id d op) (hA : associative op) :
-  associative liftb.
+Lemma liftzA (hIl : left_id  d op) (hIr : right_id d op) (hA : associative op) :
+  associative liftz.
 Proof.
 by elim=> [|x s IHs] [|y t] [|z u]; rewrite ?(liftE, liftA, hIl, hIr) 1?hA ?IHs.
 Qed.
 
 End LiftZ.
 
-Canonical liftb_tuple T d op k (s t : k.-tuple T) := Tuple (liftb_tupleP d op s t).
+Canonical liftz_tuple T d op k (s t : k.-tuple T) := Tuple (liftz_tupleP d op s t).
 
 Delimit Scope bits_scope with B.
 Local Open Scope bits_scope.
@@ -210,6 +221,10 @@ Notation "s `_ i" := (nth false s i) : bits_scope.
 Notation "''B_' n" := (n.+1.-tuple bool)
   (at level 8, n at level 2, format "''B_' n").
 
+
+(******************************************************************************)
+(* The bit operations themselves                                              *)
+(******************************************************************************)
 Section BitOps.
 
 Variable k : nat.
@@ -245,43 +260,52 @@ Canonical setlB bv j b := Tuple (setlb_tupleP bv j b).
 (* Properties of bget bset wrt to bit operations *)
 (* Bigops? *)
 
-Definition orB  := liftb false orb.
-Definition andB := liftb true andb.
+Definition orB  := liftz false orb.
+Definition andB := liftz true andb.
 
 Lemma orB_cons b1 b2 bs1 bs2 : orB (b1 :: bs1) (b2 :: bs2) = b1 || b2 :: orB bs1 bs2.
 Proof. by []. Qed.
 
 Lemma or0B : left_id [::] orB.
-Proof. exact: lift0B. Qed.
+Proof. exact: lift0z. Qed.
 
 Lemma orB0 : right_id [::] orB.
-Proof. exact: (liftB0 orbF). Qed.
+Proof. exact: (liftz0 orbF). Qed.
 
 Lemma or0B' : {in [pred s | k <= size s], left_id '0_k orB}.
-Proof. exact: lift0B'. Qed.
+Proof. exact: lift0z'. Qed.
 
 Lemma orB0' : {in [pred s | k <= size s], right_id '0_k orB}.
-Proof. exact: (liftB0' orbF). Qed.
+Proof. exact: (liftz0' orbF). Qed.
 
 Lemma orBC : commutative orB.
-Proof. exact: (liftBC _ orbC). Qed.
+Proof. exact: (liftzC _ orbC). Qed.
 
 Lemma orBA : associative orB.
-Proof. exact: (liftBA orFb orbF orbA). Qed.
+Proof. exact: (liftzA orFb orbF orbA). Qed.
 
-Lemma andbC : commutative andB.
-Proof. exact: (liftBC _ andbC). Qed.
+Lemma andBC : commutative andB.
+Proof. exact: (liftzC _ andbC). Qed.
 
-Lemma andbA : associative andB.
-Proof. exact: (liftBA andTb andbT andbA). Qed.
+Lemma andBA : associative andB.
+Proof. exact: (liftzA andTb andbT andbA). Qed.
+
+Lemma and1B : left_id [::] andB.
+Proof. exact: (lift0z andTb). Qed.
+
+Lemma andB1 : right_id [::] andB.
+Proof. exact: (liftz0 andbT). Qed.
 
 End BitOps.
 
 Canonical setb_tuple.
 
-(* Needs improvement *)
+(* May need improvement *)
 Canonical orB_monoid := Monoid.Law orBA or0B orB0.
 Canonical orb_com    := Monoid.ComLaw orBC.
+
+Canonical andB_monoid := Monoid.Law andBA and1B andB1.
+Canonical andb_com    := Monoid.ComLaw andBC.
 
 (* Unsigned modular arithmetic *)
 Section Unsigned.
