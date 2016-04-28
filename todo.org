@@ -1,0 +1,36 @@
+- Add bigops
+- alias for bitset operations
+
+  - specify the general theory, which properties do really need to work
+    over the tuple representation?
+
+  - for a start we can take a bitset type as a complete lattice. [This
+    should help integrating with Cyril's future library]
+
+    This should replace the current "SET" module interface used in PE
+    paper, for reference it is:
+
+  # T = Set
+  Parameter T : Type.
+  Parameter eq    : T -> T -> bool.
+  Parameter empty : T.
+  Parameter singl : 'I_k -> T.
+  Parameter compl : T -> T.
+  Parameter mem   : T -> 'I_k -> bool.
+  Parameter inter : T -> T -> T.
+  Parameter union : T -> T -> T.
+  Parameter card  : T -> nat.
+
+  # We could just rebind the notation..... and share with finset.
+
+  # Definable operations that may work more efficiently...
+  Parameter create : bool -> T.
+  Parameter insert : T -> 'I_wordsize -> T.
+  Parameter remove : T -> 'I_wordsize -> T.
+  Parameter keep_min : forall (E: T) x, x \in E -> T.
+  Parameter symdiff : T -> T -> T.
+
+- expand theory of arithmetic.
+- extraction ...
+
+  My first guess is that we'd like to use refinement here à la Cohen, Dénès, Motberg.
