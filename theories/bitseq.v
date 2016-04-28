@@ -111,7 +111,6 @@ Qed.
 
 End ZipD.
 
-
 Notation "''0_' n" := (nseq n false)
   (at level 8, n at level 2, format "''0_' n").
 
@@ -295,6 +294,47 @@ Proof. exact: (lift0z andTb). Qed.
 
 Lemma andB1 : right_id [::] andB.
 Proof. exact: (liftz0 andbT). Qed.
+
+(* Aliases for rotation *)
+Definition rolB := @rot bool.
+Definition rorB := @rotr bool.
+
+Lemma rolK n : cancel (rolB n) (rorB n).
+Proof. exact: rotK. Qed.
+
+Lemma rorK n : cancel (rorB n) (rolB n).
+Proof. exact: rotrK. Qed.
+
+(* Shift to left/right *)
+Definition shlB n s := '0_n ++ take (size s - n) s.
+Definition shrB n s := take (size s - n) s ++ '0_n.
+
+(* XXX *)
+Lemma size_shlB n s : size (shlB n s) = maxn n (size s).
+Proof.
+rewrite size_cat size_nseq size_takel ?leq_subr //.
+have [hs|/ltnW hs] := leqP n (size s).
+  by move/maxn_idPr: (hs) ->; rewrite subnKC.
+by move/maxn_idPl: (hs) (hs) ->; rewrite -subn_eq0 => /eqP->; rewrite addn0.
+Qed.
+
+Definition shlW n s := take (size s) (shlB n s).
+
+Lemma size_shlW n s : size (shlW n s) = size s.
+Proof. by rewrite size_takel // size_shlB leq_max leqnn orbT. Qed.
+
+Lemma size_shrB n s : size (shrB n s) = maxn n (size s).
+Proof.
+rewrite size_cat size_nseq size_takel ?leq_subr //.
+have [hs|/ltnW hs] := leqP n (size s).
+  by move/maxn_idPr: (hs) ->; rewrite subnK.
+by move/maxn_idPl: (hs) (hs) ->; rewrite -subn_eq0 => /eqP->.
+Qed.
+
+Definition shrW n s := take (size s) (shrB n s).
+
+Lemma size_shrW n s : size (shrW n s) = size s.
+Proof. by rewrite size_takel // size_shrB leq_max leqnn orbT. Qed.
 
 End BitOps.
 
