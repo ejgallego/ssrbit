@@ -238,12 +238,12 @@ Qed.
 (* Cardinality *)
 Definition cardb k (s : k.-tuple bool) := count id s.
 
+Arguments seqb_uniq [k s].
+
 (* This follows directly from the library *)
 Lemma cardbP k (s : k.-tuple bool) : #| setB s | = cardb s.
 Proof.
-rewrite cardsE; transitivity (size (seqB s)).
-  exact/card_uniqP/seqb_uniq.
-by rewrite size_mask ?size_tuple ?cardT ?size_enum_ord.
+by rewrite cardsE (card_uniqP seqb_uniq) size_mask // size_tuple size_enum_ord.
 Qed.
 
 (******************************************************************************)
@@ -277,17 +277,13 @@ End FinSet.
 
 (******************************************************************************)
 (* Taken from PE paper, we see indeed that there exists a unique repr which   *)
-(* is ours                                                                    *)
+(* is the one given by setB.                                                  *)
 (******************************************************************************)
 Definition s_repr k (bs : k.-tuple bool) E :=
   E = [set x : 'I_k | getb bs x].
-
-Lemma s_reprP k (bs : k.-tuple bool) : s_repr bs (setB bs).
-Proof. by rewrite /s_repr setb_def. Qed.
 
 Lemma s_repr_uniq k (bs : k.-tuple bool) E : s_repr bs E -> E = setB bs.
 Proof. by move ->; rewrite setb_def. Qed.
 
 Lemma count_repr k (bs : k.-tuple bool) E : s_repr bs E -> count_mem true bs = #|E|.
 Proof. by move -> ; rewrite -setb_def cardbP; apply: eq_count; case. Qed.
-

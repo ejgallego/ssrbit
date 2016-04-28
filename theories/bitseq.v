@@ -337,7 +337,7 @@ Proof. by rewrite size_takel // size_shrB leq_max leqnn orbT. Qed.
 Lemma take_nseq T n m (x : T) : take n (nseq m x) = nseq (minn n m) x.
 Proof. by elim: n m => [|n ihn] [|m]; rewrite ?minnSS //= ihn. Qed.
 
-(* Example lemma from the old lib: compare *)
+(* Example lemmas from the old lib: compare *)
 Lemma shlB_overflow n s (hs : size s <= n) : shlW n s = '0_(size s).
 Proof. by rewrite /shlW takel_cat ?size_nseq // take_nseq (minn_idPl hs). Qed.
 
@@ -346,6 +346,84 @@ Proof.
 have/eqP hsu : size s - n == 0 by rewrite subn_eq0.
 by rewrite /shrW /shrB hsu take0 take_nseq (minn_idPl hs).
 Qed.
+
+(* Inversion of bits *)
+Definition negB s := [seq negb b | b <- s].
+
+(* adder : c b1 b2 -> carry * res *)
+Definition adder carry b1 b2 :=
+  let: r := carry + b1 + b2 in
+  (r > 1, r %% 2 != 0).
+
+Lemma adderC c b1 b2 : adder c b1 b2 = adder c b2 b1.
+Proof. by rewrite /adder addnAC. Qed.
+
+(* XXX: Use a big_iter *)
+Fixpoint adcB_p (carry : bool) (s : seq (bool * bool)) :=
+  if s is (b1, b2) :: s then
+    let: (nc, rb) := adder carry b1 b2 in
+    let: (fc, rs) := adcB_p  nc s      in
+    (fc, rb :: rs)
+  else (carry, [::]).
+
+Lemma size_adcB_p c s : size (adcB_p c s).2 = size s.
+Proof.
+elim: s c => //= -[r1 r2] l ihl c; rewrite -(ihl (adder c r1 r2).1).
+by case: adcB_p.
+Qed.
+
+(* XXX: refine into carry and res... *)
+Definition adcB c s1 s2 := adcB_p c (zipd false false s1 s2).
+
+Lemma adcB_cons c x s y t :
+ adcB c (x :: s) (y :: t) =
+ let: (nc, rb) := adder c  x y in
+ let: (fc, rs) := adcB  nc s t in
+ (fc, rb :: rs).
+Proof. by []. Qed.
+
+Lemma size_adcB c s1 s2 : size (adcB c s1 s2).2 = maxn (size s1) (size s2).
+Proof. by rewrite /adcB size_adcB_p size_zipd. Qed.
+
+Compute (adcB true [:: true; false; true] [:: true; true; false]).
+
+Lemma adc0BC c s : adcB c [::] s = adcB c s [::].
+Proof.
+rewrite /adcB zipd0 zip0d; elim: s c => //= b l ihl c.
+by rewrite ihl addnAC.
+Qed.
+
+Lemma adcBC c : commutative (adcB c).
+Proof.
+move=> s t; elim: s t c => [|x s ihs] [|y t] c; rewrite ?zipd0 ?zip0d ?adc0BC //.
+by rewrite !adcB_cons adderC /= ihs.
+Qed.
+
+Definition sbbB borrow s1 s2 :=
+  let: (carry, res) := adcB (~~ borrow) s1 (negB s2) in
+  (~~carry, res).
+
+(* Old: "Absurdily complicated"  EG: Not sure this makes sense *)
+Lemma sbb0B_carry s : fst (sbbB false [::] s) = (s != '0_(size s)).
+Proof.
+elim: s => //= b l ihl; rewrite /sbbB /adcB /=.
+rewrite !addn0.
+Admitted.
+
+(* XXX: rcons *)
+
+(* Definition adcB (carry : bool) s1 s2 := *)
+(*   foldl (fun carry (e1, e2) => ) (carry, []) *)
+(*         (zipd false false s1 s2). *)
+
+(*
+Definition sbbB {n} borrow (arg1 arg2: BITS n) :=
+  let (carry, res) := eta_expand (adcB (~~borrow) arg1 (invB arg2)) in
+  (~~carry, res).
+
+(* Old: "Absurdily complicated" *)
+Lemma sbb0B_carry n (p: BITS n.+1) : fst (sbbB false #0 p) = (p != #0).
+*)
 
 End BitOps.
 
