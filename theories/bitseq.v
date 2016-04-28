@@ -312,10 +312,9 @@ Definition shrB n s := take (size s - n) s ++ '0_n.
 (* XXX *)
 Lemma size_shlB n s : size (shlB n s) = maxn n (size s).
 Proof.
-rewrite size_cat size_nseq size_takel ?leq_subr //.
-have [hs|/ltnW hs] := leqP n (size s).
-  by move/maxn_idPr: (hs) ->; rewrite subnKC.
-by move/maxn_idPl: (hs) (hs) ->; rewrite -subn_eq0 => /eqP->; rewrite addn0.
+apply/eqP; rewrite size_cat size_nseq size_takel ?leq_subr //.
+have [hs|/ltnW hs] := leqP n (size s); first by rewrite (maxn_idPr hs) subnKC.
+by rewrite (maxn_idPl hs) -{3}[n]addn0 eqn_add2l subn_eq0.
 Qed.
 
 Definition shlW n s := take (size s) (shlB n s).
@@ -325,16 +324,28 @@ Proof. by rewrite size_takel // size_shlB leq_max leqnn orbT. Qed.
 
 Lemma size_shrB n s : size (shrB n s) = maxn n (size s).
 Proof.
-rewrite size_cat size_nseq size_takel ?leq_subr //.
-have [hs|/ltnW hs] := leqP n (size s).
-  by move/maxn_idPr: (hs) ->; rewrite subnK.
-by move/maxn_idPl: (hs) (hs) ->; rewrite -subn_eq0 => /eqP->.
+apply/eqP; rewrite size_cat size_nseq size_takel ?leq_subr //.
+have [hs|/ltnW hs] := leqP n (size s); first by rewrite (maxn_idPr hs) subnK.
+by rewrite (maxn_idPl hs) -{3}[n]add0n eqn_add2r subn_eq0.
 Qed.
 
 Definition shrW n s := take (size s) (shrB n s).
 
 Lemma size_shrW n s : size (shrW n s) = size s.
 Proof. by rewrite size_takel // size_shrB leq_max leqnn orbT. Qed.
+
+Lemma take_nseq T n m (x : T) : take n (nseq m x) = nseq (minn n m) x.
+Proof. by elim: n m => [|n ihn] [|m]; rewrite ?minnSS //= ihn. Qed.
+
+(* Example lemma from the old lib: compare *)
+Lemma shlB_overflow n s (hs : size s <= n) : shlW n s = '0_(size s).
+Proof. by rewrite /shlW takel_cat ?size_nseq // take_nseq (minn_idPl hs). Qed.
+
+Lemma shrB_overflow n s (hs : size s <= n) : shrW n s = '0_(size s).
+Proof.
+have/eqP hsu : size s - n == 0 by rewrite subn_eq0.
+by rewrite /shrW /shrB hsu take0 take_nseq (minn_idPl hs).
+Qed.
 
 End BitOps.
 
