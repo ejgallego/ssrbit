@@ -29,6 +29,10 @@ Require Import choice fintype finset tuple path bigop.
 (*     seqB B ==  seq 'I_k  corresponding to (B : k.-bit_tuple)               *)
 (*     setB B == {set 'I_k} corresponding to (B : k.-bit_tuple)               *)
 (*                                                                            *)
+(* Future                                                                     *)
+(*     seqF F ==  seq 'I_k  corresponding to (B : {ffun ...}                  *)
+(*     setF B == {ffun 'I_k... } corresponding to (B : k.-bit_tuple)          *)
+(*                                                                            *)
 (* Operations are designed to cancel in the proper way, the *_morphL family   *)
 (* or lemmas provide the correspondence between set and bit operations.       *)
 (*                                                                            *)
@@ -271,6 +275,18 @@ Lemma bitFK : cancel finB bitF.
 Proof.
 move=> b; rewrite /finB /bitF -imset_comp (eq_imset _ (@enum_valK _)) imset_id.
 exact: setbK.
+Qed.
+
+Definition f_repr b A := A = [set x : T | getb b (enum_rank x)].
+
+(* XXX: Refactor, should be easier. *)
+Lemma f_repr_uniq b E : f_repr b E -> E = finB b.
+Proof.
+move->; rewrite /finB (can2_imset_pre _ (@enum_valK _) (@enum_rankK _)).
+apply/setP=> k; rewrite !inE /seqB.
+rewrite -[val (enum_rank k)]subn0 -(@mem_mask_iota #|T|) ?size_tuple //.
+  by rewrite val_mem_seq map_mask val_enum_ord.
+by rewrite leq0n ltn_ord.
 Qed.
 
 End FinSet.
