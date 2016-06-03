@@ -283,10 +283,8 @@ Definition f_repr b A := A = [set x : T | getb b (enum_rank x)].
 Lemma f_repr_uniq b E : f_repr b E -> E = finB b.
 Proof.
 move->; rewrite /finB (can2_imset_pre _ (@enum_valK _) (@enum_rankK _)).
-apply/setP=> k; rewrite !inE /seqB.
-rewrite -[val (enum_rank k)]subn0 -(@mem_mask_iota #|T|) ?size_tuple //.
-  by rewrite val_mem_seq map_mask val_enum_ord.
-by rewrite leq0n ltn_ord.
+apply/setP=> k; rewrite !inE /seqB val_mem_seq map_mask val_enum_ord.
+by rewrite mem_mask_iota ?subn0 ?size_tuple // leq0n ltn_ord.
 Qed.
 
 End FinSet.
