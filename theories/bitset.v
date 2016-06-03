@@ -277,14 +277,14 @@ move=> b; rewrite /finB /bitF -imset_comp (eq_imset _ (@enum_valK _)) imset_id.
 exact: setbK.
 Qed.
 
+(* Aux Lemma to avoid using prenex implicits *)
+Let can_enum D := can2_imset_pre D (@enum_valK T) (@enum_rankK _).
+
 Definition f_repr b A := A = [set x : T | getb b (enum_rank x)].
 
-(* XXX: Refactor, should be easier. *)
 Lemma f_repr_uniq b E : f_repr b E -> E = finB b.
 Proof.
-move->; rewrite /finB (can2_imset_pre _ (@enum_valK _) (@enum_rankK _)).
-apply/setP=> k; rewrite !inE /seqB val_mem_seq map_mask val_enum_ord.
-by rewrite mem_mask_iota ?subn0 ?size_tuple // leq0n ltn_ord.
+by move->; rewrite /finB can_enum; apply/setP=> ?; rewrite !inE -mem_setb inE.
 Qed.
 
 End FinSet.
