@@ -20,23 +20,29 @@ Require Import bigop ssralg ssrnum fingroup perm finalg zmodp ssrint.
 
 (******************************************************************************)
 (*                                                                            *)
-(* We only consider non-empty bit sequences:                                  *)
+(* We develop the theory of bit sequences, AKA, words. This file deals with   *)
+(* the computable part of the theory, based on the standard type:             *)
 (*                                                                            *)
-(*        'B_n == type of n.+1 bit sequences                                  *)
+(*      bitseq == seq bool                                                    *)
 (*                                                                            *)
-(* A bit sequence is just a list or tuple of booleans, and it inherits        *)
-(* zmodType and ringType structures.                                          *)
+(* We define all bit operations over this representation, using a zip with    *)
+(* default operation that respects most algebraic properties without          *)
+(* requiring arguments of the same lenght.                                    *)
+(*                                                                            *)
+(* Bitseq are naturally viewed as tuples:                                     *)
+(*                                                                            *)
+(*        'B_n == type of sequences of n.+1 bits                              *)
+(*                                                                            *)
+(* 'B_n inheritis zmodType and ringType structures.                           *)
 (*                                                                            *)
 (*  ** Bit Operations:                                                        *)
 (*                                                                            *)
-(*  Most operations are already in the seq library,                           *)
-(*                                                                            *)
-(*  We'd like to formalize at least the ocaml operations on bits              *)
+(*  Quite a few operations are already provided by the standard seq library,  *)
+(*  including `setb` and `getb` which are just aliaes for `nth`, `set_nth`:   *)
 (*                                                                            *)
 (*     setb bs i b == sets bit i in bs to b                                   *)
 (*           bs`_i == gets bit i in bs                                        *)
 (*                                                                            *)
-(*   these two are just aliases for nth set_nth                               *)
 (*                                                                            *)
 (*  ** Unsigned modular arithmetic.                                           *)
 (*                                                                            *)
@@ -164,7 +170,7 @@ Lemma nth_liftz s t i (i_le_s : i < size s) (i_le_t : i < size t) :
 Proof. by rewrite (nth_map (d,d)) ?size_zipd ?leq_max ?i_le_s ?nth_zipd. Qed.
 
 (* XXX: Weird version *)
-Lemma nth_liftz' s t i (op_id : idempotent op) :
+Lemma nth_liftz_idem s t i (op_id : idempotent op) :
   nth d (liftz s t) i = op (nth d s i) (nth d t i).
 Proof.
 case: (i < maxn (size s) (size t)) / leqP.

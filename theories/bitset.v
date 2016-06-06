@@ -29,7 +29,8 @@ Require Import choice fintype finset tuple path bigop.
 (*     seqB B ==  seq 'I_k  corresponding to (B : k.-bit_tuple)               *)
 (*     setB B == {set 'I_k} corresponding to (B : k.-bit_tuple)               *)
 (*                                                                            *)
-(* Future                                                                     *)
+(* Future:                                                                    *)
+(*                                                                            *)
 (*     seqF F ==  seq 'I_k  corresponding to (B : {ffun ...}                  *)
 (*     setF B == {ffun 'I_k... } corresponding to (B : k.-bit_tuple)          *)
 (*                                                                            *)
@@ -172,7 +173,7 @@ Qed.
 (* Proof. exact: val_inj. Qed. *)
 
 Lemma nth_orB0 bs i k : ((orB bs '0_k)`_i)%B = (bs`_i)%B.
-Proof. by rewrite /orB nth_liftz ?getb0 ?orbF. Qed.
+Proof. by rewrite /orB nth_liftz_idem ?getb0 ?orbF. Qed.
 
 (* Perm_eq is not enoguht as we also remove the dups *)
 Lemma seqnK k (x : seq 'I_k) : (seqB (seqn x)) =i x.
@@ -213,7 +214,7 @@ Prenex Implicits setnK setbK.
 (* XXX: move to use {morph ...} notation *)
 Lemma union_morphL k (b1 b2 : k.-tuple bool) :
   setB [tuple of orB b1 b2] = (setB b1 :|: setB b2).
-Proof. by apply/setP=> i; rewrite !mem_setb inE !mem_setb /orB !getbE nth_liftz. Qed.
+Proof. by apply/setP=> i; rewrite !mem_setb inE !mem_setb /orB !getbE nth_liftz_idem. Qed.
 
 (* Example of derived property *)
 Lemma union_morphR k (s1 s2 : {set 'I_k}) :
@@ -265,20 +266,31 @@ Definition bitF A := setn [set enum_rank x | x in A].
 (* From a tuple to a finite set *)
 Definition finB b := [set enum_val x | x in setB b].
 
+(* Aux Lemma to avoid using prenex implicits *)
+Let can_enum D := can2_imset_pre D (@enum_valK T) (@enum_rankK _).
+Let enum_can D := can2_imset_pre D (@enum_rankK T) (@enum_valK _).
+
+Lemma preimsetK (U V : finType) (A : {set U}) (f : U -> V)
+                (f_inj : injective f) :
+  f @^-1: (f @: A) = A.
+Proof.
+apply/setP=> x; rewrite inE; apply/imsetP/idP; last by move=> x_in; exists x.
+by case=> y y_in /f_inj->.
+Qed.
+
 Lemma finBK : cancel bitF finB.
 Proof.
-move=> A; rewrite /finB /bitF setnK -imset_comp (eq_imset _ (@enum_rankK _)).
-exact: imset_id.
+by move=> A; rewrite /finB can_enum setnK (preimsetK _ enum_rank_inj).
+(* move=> A; rewrite /finB /bitF setnK -imset_comp (eq_imset _ (@enum_rankK _)). *)
+(* exact: imset_id. *)
 Qed.
 
 Lemma bitFK : cancel finB bitF.
 Proof.
-move=> b; rewrite /finB /bitF -imset_comp (eq_imset _ (@enum_valK _)) imset_id.
-exact: setbK.
+by move=> A; rewrite /finB /bitF enum_can (preimsetK _ enum_val_inj) setbK.
+(* move=> b; rewrite /finB /bitF -imset_comp (eq_imset _ (@enum_valK _)) imset_id. *)
+(* exact: setbK. *)
 Qed.
-
-(* Aux Lemma to avoid using prenex implicits *)
-Let can_enum D := can2_imset_pre D (@enum_valK T) (@enum_rankK _).
 
 Definition f_repr b A := A = [set x : T | getb b (enum_rank x)].
 
