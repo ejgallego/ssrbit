@@ -4,7 +4,8 @@
 (*                                                                            *)
 (* (c) 2016, MINES ParisTech                                                  *)
 (*                                                                            *)
-(* Written by Emilio J. Gallego Arias                                         *)
+(* Written by Pierre-Evariste Dagand                                          *)
+(*            Emilio J. Gallego Arias                                         *)
 (*                                                                            *)
 (* LICENSE: CECILL-B                                                          *)
 (*                                                                            *)
@@ -13,7 +14,7 @@
 From mathcomp
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq div.
 From mathcomp
-Require Import choice fintype finset tuple.
+Require Import choice fintype finset tuple finfun.
 From mathcomp
 Require Import bigop ssralg ssrnum fingroup perm finalg zmodp ssrint.
 
@@ -158,7 +159,12 @@ elim: s t => [|x s ihs] [|y t] //=; last by rewrite ihs maxnSS.
 by rewrite maxn0 size_map size_zip size_nseq minnn.
 Qed.
 
-Lemma nth_liftz s t i (op_id : idempotent op) :
+Lemma nth_liftz s t i (i_le_s : i < size s) (i_le_t : i < size t) :
+  nth d (liftz s t) i = op (nth d s i) (nth d t i).
+Proof. by rewrite (nth_map (d,d)) ?size_zipd ?leq_max ?i_le_s ?nth_zipd. Qed.
+
+(* XXX: Weird version *)
+Lemma nth_liftz' s t i (op_id : idempotent op) :
   nth d (liftz s t) i = op (nth d s i) (nth d t i).
 Proof.
 case: (i < maxn (size s) (size t)) / leqP.
@@ -207,6 +213,15 @@ End LiftZ.
 
 Canonical liftz_tuple T d op k (s t : k.-tuple T) := Tuple (liftz_tupleP d op s t).
 
+(* Tuple theory *)
+Section LiftzTuple.
+
+Lemma tnth_liftz T d op k (s t : k.-tuple T) i :
+  tnth [tuple of liftz d op s t] i = op (tnth s i) (tnth t i).
+Proof. by rewrite !(tnth_nth d) nth_liftz ?size_tuple. Qed.
+
+End LiftzTuple.
+
 Delimit Scope bits_scope with B.
 Local Open Scope bits_scope.
 
@@ -219,7 +234,6 @@ Notation "s `_ i" := (nth false s i) : bits_scope.
 (* Non-empty bit vectors *)
 Notation "''B_' n" := (n.+1.-tuple bool)
   (at level 8, n at level 2, format "''B_' n").
-
 
 (******************************************************************************)
 (* The bit operations themselves                                              *)
