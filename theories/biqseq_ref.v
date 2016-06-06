@@ -25,28 +25,33 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
-Require Import bitseq.
+Require Import bitseq bitword.
 
-(* Refinements by P-E Dagand *)
+(* Refinements *)
 Section BitFFun.
 
 Variable k : nat.
 
-Definition BitSeq := {ffun 'I_k -> bool}.
-Implicit Type (b : bitseq) (bt : k.-tuple bool) (f : BitSeq).
+Implicit Type (b : bitseq) (bt : k.-tuple bool) (w : word k).
 
 Definition orB b1 b2          := liftz false orb b1 b2.
-Definition orF f1 f2 : BitSeq := [ffun j => f1 j || f2 j].
+Definition orF f1 f2 : word k := [ffun j => f1 j || f2 j].
 
-Definition R_bitseq b f : Prop := b = fgraph f.
+Definition R_bitseq b w : Prop := b = fgraph w.
 Notation "b ≈ f" := (R_bitseq b f) (at level 42).
 (* Even if like this more *)
 (* Definition R_bitseq b f : bool := [forall j, f j == getb b j]. *)
 
-Lemma size_ref b f : b ≈ f -> size b = k.
+Lemma size_ref b w : b ≈ w -> size b = k.
 Proof. by move->; rewrite size_tuple card_ord. Qed.
 
-Lemma R_or b1 f1 (hR1 : b1 ≈ f1) b2 f2 (hR2 : b2 ≈ f2) : orB b1 b2 ≈ orF f1 f2.
+(* XXX: Other option here, apply cancel lemma *)
+
+Lemma R_or_K b1 w1 (hR1 : b1 ≈ w1) b2 w2 (hR2 : b2 ≈ w2) : orB b1 b2 ≈ orF w1 w2.
+Proof.
+Admitted.
+
+Lemma R_or b1 w1 (hR1 : b1 ≈ w1) b2 w2 (hR2 : b2 ≈ w2) : orB b1 b2 ≈ orF w1 w2.
 Proof.
 have sz1 := size_ref hR1.
 have sz2 := size_ref hR2.
@@ -60,7 +65,7 @@ Qed.
 Global Instance or_refineP : refines (R_bitseq ==> R_bitseq ==> R_bitseq)%rel orB orF.
 Proof. by rewrite refinesE; exact: R_or. Qed.
 
-Definition funB bv : BitSeq := [ffun x : 'I_k => getb bv x].
+Definition funB bv : word k := [ffun x : 'I_k => getb bv x].
 
 Lemma funbP bv : funB bv =1 getb bv.
 Proof. exact: ffunE. Qed.
@@ -74,7 +79,7 @@ Section BitFFunTuples.
 (* A different attempt with composition of refinments *)
 Variable k : nat.
 
-Implicit Type (b : k.-tuple bool) (f : BitSeq k).
+Implicit Type (b : k.-tuple bool) (f : word k).
 
 Definition orT b1 b2 := [tuple of liftz false orb b1 b2].
 
@@ -157,25 +162,10 @@ rewrite /orF ffunE.
 rewrite hR1 in sz1 *.
 rewrite hR2 in sz2 *.
 rewrite /= /orB tnth_liftz.
+Admitted.
 
-apply: R_inj => x; rewrite /orF ffunE.
+Global Instance or_refineP2 : refines (R_bitgraph ==> R_bitgraph ==> R_bitgraph)%rel orB2 orF2.
+Proof. by rewrite refinesE; exact: R_orF. Qed.
 
-
-rewrite /orB.
-move=> i i_lt; rewrite /liftz (nth_map (false,false)).
-  by rewrite nth_zipd hR1 hR2 !U /orF !tnth_fgraph ffunE.
-by rewrite size_zipd sz1 sz2 maxnn -szO.
-Qed.
-
-Global Instance or_refineP : refines (R_bitseq ==> R_bitseq ==> R_bitseq)%rel orB orF.
-Proof. by rewrite refinesE; exact: R_or. Qed.
-
-Definition funB bv : BitSeq := [ffun x : 'I_k => getb bv x].
-
-Lemma funbP bv : funB bv =1 getb bv.
-Proof. exact: ffunE. Qed.
-
-(* Require Import Parametricty. *)
-
-End BitFFun.
+End BitFFun2.
 
