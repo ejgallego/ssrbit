@@ -24,3 +24,11 @@ interesting references are:
   https://github.com/arthuraa/coq-utils/blob/master/theories/word.v
 + Why3 BitVectors: http://why3.lri.fr/stdlib-0.87.0/bv.html
 + Coq BitVectors: https://coq.inria.fr/library/Coq.Bool.Bvector.html
+
+## Acknowledgments
+
+ssrbit has been developed at the
+[Centre de Recherche en Informatique](https://www.cri.ensmp.fr/") of
+[MINES ParisTech](http://www.mines-paristech.fr/) (former École de
+Mines de Paris) and partially supported by the
+[FEEVER](http://www.feever.fr) project.
