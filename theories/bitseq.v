@@ -111,6 +111,13 @@ Notation "[ 'bits' 'of' s ]" := (tuple (fun sP => @Tuple _ bool s sP))
 Notation "''B_' n" := (n.-tuple bool)
   (at level 8, n at level 2, format "''B_' n").
 
+Section AuxTheory.
+
+Lemma tnth_nseq m T (x : T) i : tnth [tuple of nseq m x] i = x.
+Proof. by rewrite (tnth_nth x) nth_nseq ltn_ord. Qed.
+
+End AuxTheory.
+
 (************************************************************************)
 (* Zip with a default. It is worth defining our own version of zip
  * such that preserves the length of the greatest list. An
@@ -301,9 +308,6 @@ Canonical setlB bv j b := Tuple (setls_tupleP bv j b).
 Definition ors  := liftz false orb.
 Definition ands := liftz true andb.
 
-Definition orB  k (t1 t2 : 'B_k) := [bits of ors  t1 t2].
-Definition andB k (t1 t2 : 'B_k) := [bits of ands t1 t2].
-
 Lemma ors_cons b1 b2 bs1 bs2 : ors (b1 :: bs1) (b2 :: bs2) = b1 || b2 :: ors bs1 bs2.
 Proof. by []. Qed.
 
@@ -325,17 +329,45 @@ Proof. exact: (liftzC _ orbC). Qed.
 Lemma orsA : associative ors.
 Proof. exact: (liftzA orFb orbF orbA). Qed.
 
+Lemma ands_cons b1 b2 bs1 bs2 : ands (b1 :: bs1) (b2 :: bs2) = b1 && b2 :: ands bs1 bs2.
+Proof. by []. Qed.
+
 Lemma andsC : commutative ands.
 Proof. exact: (liftzC _ andbC). Qed.
 
 Lemma andsA : associative ands.
 Proof. exact: (liftzA andTb andbT andbA). Qed.
 
-Lemma and1B : left_id [::] ands.
+Lemma and1s : left_id [::] ands.
 Proof. exact: (lift0z andTb). Qed.
 
 Lemma ands1 : right_id [::] ands.
 Proof. exact: (liftz0 andbT). Qed.
+
+Section OpsTup.
+
+Variable k' : nat.
+Implicit Type (t : 'B_k').
+
+Definition orB  t1 t2 := [bits of ors  t1 t2].
+Definition andB t1 t2 := [bits of ands t1 t2].
+
+Lemma and0B t : andB [bits of '0_k'] t = [bits of '0_k'].
+Proof.
+(* XXX : use right_zero *)
+apply: val_inj; case: t => [t /= /eqP ht].
+by elim: t k' ht => [|b t iht] [|k0] //= [/iht]{2}<-.
+Qed.
+
+Lemma andBC : commutative andB.
+Proof. by move=> t1 t2; apply/val_inj/andsC. Qed.
+
+End OpsTup.
+
+Lemma andB_cons b1 b2 (t1 t2 : 'B_k) :
+  andB [bits of b1 :: t1] [bits of b2 :: t2] =
+  [bits of b1 && b2 :: andB t1 t2].
+Proof. exact: val_inj. Qed.
 
 (* Aliases for rotation *)
 Definition rols := @rot bool.
@@ -466,7 +498,7 @@ End BitOps.
 Canonical ors_monoid := Monoid.Law orsA or0s ors0.
 Canonical ors_com    := Monoid.ComLaw orsC.
 
-Canonical ands_monoid := Monoid.Law andsA and1B ands1.
+Canonical ands_monoid := Monoid.Law andsA and1s ands1.
 Canonical ands_com    := Monoid.ComLaw andsC.
 
 (* Unsigned modular arithmetic *)
@@ -647,6 +679,9 @@ Canonical B_comRingType := Eval hnf in ComRingType _ mulBC.
 
 End BitAlgebra.
 End Unsigned.
+
+Arguments B0 [_].
+Arguments B1 [_].
 
 Section Examples.
 
