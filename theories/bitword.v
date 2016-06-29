@@ -40,26 +40,27 @@ Section BitFFun.
 
 Variable k : nat.
 
+(* We thank Cyril Cohen for the suggestion *)
 Definition word := {ffun 'I_k -> bool}.
 
 Implicit Type (b : bitseq) (t : k.-tuple bool) (w : word).
 
 Definition seqw w        := val (fgraph w).
-Definition wrdb b : word := [ffun i => nth false b (val i)].
+Definition wrds b : word := [ffun i => nth false b (val i)].
 
 Lemma size_seqw w : size (seqw w) = k.
 Proof. by rewrite size_tuple card_ord. Qed.
 
-Lemma seqwK : cancel seqw wrdb.
+Lemma seqwK : cancel seqw wrds.
 Proof. by move=> w; apply/ffunP=> i; rewrite /= !ffunE nth_fgraph_ord. Qed.
 
-Lemma wrdbK : {in [pred x | size x == k], cancel wrdb seqw}.
+Lemma wrdbK : {in [pred x | size x == k], cancel wrds seqw}.
 Proof.
 move=> b /eqP hsz; apply: (@eq_from_nth _ false); first by rewrite size_seqw.
 move=> i; rewrite size_seqw => hlt.
 by rewrite (_ : i = (Ordinal hlt)) // nth_fgraph_ord ffunE.
 Qed.
-
+About tnth.
 Definition bitw w        := tcast (@card_ord k) (fgraph w).
 Definition wrdt t : word := [ffun i => tnth t i].
 

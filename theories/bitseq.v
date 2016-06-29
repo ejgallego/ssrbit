@@ -25,36 +25,48 @@ Require Import bigop ssralg ssrnum fingroup perm finalg zmodp ssrint.
 (*                                                                            *)
 (*      bitseq == seq bool                                                    *)
 (*                                                                            *)
-(* We define all bit operations over this representation, using a zip with    *)
+(* We define bit operations over this representation, using a zip with        *)
 (* default operation that respects most algebraic properties without          *)
-(* requiring arguments of the same lenght.                                    *)
+(* requiring arguments of the same length.                                    *)
+(*                                                                            *)
+(* In the second part of the file, we provide bit sequence arithmetic.        *)
 (*                                                                            *)
 (* Bitseq are naturally viewed as tuples:                                     *)
 (*                                                                            *)
-(*        'B_n == type of sequences of n.+1 bits                              *)
+(*        'B_n == type of sequences of n bits, note that for many             *)
+(*                constructions you need to use 'B_n.+1                       *)
 (*                                                                            *)
-(* 'B_n inheritis zmodType and ringType structures.                           *)
+(* In all cases, the tuple operations are based on their bitseq counterpart.  *)
 (*                                                                            *)
 (*  ** Bit Operations:                                                        *)
 (*                                                                            *)
 (*  Quite a few operations are already provided by the standard seq library,  *)
 (*  including `setb` and `getb` which are just aliaes for `nth`, `set_nth`:   *)
 (*                                                                            *)
-(*     setb bs i b == sets bit i in bs to b                                   *)
-(*           bs`_i == gets bit i in bs                                        *)
+(*     sets bs i b == sets bit i in bs to b                                   *)
+(*           bs`_i == gets bit i in bs (or false if out of range)             *)
 (*                                                                            *)
+(*  We additionally provide:                                                  *)
 (*                                                                            *)
 (*  ** Unsigned modular arithmetic.                                           *)
 (*                                                                            *)
+(*  We provide conversion functions to/from bitseqs to natural numbers.       *)
+(*                                                                            *)
 (*     bito o  == k.-bit sequence for ordinal o : 'I_(2^k)                    *)
-(*     ordb bs == 2^k ordinal for k.-bit sequence bs                          *)
+(*     ordB bs == 2^k.+1 ordinal for k.+1.-bit sequence bs                    *)
+(*                                                                            *)
+(*  Note the choice to reject producing 0-size ordinals.                      *)
+(*                                                                            *)
+(*  'B_n.+1. inherits the zmodType and ringType structure.                    *)
+(*                                                                            *)
 (*                                                                            *)
 (*  ** Signed modular arithmetic.                                             *)
 (*                                                                            *)
 (*                                                                            *)
+(*                                                                            *)
 (* This file uses the following suffix conventions:                           *)
-(*   B - operation on bitseq                                                  *)
-(*   W - operation on k.-tuple bool                                           *)
+(*   s  - operations on bitseq                                                *)
+(*   B  - operations on 'B_n                                                  *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -74,6 +86,32 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+(************************************************************************)
+(* Main notations and basic definitions                                 *)
+(************************************************************************)
+
+Delimit Scope bits_scope with B.
+Local Open Scope bits_scope.
+
+Notation "''0_' n" := (nseq n false)
+  (at level 8, n at level 2, format "''0_' n") : bits_scope.
+
+Notation "''1_' n" := (nseq n true)
+  (at level 8, n at level 2, format "''1_' n") : bits_scope.
+
+Definition sets bs i b := set_nth false bs i b.
+
+Notation "bs `_ i" := (nth false bs i) : bits_scope.
+
+(* We define some notations over sets and tuples *)
+Notation "[ 'bits' 'of' s ]" := (tuple (fun sP => @Tuple _ bool s sP))
+  (at level 0, format "[ 'bits'  'of'  s ]") : bits_scope.
+
+(* Bit vectors *)
+Notation "''B_' n" := (n.-tuple bool)
+  (at level 8, n at level 2, format "''B_' n").
+
+(************************************************************************)
 (* Zip with a default. It is worth defining our own version of zip
  * such that preserves the length of the greatest list. An
  * alternative is using the regular list + padding but we'd like to
@@ -118,12 +156,6 @@ Qed.
 
 End ZipD.
 
-Notation "''0_' n" := (nseq n false)
-  (at level 8, n at level 2, format "''0_' n").
-
-Notation "''1_' n" := (nseq n true)
-  (at level 8, n at level 2, format "''1_' n").
-
 (******************************************************************************)
 (* Lifting of a binary operator throu zipd                                    *)
 (******************************************************************************)
@@ -165,9 +197,14 @@ elim: s t => [|x s ihs] [|y t] //=; last by rewrite ihs maxnSS.
 by rewrite maxn0 size_map size_zip size_nseq minnn.
 Qed.
 
-Lemma nth_liftz s t i (i_le_s : i < size s) (i_le_t : i < size t) :
-  nth d (liftz s t) i = op (nth d s i) (nth d t i).
-Proof. by rewrite (nth_map (d,d)) ?size_zipd ?leq_max ?i_le_s ?nth_zipd. Qed.
+Lemma nth_liftz d0 s t i (i_le_s : i < size s) (i_le_t : i < size t) :
+  nth d0 (liftz s t) i = op (nth d0 s i) (nth d0 t i).
+Proof.
+rewrite (nth_map (d0,d0)) ?size_zipd ?leq_max ?i_le_s //.
+rewrite (set_nth_default (d,d) (d0,d0)) ?nth_zipd //.
+  by rewrite !(set_nth_default d0 d).
+by rewrite size_zipd leq_max i_le_s.
+Qed.
 
 (* XXX: Weird version *)
 Lemma nth_liftz_idem s t i (op_id : idempotent op) :
@@ -228,144 +265,118 @@ Proof. by rewrite !(tnth_nth d) nth_liftz ?size_tuple. Qed.
 
 End LiftzTuple.
 
-Delimit Scope bits_scope with B.
-Local Open Scope bits_scope.
-
-(* We define some notations over sets and tuples *)
-Notation "[ 'bits' 'of' s ]" := (tuple (fun sP => @Tuple _ bool s sP))
-  (at level 0, format "[ 'bits'  'of'  s ]") : bits_scope.
-
-Notation "s `_ i" := (nth false s i) : bits_scope.
-
-(* Non-empty bit vectors *)
-Notation "''B_' n" := (n.+1.-tuple bool)
-  (at level 8, n at level 2, format "''B_' n").
-
 (******************************************************************************)
-(* The bit operations themselves                                              *)
+(* Bit operations                                                             *)
 (******************************************************************************)
 Section BitOps.
 
 Variable k : nat.
-Implicit Types (i : nat) (j : 'I_k.+1) (bs : bitseq) (bv : 'B_k) (b : bool).
+Implicit Types (i : nat) (j : 'I_k) (bs : bitseq) (bv : 'B_k) (b : bool).
 
 (* Untyped versions *)
-Definition setb bs i b := set_nth false bs i b.
-Definition getb bs i   := nth false bs i.
 
-Lemma getbE bs i : getb bs i = bs`_i.
-Proof. by []. Qed.
-
-Lemma getb0 i : '0_k`_i = false.
+Lemma gets0 i : '0_k`_i = false.
 Proof. by elim: i k => [|i IHi] [|k'] //=. Qed.
 
-Lemma setb_tupleP bv j b :
-  size (setb bv j b) == k.+1.
+Lemma sets_tupleP bv j b :
+  size (sets bv j b) == k.
 Proof. by rewrite size_set_nth size_tuple; apply/eqP/maxn_idPr. Qed.
 
-Canonical setb_tuple bv j b := Tuple (setb_tupleP bv j b).
+Canonical setB bv j b := Tuple (sets_tupleP bv j b).
 
 (* Size-preserving version *)
-Definition setlb bs i b :=
+Definition setls bs i b :=
   if i < size bs then set_nth false bs i b else bs.
 
-Lemma setlb_tupleP bv i b : size (setlb bv i b) == k.+1.
+Lemma setls_tupleP bv i b : size (setls bv i b) == k.
 Proof.
 by rewrite fun_if size_set_nth size_tuple; case: ifP => // /maxn_idPr ->.
 Qed.
 
-Canonical setlB bv j b := Tuple (setlb_tupleP bv j b).
+Canonical setlB bv j b := Tuple (setls_tupleP bv j b).
 
 (* Properties of bget bset wrt to bit operations *)
 (* Bigops? *)
 
-Definition orB  := liftz false orb.
-Definition andB := liftz true andb.
+Definition ors  := liftz false orb.
+Definition ands := liftz true andb.
 
-Lemma orB_cons b1 b2 bs1 bs2 : orB (b1 :: bs1) (b2 :: bs2) = b1 || b2 :: orB bs1 bs2.
+Definition orB  k (t1 t2 : 'B_k) := [bits of ors  t1 t2].
+Definition andB k (t1 t2 : 'B_k) := [bits of ands t1 t2].
+
+Lemma ors_cons b1 b2 bs1 bs2 : ors (b1 :: bs1) (b2 :: bs2) = b1 || b2 :: ors bs1 bs2.
 Proof. by []. Qed.
 
-Lemma or0B : left_id [::] orB.
+Lemma or0s : left_id [::] ors.
 Proof. exact: lift0z. Qed.
 
-Lemma orB0 : right_id [::] orB.
+Lemma ors0 : right_id [::] ors.
 Proof. exact: (liftz0 orbF). Qed.
 
-Lemma or0B' : {in [pred s | k <= size s], left_id '0_k orB}.
+Lemma or0s' : {in [pred s | k <= size s], left_id '0_k ors}.
 Proof. exact: lift0z'. Qed.
 
-Lemma orB0' : {in [pred s | k <= size s], right_id '0_k orB}.
+Lemma ors0' : {in [pred s | k <= size s], right_id '0_k ors}.
 Proof. exact: (liftz0' orbF). Qed.
 
-Lemma orBC : commutative orB.
+Lemma orsC : commutative ors.
 Proof. exact: (liftzC _ orbC). Qed.
 
-Lemma orBA : associative orB.
+Lemma orsA : associative ors.
 Proof. exact: (liftzA orFb orbF orbA). Qed.
 
-Lemma andBC : commutative andB.
+Lemma andsC : commutative ands.
 Proof. exact: (liftzC _ andbC). Qed.
 
-Lemma andBA : associative andB.
+Lemma andsA : associative ands.
 Proof. exact: (liftzA andTb andbT andbA). Qed.
 
-Lemma and1B : left_id [::] andB.
+Lemma and1B : left_id [::] ands.
 Proof. exact: (lift0z andTb). Qed.
 
-Lemma andB1 : right_id [::] andB.
+Lemma ands1 : right_id [::] ands.
 Proof. exact: (liftz0 andbT). Qed.
 
 (* Aliases for rotation *)
-Definition rolB := @rot bool.
-Definition rorB := @rotr bool.
+Definition rols := @rot bool.
+Definition rors := @rotr bool.
 
-Lemma rolK n : cancel (rolB n) (rorB n).
+Lemma rolK n : cancel (rols n) (rors n).
 Proof. exact: rotK. Qed.
 
-Lemma rorK n : cancel (rorB n) (rolB n).
+Lemma rorK n : cancel (rors n) (rols n).
 Proof. exact: rotrK. Qed.
 
 (* Shift to left/right *)
-Definition shlB n s := '0_n ++ take (size s - n) s.
-Definition shrB n s := take (size s - n) s ++ '0_n.
+Definition shls n s := '0_(minn (size s) n) ++ take (size s - n) s.
+Definition shrs n s := drop n s ++ '0_(minn (size s) n).
 
 (* XXX *)
-Lemma size_shlB n s : size (shlB n s) = maxn n (size s).
-Proof.
-apply/eqP; rewrite size_cat size_nseq size_takel ?leq_subr //.
-have [hs|/ltnW hs] := leqP n (size s); first by rewrite (maxn_idPr hs) subnKC.
-by rewrite (maxn_idPl hs) -{3}[n]addn0 eqn_add2l subn_eq0.
-Qed.
+Lemma size_shls n s : size (shls n s) = size s.
+Proof. by rewrite size_cat size_nseq size_takel ?minnE ?subnK ?leq_subr. Qed.
 
-Definition shlW n s := take (size s) (shlB n s).
+Lemma size_shrs n s : size (shrs n s) = size s.
+Proof. by rewrite size_cat size_nseq size_drop minnE subnKC ?leq_subr. Qed.
 
-Lemma size_shlW n s : size (shlW n s) = size s.
-Proof. by rewrite size_takel // size_shlB leq_max leqnn orbT. Qed.
-
-Lemma size_shrB n s : size (shrB n s) = maxn n (size s).
-Proof.
-apply/eqP; rewrite size_cat size_nseq size_takel ?leq_subr //.
-have [hs|/ltnW hs] := leqP n (size s); first by rewrite (maxn_idPr hs) subnK.
-by rewrite (maxn_idPl hs) -{3}[n]add0n eqn_add2r subn_eq0.
-Qed.
-
-Definition shrW n s := take (size s) (shrB n s).
-
-Lemma size_shrW n s : size (shrW n s) = size s.
-Proof. by rewrite size_takel // size_shrB leq_max leqnn orbT. Qed.
-
-Lemma take_nseq T n m (x : T) : take n (nseq m x) = nseq (minn n m) x.
-Proof. by elim: n m => [|n ihn] [|m]; rewrite ?minnSS //= ihn. Qed.
+(* Lemma take_nseq T n m (x : T) : take n (nseq m x) = nseq (minn n m) x. *)
+(* Proof. by elim: n m => [|n ihn] [|m]; rewrite ?minnSS //= ihn. Qed. *)
 
 (* Example lemmas from the old lib: compare *)
-Lemma shlB_overflow n s (hs : size s <= n) : shlW n s = '0_(size s).
-Proof. by rewrite /shlW takel_cat ?size_nseq // take_nseq (minn_idPl hs). Qed.
+Lemma shls_overflow n s (hs : size s <= n) : shls n s = '0_(size s).
+Proof. by rewrite /shls (eqP hs) (minn_idPl hs) take0 cats0. Qed.
 
-Lemma shrB_overflow n s (hs : size s <= n) : shrW n s = '0_(size s).
+Lemma shrs_overflow n s (hs : size s <= n) : shrs n s = '0_(size s).
 Proof.
-have/eqP hsu : size s - n == 0 by rewrite subn_eq0.
-by rewrite /shrW /shrB hsu take0 take_nseq (minn_idPl hs).
-Qed.
+Proof. by rewrite /shrs (minn_idPl hs) drop_oversize. Qed.
+
+Lemma shls_tupleP n (t : 'B_k) : size (shls n t) == k.
+Proof. by rewrite size_shls size_tuple. Qed.
+
+Lemma shrs_tupleP n (t : 'B_k) : size (shrs n t) == k.
+Proof. by rewrite size_shrs size_tuple. Qed.
+
+Canonical shlB n (t : 'B_k) := Tuple (shls_tupleP n t).
+Canonical shrB n (t : 'B_k) := Tuple (shrs_tupleP n t).
 
 (* Inversion of bits *)
 Definition negB s := [seq negb b | b <- s].
@@ -447,26 +458,24 @@ Lemma sbb0B_carry n (p: BITS n.+1) : fst (sbbB false #0 p) = (p != #0).
 
 End BitOps.
 
-Canonical setb_tuple.
-
 (* May need improvement *)
-Canonical orB_monoid := Monoid.Law orBA or0B orB0.
-Canonical orb_com    := Monoid.ComLaw orBC.
+Canonical ors_monoid := Monoid.Law orsA or0s ors0.
+Canonical ors_com    := Monoid.ComLaw orsC.
 
-Canonical andB_monoid := Monoid.Law andBA and1B andB1.
-Canonical andb_com    := Monoid.ComLaw andBC.
+Canonical ands_monoid := Monoid.Law andsA and1B ands1.
+Canonical ands_com    := Monoid.ComLaw andsC.
 
 (* Unsigned modular arithmetic *)
 Section Unsigned.
 
 Implicit Types (bs : bitseq).
 
-Fixpoint natb_rec bs : nat :=
-  if bs is b :: bs then b + (natb_rec bs).*2 else 0.
+Fixpoint nats_rec bs : nat :=
+  if bs is b :: bs then b + (nats_rec bs).*2 else 0.
 
-Definition natb := nosimpl natb_rec.
+Definition nats := nosimpl nats_rec.
 
-Lemma natb_cons b bs : natb [:: b & bs] = b + (natb bs).*2.
+Lemma nats_cons b bs : nats [:: b & bs] = b + (nats bs).*2.
 Proof. by []. Qed.
 
 (* bitsequence of a nat *)
@@ -476,6 +485,10 @@ Fixpoint bitn_rec n k : bitseq :=
   else [::].
 
 Definition bitn := nosimpl bitn_rec.
+
+Eval compute in bitn 10 00.
+Eval compute in nats [:: false; true; false; false; false; false; false;
+           false; false; false].
 
 Lemma bitn_cons n k : bitn n.+1 k = [:: odd k & bitn n k./2].
 Proof. by []. Qed.
@@ -489,44 +502,42 @@ Proof. exact/eqP/size_bitn. Qed.
 
 Canonical bitn_tuple n k := Tuple (size_bitnP n k).
 
-Lemma natbK : forall m, bitn (size m) (natb m) = m.
+Lemma natbK : forall m, bitn (size m) (nats m) = m.
 Proof.
 elim=> // -[] /= m ihm.
-  by rewrite !bitn_cons !natb_cons /= odd_double uphalf_double ihm.
+  by rewrite !bitn_cons !nats_cons /= odd_double uphalf_double ihm.
 by rewrite bitn_cons odd_double (half_bit_double _ false) ihm.
 Qed.
 
 (* We may want a truncation here. *)
-Lemma bitnK n k : n < 2^k -> natb (bitn k n) = n.
+Lemma bitnK n k : n < 2^k -> nats (bitn k n) = n.
 Proof.
 elim: k n => //= [|k ihk] n hn; first by case: n hn.
-rewrite natb_cons ihk ?odd_double_half // -ltn_double.
+rewrite nats_cons ihk ?odd_double_half // -ltn_double.
 suff U: (n./2).*2 <= n.
   by rewrite (leq_ltn_trans U); rewrite // -mul2n expnS in hn *.
 by rewrite -{2}[n](odd_double_half n) leq_addl.
 Qed.
 
 (* Bound on the integer we get... *)
-Lemma natb_ltn m : natb m < 2^(size m).
+Lemma natb_ltn m : nats m < 2^(size m).
 Proof.
 elim: m => //= b m ihm.
-rewrite natb_cons expnS mul2n -!addnn addnA -addnS leq_add //.
+rewrite nats_cons expnS mul2n -!addnn addnA -addnS leq_add //.
 by case: b; rewrite //= ltnW.
 Qed.
 
 (* Development of the bounded operators *)
 Section BitTuples.
 
-(* We only consider non-empty bitseq to have the proper algebraic
-   properties *)
 Variable k : nat.
 Implicit Types (bv : 'B_k).
-Implicit Types (o  : 'Z_(2^k.+1)).
+Implicit Types (o  : 'Z_(2^k)).
 
 (* Bits of an unsigned *)
-Definition bito o  := [tuple of bitn k.+1 o].
+Definition bito k (o : 'Z_(2^k))  := [tuple of bitn k o].
 
-Lemma texp_fact bv : 2^size bv = 2^k.+1.
+Lemma texp_fact bv : 2^size bv = 2^k.
 Proof. by rewrite size_tuple. Qed.
 
 Lemma cast_zord_proof n m (i : 'Z_n) : n = m -> i < m.-2.+2.
@@ -540,32 +551,32 @@ Proof. by case: n => // -[]. Qed.
 Lemma expkS_ge2 n : 2 <= 2 ^ n.+1.
 Proof. by elim: n => // n ihn; rewrite expnS mul2n -addnn ltn_addl. Qed.
 
-Lemma ZeP n : (n < (Zp_trunc (2 ^ k.+1)).+2) = (n < 2 ^ k.+1).
-Proof. by rewrite /Zp_trunc /= nPPSS ? expkS_ge2. Qed.
+Lemma ltn_bv (bv : 'B_k.+1) : nats bv < (2^k.+1).-2.+2.
+Proof. by have := natb_ltn bv; rewrite size_tuple nPPSS // expkS_ge2. Qed.
 
-Lemma ltn_m_in_z bv : natb bv < (2^k.+1).-2.+2.
-Proof. by rewrite ZeP -{2}(size_tuple bv) natb_ltn. Qed.
+Definition ordb  (bv : 'B_k.+1) : 'Z_(2^k.+1) := Ordinal (ltn_bv bv).
+(* Does one more computation. *)
+Definition ordb' (bv : 'B_k.+1) : 'Z_(2^k.+1) := inZp (nats bv).
 
-Definition ordb bv : 'Z_(2^k.+1) := Ordinal (ltn_m_in_z bv).
-
-Definition ordb' bv : 'Z_(2^k.+1) := inZp (natb bv).
-
-Lemma ordbK : cancel ordb bito.
+Lemma ordbK : cancel ordb (@bito _).
 Proof.
 by move=> b; apply/val_inj; rewrite /= -{1}(size_tuple b); apply/natbK.
 Qed.
 
-Lemma ordbK' : cancel ordb' bito.
+Lemma ordbK' : cancel ordb' (@bito _).
 Proof.
-move=> b. apply/val_inj; rewrite /= modn_small ?ltn_m_in_z //.
+move=> b. apply/val_inj; rewrite /= modn_small ?ltn_bv //.
 by rewrite /= -{1}(size_tuple b); apply/natbK.
 Qed.
 
-Lemma bitoK : cancel bito ordb.
+Lemma ZeP n : (n < (Zp_trunc (2 ^ k.+1)).+2) = (n < 2 ^ k.+1).
+Proof. by rewrite /Zp_trunc /= nPPSS ? expkS_ge2. Qed.
+
+Lemma bitoK : cancel (@bito _) ordb.
 Proof. by move=> o; apply/val_inj/bitnK; rewrite -ZeP. Qed.
 
-Lemma bitoK' : cancel bito ordb'.
-Proof. move=> o; apply/val_inj; rewrite /= modn_small ?ltn_m_in_z //.
+Lemma bitoK' : cancel (@bito _) ordb'.
+Proof. move=> o; apply/val_inj; rewrite /= modn_small ?ltn_bv //.
 by apply/bitnK; rewrite -ZeP.
 Qed.
 
@@ -577,9 +588,9 @@ Section BitAlgebra.
 
 Variable k : nat.
 
-Definition B0          : 'B_k  := bito 0%R.
-Definition addB (b1 b2 : 'B_k) := bito (ordb b1 + ordb b2)%R.
-Definition oppB (b     : 'B_k) := bito (- ordb b)%R.
+Definition B0          : 'B_k.+1  := bito 0%R.
+Definition addB (b1 b2 : 'B_k.+1) := bito (ordb b1 + ordb b2)%R.
+Definition oppB (b     : 'B_k.+1) := bito (- ordb b)%R.
 
 Import GRing.Theory.
 
@@ -597,12 +608,12 @@ Lemma addBC : commutative addB.
 Proof. by move=> x y; apply: val_inj; rewrite /= addnC. Qed.
 
 Definition B_zmodMixin := ZmodMixin addBA addBC add0B addNB.
-Canonical B_zmodType := Eval hnf in ZmodType ('B_k) B_zmodMixin.
-Canonical B_finZmodType := Eval hnf in [finZmodType of 'B_k].
-Canonical B_baseFinGroupType := Eval hnf in [baseFinGroupType of 'B_k for +%R].
-Canonical B_finGroupType := Eval hnf in [finGroupType of 'B_k for +%R].
+Canonical B_zmodType := Eval hnf in ZmodType ('B_k.+1) B_zmodMixin.
+Canonical B_finZmodType := Eval hnf in [finZmodType of 'B_k.+1].
+Canonical B_baseFinGroupType := Eval hnf in [baseFinGroupType of 'B_k.+1 for +%R].
+Canonical B_finGroupType := Eval hnf in [finGroupType of 'B_k.+1 for +%R].
 
-Definition mulB k (b1 b2 : 'B_k) := bito (ordb b1 * ordb b2)%R.
+Definition mulB k (b1 b2 : 'B_k.+1) := bito (ordb b1 * ordb b2)%R.
 
 End BitAlgebra.
 End Unsigned.
@@ -628,8 +639,8 @@ Definition sign s := last   (head false s) (behead s).
 Definition bnum s := belast (head false s) (behead s).
 
 Definition intb s :=
-  (if sign s && (0 < size s) then Negz (natb (bnum s))
-                             else Posz (natb (bnum s))).
+  (if sign s && (0 < size s) then Negz (nats (bnum s))
+                             else Posz (nats (bnum s))).
 
 Lemma intb_ltn m : `|intb m| < 2^(size m).-1 + (intb m \is Num.neg).
 Proof.

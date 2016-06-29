@@ -27,6 +27,8 @@ Unset Printing Implicit Defensive.
 
 Require Import bitseq bitword.
 
+Open Scope bits_scope.
+
 (* Refinements *)
 Section BitFFun.
 
@@ -39,6 +41,7 @@ Definition orF f1 f2 : word k := [ffun j => f1 j || f2 j].
 
 Definition R_bitseq b w : Prop := b = fgraph w.
 Notation "b ≈ f" := (R_bitseq b f) (at level 42).
+
 (* Even if like this more *)
 (* Definition R_bitseq b f : bool := [forall j, f j == getb b j]. *)
 
@@ -65,9 +68,9 @@ Qed.
 Global Instance or_refineP : refines (R_bitseq ==> R_bitseq ==> R_bitseq)%rel orB orF.
 Proof. by rewrite refinesE; exact: R_or. Qed.
 
-Definition funB bv : word k := [ffun x : 'I_k => getb bv x].
+Definition funB bv : word k := [ffun x : 'I_k => bv`_x].
 
-Lemma funbP bv : funB bv =1 getb bv.
+Lemma funbP bv : funB bv =1 (fun i => bv`_i).
 Proof. exact: ffunE. Qed.
 
 (* Require Import Parametricty. *)
@@ -89,6 +92,9 @@ Notation "b ≈ f" := (R_bittup b f) (at level 42).
 Lemma R_orT b1 f1 (hR1 : b1 ≈ f1) b2 f2 (hR2 : b2 ≈ f2) : orT b1 b2 ≈ orF f1 f2.
 Proof. by move=> i; rewrite !tnth_liftz ffunE hR1 hR2. Qed.
 
+Lemma orT_refineP : refines (R_bittup ==> R_bittup ==> R_bittup)%rel orT (@orF _).
+Proof. rewrite refinesE; exact: R_orT. Qed.
+
 End BitFFunTuples.
 
 Section BitSeqTuples.
@@ -103,7 +109,30 @@ Notation "b ≈ f" := (R_seqtup b f) (at level 42).
 Lemma R_orB b1 bt1 (hR1 : b1 ≈ bt1) b2 bt2 (hR2 : b2 ≈ bt2) : orB b1 b2 ≈ orT bt1 bt2.
 Proof. by rewrite hR1 hR2. Qed.
 
+Lemma orB_refineP : refines (R_seqtup ==> R_seqtup ==> R_seqtup)%rel orB (@orT _).
+Proof. rewrite refinesE; exact: R_orB. Qed.
+
 End BitSeqTuples.
+
+(* Use composition *)
+Section BitComp.
+
+Variable k : nat.
+
+Lemma compR : composable (@R_seqtup k) (@R_bittup k) (@R_bitseq k).
+rewrite composableE => b w [t [-> tRw]].
+apply: (@eq_from_nth _ false); first by rewrite !size_tuple card_ord.
+move=> i hi; rewrite size_tuple in hi.
+have := tRw (Ordinal hi).
+by rewrite (tnth_nth false) /= => ->; rewrite (nth_fgraph_ord _ (Ordinal hi)).
+Qed.
+
+Definition orPP b1 b2 t1 t2 w1 w2 :=
+  @refines_trans _ _ _ (@R_seqtup k) (@R_bittup k) (@R_bitseq k)
+                 (orB b1 b2) (orT t1 t2) (orF w1 w2) compR.
+(* Ummm. *)
+
+End BitComp.
 
 (* XXX: The below seems broken *)
 Section BitFFun2.
