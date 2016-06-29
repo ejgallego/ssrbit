@@ -593,8 +593,10 @@ Section BitAlgebra.
 Variable k : nat.
 
 Definition B0          : 'B_k.+1  := bito 0%R.
+Definition B1          : 'B_k.+1  := bito 1%R.
 Definition addB (b1 b2 : 'B_k.+1) := bito (ordB b1 + ordB b2)%R.
 Definition oppB (b     : 'B_k.+1) := bito (- ordB b)%R.
+Definition mulB (b1 b2 : 'B_k.+1) := bito (ordB b1 * ordB b2)%R.
 
 Import GRing.Theory.
 
@@ -617,7 +619,31 @@ Canonical B_finZmodType := Eval hnf in [finZmodType of 'B_k.+1].
 Canonical B_baseFinGroupType := Eval hnf in [baseFinGroupType of 'B_k.+1 for +%R].
 Canonical B_finGroupType := Eval hnf in [finGroupType of 'B_k.+1 for +%R].
 
-Definition mulB k (b1 b2 : 'B_k.+1) := bito (ordB b1 * ordB b2)%R.
+Lemma mulBA : associative mulB.
+Proof. by move => x y z; apply/(can_inj ordBK); rewrite !bitoK mulrA. Qed.
+
+Lemma mul1B : left_id  B1 mulB.
+Proof. by move => x; apply/(can_inj ordBK); rewrite !bitoK mul1r. Qed.
+
+Lemma mulB1 : right_id B1 mulB.
+Proof. by move => x; apply/(can_inj ordBK); rewrite !bitoK mulr1. Qed.
+
+Lemma mulBDl : left_distributive mulB addB.
+Proof. by move => x y z; apply/(can_inj ordBK); rewrite !bitoK mulrDl. Qed.
+
+Lemma mulBDr : right_distributive mulB addB.
+Proof. by move => x y z; apply/(can_inj ordBK); rewrite !bitoK mulrDr. Qed.
+
+Lemma oneB_neq0 : B1 != B0.
+Proof. by []. Qed.
+
+Definition B_ringMixin := RingMixin mulBA mul1B mulB1 mulBDl mulBDr oneB_neq0.
+Canonical B_ringType := Eval hnf in RingType _ B_ringMixin.
+
+Lemma mulBC : commutative mulB.
+Proof. by move => x y; apply/(can_inj ordBK); rewrite !bitoK mulrC. Qed.
+
+Canonical B_comRingType := Eval hnf in ComRingType _ mulBC.
 
 End BitAlgebra.
 End Unsigned.
