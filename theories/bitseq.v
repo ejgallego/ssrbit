@@ -347,6 +347,9 @@ Proof. exact: rotK. Qed.
 Lemma rorK n : cancel (rors n) (rols n).
 Proof. exact: rotrK. Qed.
 
+Definition rolB n (t : 'B_k) := [bits of rols n t].
+Definition rorB n (t : 'B_k) := [bits of rors n t].
+
 (* Shift to left/right *)
 Definition shls n s := '0_(minn (size s) n) ++ take (size s - n) s.
 Definition shrs n s := drop n s ++ '0_(minn (size s) n).
@@ -379,7 +382,8 @@ Canonical shlB n (t : 'B_k) := Tuple (shls_tupleP n t).
 Canonical shrB n (t : 'B_k) := Tuple (shrs_tupleP n t).
 
 (* Inversion of bits *)
-Definition negB s := [seq negb b | b <- s].
+Definition negs s := [seq negb b | b <- s].
+Definition negB (t : 'B_k) := [bits of negs t].
 
 (* adder : c b1 b2 -> carry * res *)
 Definition adder carry b1 b2 :=
@@ -435,11 +439,11 @@ Definition sbbB borrow s1 s2 :=
   (~~carry, res).
 
 (* Old: "Absurdily complicated"  EG: Not sure this makes sense *)
-Lemma sbb0B_carry s : fst (sbbB false [::] s) = (s != '0_(size s)).
-Proof.
-elim: s => //= b l ihl; rewrite /sbbB /adcB /=.
-rewrite !addn0.
-Admitted.
+(* Lemma sbb0B_carry s : fst (sbbB false [::] s) = (s != '0_(size s)). *)
+(* Proof. *)
+(* elim: s => //= b l ihl; rewrite /sbbB /adcB /=. *)
+(* rewrite !addn0. *)
+(* Admitted. *)
 
 (* XXX: rcons *)
 
@@ -554,16 +558,16 @@ Proof. by elim: n => // n ihn; rewrite expnS mul2n -addnn ltn_addl. Qed.
 Lemma ltn_bv (bv : 'B_k.+1) : nats bv < (2^k.+1).-2.+2.
 Proof. by have := natb_ltn bv; rewrite size_tuple nPPSS // expkS_ge2. Qed.
 
-Definition ordb  (bv : 'B_k.+1) : 'Z_(2^k.+1) := Ordinal (ltn_bv bv).
+Definition ordB  (bv : 'B_k.+1) : 'Z_(2^k.+1) := Ordinal (ltn_bv bv).
 (* Does one more computation. *)
-Definition ordb' (bv : 'B_k.+1) : 'Z_(2^k.+1) := inZp (nats bv).
+Definition ordB' (bv : 'B_k.+1) : 'Z_(2^k.+1) := inZp (nats bv).
 
-Lemma ordbK : cancel ordb (@bito _).
+Lemma ordBK : cancel ordB (@bito _).
 Proof.
 by move=> b; apply/val_inj; rewrite /= -{1}(size_tuple b); apply/natbK.
 Qed.
 
-Lemma ordbK' : cancel ordb' (@bito _).
+Lemma ordBK' : cancel ordB' (@bito _).
 Proof.
 move=> b. apply/val_inj; rewrite /= modn_small ?ltn_bv //.
 by rewrite /= -{1}(size_tuple b); apply/natbK.
@@ -572,37 +576,37 @@ Qed.
 Lemma ZeP n : (n < (Zp_trunc (2 ^ k.+1)).+2) = (n < 2 ^ k.+1).
 Proof. by rewrite /Zp_trunc /= nPPSS ? expkS_ge2. Qed.
 
-Lemma bitoK : cancel (@bito _) ordb.
+Lemma bitoK : cancel (@bito _) ordB.
 Proof. by move=> o; apply/val_inj/bitnK; rewrite -ZeP. Qed.
 
-Lemma bitoK' : cancel (@bito _) ordb'.
+Lemma bitoK' : cancel (@bito _) ordB'.
 Proof. move=> o; apply/val_inj; rewrite /= modn_small ?ltn_bv //.
 by apply/bitnK; rewrite -ZeP.
 Qed.
 
 End BitTuples.
 
-Prenex Implicits bitoK ordbK.
+Prenex Implicits bitoK ordBK.
 
 Section BitAlgebra.
 
 Variable k : nat.
 
 Definition B0          : 'B_k.+1  := bito 0%R.
-Definition addB (b1 b2 : 'B_k.+1) := bito (ordb b1 + ordb b2)%R.
-Definition oppB (b     : 'B_k.+1) := bito (- ordb b)%R.
+Definition addB (b1 b2 : 'B_k.+1) := bito (ordB b1 + ordB b2)%R.
+Definition oppB (b     : 'B_k.+1) := bito (- ordB b)%R.
 
 Import GRing.Theory.
 
 Lemma add0B : left_id B0 addB.
-Proof. by move => x; apply/(can_inj ordbK); rewrite !bitoK add0r. Qed.
+Proof. by move => x; apply/(can_inj ordBK); rewrite !bitoK add0r. Qed.
 
 Lemma addNB : left_inverse B0 oppB addB.
-Proof. by move=> x; apply/(can_inj ordbK); rewrite !bitoK addNr. Qed.
+Proof. by move=> x; apply/(can_inj ordBK); rewrite !bitoK addNr. Qed.
 
 Lemma addBA : associative addB.
 Proof.
-by move=> x y z; apply/(can_inj ordbK); rewrite !bitoK addrA. Qed.
+by move=> x y z; apply/(can_inj ordBK); rewrite !bitoK addrA. Qed.
 
 Lemma addBC : commutative addB.
 Proof. by move=> x y; apply: val_inj; rewrite /= addnC. Qed.
@@ -613,7 +617,7 @@ Canonical B_finZmodType := Eval hnf in [finZmodType of 'B_k.+1].
 Canonical B_baseFinGroupType := Eval hnf in [baseFinGroupType of 'B_k.+1 for +%R].
 Canonical B_finGroupType := Eval hnf in [finGroupType of 'B_k.+1 for +%R].
 
-Definition mulB k (b1 b2 : 'B_k.+1) := bito (ordb b1 * ordb b2)%R.
+Definition mulB k (b1 b2 : 'B_k.+1) := bito (ordB b1 * ordB b2)%R.
 
 End BitAlgebra.
 End Unsigned.
@@ -664,7 +668,7 @@ Section Defs.
 Variable k : nat.
 
 (* TODO: pick a definition of modular signed arithmetic. *)
-(* Definition sordb s := *)
+(* Definition sordB s := *)
 
 End Defs.
 
