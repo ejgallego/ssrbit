@@ -1,12 +1,17 @@
-From Coq
-     Require Import ZArith.ZArith.
 From mathcomp
-     Require Import ssreflect ssrbool eqtype ssrnat seq fintype ssrfun zmodp tuple.
+Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq choice fintype.
+
+From mathcomp
+Require Import tuple ssralg ssrnum zmodp.
+
 From CoqEAL
-     Require Import hrel param refinements.
+Require Import hrel param refinements.
+
+From ssrbit
 Require Import bitseq notation.
 
-Require Import ExtrOcamlBasic.
+From Coq
+Require Import ZArith.ZArith ExtrOcamlBasic.
 
 Import Refinements.Op.
 Import Logical.Op.
