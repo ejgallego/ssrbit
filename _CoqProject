@@ -3,3 +3,5 @@
 theories/bitseq.v
 theories/bitword.v
 theories/bitset.v
+theories/notation.v
+extraction/axioms.v
