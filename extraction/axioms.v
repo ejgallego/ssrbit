@@ -95,14 +95,45 @@ Global Instance  mul_NativeInt : mul_of  NativeInt.Int := NativeInt.mul.
 
 (** * Conversion between machine integers and bit sequences *)
 
-(* Enumeration for 'B_n, from G. Gonthier's example at:
+(* Enumeration for 'B_n, from G. Gonthier's mailing list post at:
 
  *)
+Section AllPairsExtra.
+
+Lemma map_allpairs S T R O s t (op : S -> T -> R) (f : R -> O) :
+  [seq f x | x <- allpairs op s t] = [seq f (op x y) | x <- s, y <- t].
+Proof.
+by elim: s t => [|x s ihs] [|y t] //=; rewrite -ihs map_cat -map_comp.
+Qed.
+
+Lemma allpairss0 S T R s (op : S -> T -> R) :
+    [seq op x y | x <- s, y <- [::]] = [::].
+Proof. by elim s. Qed.
+
+Lemma allpairs_map S T R U V s t (f : S -> T -> R) (g : U -> S) (h : V -> T) :
+  allpairs f (map g s) (map h t) = allpairs (fun x y => f (g x) (h y)) s t.
+Proof.
+elim: s t => [|x s ihs] [|y t] //=; first by rewrite !allpairss0.
+by rewrite -ihs -map_comp.
+Qed.
+
+End AllPairsExtra.
+
 Section TupleEnum.
+
+Fixpoint all_seqs T (e : seq T) n : seq (seq T) :=
+  if n isn't m.+1 then [:: [::]] else
+    [seq [:: x & t] | x <- e, t <- all_seqs e m].
 
 Fixpoint all_tuples T (e : seq T) n : seq (n.-tuple T) :=
   if n isn't m.+1 then [:: [tuple]] else
     [seq cons_tuple x t | x <- e, t <- all_tuples e m].
+
+Lemma all_tuplesE T (e : seq T) n :
+  map val (all_tuples e n) = all_seqs e n.
+Proof.
+by elim: n => //= n <-; rewrite !map_allpairs -{3}[e]map_id allpairs_map.
+Qed.
 
 Lemma perm_enum_tuples n (T : finType) :
   perm_eq (enum {:n.-tuple T}) (all_tuples (enum T) n).
@@ -114,36 +145,8 @@ elim: n => [|n IHn] t; rewrite mem_enum ?tuple0 //=; apply/esym/allpairsP.
 by case/tupleP: t => x t; exists (x, t); rewrite -IHn !mem_enum.
 Qed.
 
-Lemma perm_enum_bits n :
-  perm_eq (enum {:'B_n}) (all_tuples (enum {: bool}) n).
+Lemma perm_enum_bits n : perm_eq (enum {:'B_n}) (all_tuples (enum {: bool}) n).
 Proof. exact: perm_enum_tuples. Qed.
-
-Fixpoint all_seqs T (e : seq T) n : seq (seq T) :=
-  if n isn't m.+1 then [:: [::]] else
-    [seq [:: x & t] | x <- e, t <- all_seqs e m].
-
-Lemma map_allpairs S T R O s t (op : S -> T -> R) (f : R -> O) :
-  [seq f x | x <- allpairs op s t] = [seq f (op x y) | x <- s, y <- t].
-Proof.
-by elim: s t => [|x s ihs] [|y t] //=; rewrite -ihs map_cat -map_comp.
-Qed.
-
-(* XXX: This lemma looks fishy, we may be missing the proper way *)
-Lemma map_val_allpairs S T R (P : pred T) (sT : subType P) s t (f : S -> T -> R) :
-  allpairs f s (map val t) = allpairs (fun x (y : sT) => f x (val y)) s t.
-Proof. by elim: s t => [|x s ihs] [|y t] //=; rewrite -ihs -map_comp. Qed.
-
-Lemma all_tuplesE T (e : seq T) n :
-  map val (all_tuples e n) = all_seqs e n.
-Proof.
-by elim: n => //= n <-; rewrite !map_allpairs map_val_allpairs.
-Qed.
-
-Lemma size_mem_all_seqs (T : eqType) (e : seq T) n (l : seq T) :
-  l \in all_seqs e n -> size l = n.
-Proof.
-by rewrite -all_tuplesE; case/mapP=> [t _] ->; rewrite size_tuple.
-Qed.
 
 Lemma enum_bool : enum {: bool} = [:: true; false].
 Proof. by rewrite enumT unlock. Qed.
@@ -169,6 +172,31 @@ Lemma forall_bitP n (p : pred bitseq) :
 Proof. by rewrite -forall_bitE; exact: forallP. Qed.
 
 End TupleEnum.
+
+Section EqOps.
+
+(* This is useful to have cleaner extraction. *)
+Definition eqseqb := (fix eqseq (s1 s2 : seq bool) {struct s2} : bool :=
+     match s1 with
+     | [::] => match s2 with
+               | [::] => true
+               | _ :: _ => false
+               end
+     | x1 :: s1' =>
+       match s2 with
+       | [::] => false
+       | x2 :: s2' => (eqb x1 x2) && eqseq s1' s2'
+      end
+  end).
+
+(* R is for refinement *)
+Lemma eqseqR (t1 t2 : bitseq) : (t1 == t2) = eqseqb t1 t2.
+Proof. by []. Qed.
+
+Lemma eqBR n (t1 t2 : 'B_n) : (t1 == t2) = eqseqb t1 t2.
+Proof. by []. Qed.
+
+End EqOps.
 
 Section BitExtract.
 
@@ -229,20 +257,22 @@ Canonical bitsFromIntB (n: NativeInt.Int) : 'B_WS.wordsize
   := Tuple (@bitsFromInt_rec_tupleP WS.wordsize n).
 
 Definition bitsToIntK_test : Prop :=
- forall bs : 'B_WS.wordsize, bitsFromIntB (bitsToInt bs) == bs.
+ forall bs : 'B_WS.wordsize, bs == bitsFromIntB (bitsToInt bs).
 
 Definition bittest p := all (fun s => p s) (all_seqs [:: true; false] WS.wordsize).
 
 Definition bitsToIntK_testC :=
-  all [pred s | bitsFromInt_rec WS.wordsize (bitsToInt s) == s]
+  all (fun s => eqseqb s (bitsFromInt_rec WS.wordsize (bitsToInt s)))
       (all_seqs [:: true; false] WS.wordsize).
 
+(* Emilio: Don't extract, reflect is in Type!
 Lemma bitsToIntK_testP :
   reflect (bitsToIntK_test) (bitsToIntK_testC).
 Proof.
 apply: (iffP idP); first by move/forall_bitP.
 by move=> H; apply/forall_bitP.
 Qed.
+*)
 
 Definition Int  := NativeInt.Int.
 Definition eq   := NativeInt.eq.
@@ -298,7 +328,7 @@ Definition bitsFromInt_inj_test: bool :=
   forallInt (fun x =>
     forallInt (fun y =>
                  (* XXX use the refined operator for bitseq *)
-      (bitsFromInt_rec WS.wordsize x == bitsFromInt_rec WS.wordsize y) ==> eq x y)).
+      (eqseqb (bitsFromInt_rec WS.wordsize x) (bitsFromInt_rec WS.wordsize y)) ==> eq x y)).
 
 Axiom bitsFromInt_inj_valid: bitsFromInt_inj_test.
 
