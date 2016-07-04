@@ -1,3 +1,18 @@
+(******************************************************************************)
+(* A bit library for Coq: bit sequences.                                      *)
+(******************************************************************************)
+(*                                                                            *)
+(* (c) 2016, ENS Lyon, LIP6, MINES ParisTech                                  *)
+(*                                                                            *)
+(* Written by Arthur Blot                                                     *)
+(*            Pierre-Evariste Dagand                                          *)
+(*            Emilio J. Gallego Arias                                         *)
+(*                                                                            *)
+(* LICENSE: Dual CECILL-B / Apache 2.0                                        *)
+(*                                                                            *)
+(******************************************************************************)
+
+
 From mathcomp
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq choice fintype.
 
@@ -16,124 +31,219 @@ Require Import ZArith.ZArith ExtrOcamlBasic.
 Import Refinements.Op.
 Import Logical.Op.
 
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
 (** * An axiomatization of OCaml native integers *)
 
 (** This module should not be used directly. *)
 Module NativeInt.
 
 (** We assume that we are running on a 64 bit machine. *)
-
-Axiom Int: Type.
-Axiom eq: Int -> Int -> bool.
+Axiom Int : Type.
+Axiom eq  : Int -> Int -> bool.
 
 Axiom zero : Int.
-Axiom one : Int.
-Axiom neg: Int -> Int.
-Axiom add: Int -> Int -> Int.
-Axiom sub: Int -> Int -> Int.
-Axiom mul: Int -> Int -> Int.
+Axiom one  : Int.
+Axiom neg  : Int -> Int.
+Axiom add  : Int -> Int -> Int.
+Axiom sub  : Int -> Int -> Int.
+Axiom mul  : Int -> Int -> Int.
 
-Axiom lnot: Int -> Int.
-Axiom lor: Int -> Int -> Int.
-Axiom land: Int -> Int -> Int.
-Axiom lxor: Int -> Int -> Int.
-Axiom lsr: Int -> Int -> Int.
-Axiom lsl: Int -> Int -> Int.
+Axiom lnot : Int -> Int.
+Axiom lor  : Int -> Int -> Int.
+Axiom land : Int -> Int -> Int.
+Axiom lxor : Int -> Int -> Int.
+Axiom lsr  : Int -> Int -> Int.
+Axiom lsl  : Int -> Int -> Int.
 
-Extract Inlined Constant Int => "int".
-Extract Inlined Constant eq => "(=)".
+Extract Inlined Constant Int  => "int".
+Extract Inlined Constant eq   => "(=)".
 Extract Inlined Constant zero => "0".
-Extract Inlined Constant one => "1".
-Extract Inlined Constant lor => "(lor)".
+Extract Inlined Constant one  => "1".
+Extract Inlined Constant lor  => "(lor)".
 Extract Inlined Constant land => "(land)".
-Extract Inlined Constant lsr => "(lsr)".
+Extract Inlined Constant lsr  => "(lsr)".
 Extract Inlined Constant lxor => "(lxor)".
 
 (** One must be careful to re-normalize the following operations when
 using them at smaller wordsize: *)
 
-Extract Inlined Constant lsl => "(lsl)".
-Extract Inlined Constant neg => "(fun x -> -x)".
+Extract Inlined Constant lsl  => "(lsl)".
+Extract Inlined Constant neg  => "(fun x -> -x)".
 Extract Inlined Constant lnot => "lnot".
-Extract Inlined Constant add => "(+)".
-Extract Inlined Constant sub => "(-)".
-Extract Inlined Constant mul => "( * )".
+Extract Inlined Constant add  => "(+)".
+Extract Inlined Constant sub  => "(-)".
+Extract Inlined Constant mul  => "( * )".
 
 End NativeInt.
 
-Global Instance eq_NativeInt : eq_of NativeInt.Int := fun x y => NativeInt.eq x y.
+Global Instance   eq_NativeInt : eq_of   NativeInt.Int := NativeInt.eq.
 Global Instance zero_NativeInt : zero_of NativeInt.Int := NativeInt.zero.
-Global Instance one_NativeInt : one_of NativeInt.Int := NativeInt.one.
-Global Instance or_NativeInt : or_of NativeInt.Int := NativeInt.lor.
-Global Instance shl_NativeInt : shl_of NativeInt.Int := NativeInt.lsl.
-Global Instance and_NativeInt : and_of NativeInt.Int := NativeInt.land.
-Global Instance shr_NativeInt : shr_of NativeInt.Int := NativeInt.lsr.
-Global Instance opp_NativeInt : opp_of NativeInt.Int := NativeInt.neg.
-Global Instance not_NativeInt : not_of NativeInt.Int := NativeInt.lnot.
-Global Instance xor_NativeInt : xor_of NativeInt.Int := NativeInt.lxor.
-Global Instance add_NativeInt : add_of NativeInt.Int := NativeInt.add.
-Global Instance sub_NativeInt : sub_of NativeInt.Int := NativeInt.sub.
-Global Instance mul_NativeInt : mul_of NativeInt.Int := NativeInt.mul.
+Global Instance  one_NativeInt : one_of  NativeInt.Int := NativeInt.one.
+Global Instance   or_NativeInt : or_of   NativeInt.Int := NativeInt.lor.
+Global Instance  shl_NativeInt : shl_of  NativeInt.Int := NativeInt.lsl.
+Global Instance  and_NativeInt : and_of  NativeInt.Int := NativeInt.land.
+Global Instance  shr_NativeInt : shr_of  NativeInt.Int := NativeInt.lsr.
+Global Instance  opp_NativeInt : opp_of  NativeInt.Int := NativeInt.neg.
+Global Instance  not_NativeInt : not_of  NativeInt.Int := NativeInt.lnot.
+Global Instance  xor_NativeInt : xor_of  NativeInt.Int := NativeInt.lxor.
+Global Instance  add_NativeInt : add_of  NativeInt.Int := NativeInt.add.
+Global Instance  sub_NativeInt : sub_of  NativeInt.Int := NativeInt.sub.
+Global Instance  mul_NativeInt : mul_of  NativeInt.Int := NativeInt.mul.
 
 (** * Conversion between machine integers and bit sequences *)
 
-Fixpoint bitsToInt (p: bitseq): NativeInt.Int :=
-  (match p with
-    | true :: p => 1 || ((bitsToInt p) <<< 1)
-    | false :: p => (bitsToInt p) <<< 1
-    | [::] => 0
+(* Enumeration for 'B_n, from G. Gonthier's example at:
+
+ *)
+Section TupleEnum.
+
+Fixpoint all_tuples T (e : seq T) n : seq (n.-tuple T) :=
+  if n isn't m.+1 then [:: [tuple]] else
+    [seq cons_tuple x t | x <- e, t <- all_tuples e m].
+
+Lemma perm_enum_tuples n (T : finType) :
+  perm_eq (enum {:n.-tuple T}) (all_tuples (enum T) n).
+Proof.
+rewrite uniq_perm_eq ?enum_uniq //.
+elim: n => //= n IHn; rewrite allpairs_uniq ?enum_uniq //.
+  by move=> [x1 t1] [x2 t2] _ _ [-> /val_inj->].
+elim: n => [|n IHn] t; rewrite mem_enum ?tuple0 //=; apply/esym/allpairsP.
+by case/tupleP: t => x t; exists (x, t); rewrite -IHn !mem_enum.
+Qed.
+
+Lemma perm_enum_bits n :
+  perm_eq (enum {:'B_n}) (all_tuples (enum {: bool}) n).
+Proof. exact: perm_enum_tuples. Qed.
+
+Fixpoint all_seqs T (e : seq T) n : seq (seq T) :=
+  if n isn't m.+1 then [:: [::]] else
+    [seq [:: x & t] | x <- e, t <- all_seqs e m].
+
+Lemma size_mem_all_seqs (T : eqType) (e : seq T) n (l : seq T) :
+  l \in all_seqs e n -> size l = n.
+Proof.
+Admitted.
+
+Lemma map_allpairs S T R O s t (op : S -> T -> R) (f : R -> O) :
+  [seq f x | x <- allpairs op s t] = [seq f (op x y) | x <- s, y <- t].
+Proof.
+by elim: s t => [|x s ihs] [|y t] //=; rewrite -ihs map_cat -map_comp.
+Qed.
+
+(* XXX: This lemma looks fishy, we may be missing the proper way *)
+Lemma map_val_allpairs S T R (P : pred T) (sT : subType P) s t (f : S -> T -> R) :
+  allpairs f s (map val t) = allpairs (fun x (y : sT) => f x (val y)) s t.
+Proof. by elim: s t => [|x s ihs] [|y t] //=; rewrite -ihs -map_comp. Qed.
+
+Lemma all_tuplesE T (e : seq T) n :
+  map val (all_tuples e n) = all_seqs e n.
+Proof.
+by elim: n => //= n <-; rewrite !map_allpairs map_val_allpairs.
+Qed.
+
+(* XXX: State up to permutation of enum {: bool} ? *)
+Lemma perm_benum_bits n :
+  perm_eq (map val (enum {:'B_n})) (all_seqs [:: true; false] n).
+Proof.
+have -> : [:: true; false] = enum {: bool} by rewrite enumT unlock.
+by rewrite -all_tuplesE perm_map ?perm_enum_tuples.
+Qed.
+
+(* XXX: Doing a pred-only version for simplicity *)
+Lemma forall_bitP n (p : pred bitseq) :
+  reflect (forall b : 'B_n, p b) (all p (all_seqs [:: true; false] n)).
+Proof.
+apply: (iffP idP).
+  move/allP=> H; apply/forallP/pred0P => x /=.
+  have -> // := H x.
+  rewrite -(perm_eq_mem (perm_benum_bits _)).
+  by rewrite (mem_map val_inj) ?mem_enum.
+move/forallP/pred0P=> /= H.
+apply/allP=> x hx.
+have x_tup : size x == n by rewrite (size_mem_all_seqs hx).
+by have/negbFE := H (Tuple x_tup).
+Qed.
+
+End TupleEnum.
+
+Section BitExtract.
+
+Variable n : nat.
+Implicit Types (s : bitseq) (b : 'B_n).
+
+Fixpoint bitsToInt s : NativeInt.Int :=
+  (match s with
+    | [::]           => 0
+    | [:: false & s] =>       bitsToInt s <<< 1
+    | [:: true  & s] => 1 || (bitsToInt s <<< 1)
   end)%C.
 
-Definition bitsToIntB {n} (bs: 'B_n): NativeInt.Int := bitsToInt bs.
+Definition bitsToIntB b : NativeInt.Int := bitsToInt b.
+
+End BitExtract.
 
 (** * Extraction  *)
-
 (* Following CompCert's Integer module *)
 Module Type WORDSIZE.
   Variable wordsize: nat.
 End WORDSIZE.
 
 Axiom forallIntG : NativeInt.Int -> (NativeInt.Int -> bool) -> bool.
-Extract Inlined Constant forallIntG => "Forall.forall_int".
+(* Extract Inlined Constant forallIntG => "Forall.forall_int". *)
 
-(* Our trusted computing base sums up in these two operations and
-their associated  reflection principles in Coq. *)
+(* (* Our trusted computing base sums up in these two operations and *)
+(* their associated  reflection principles in Coq. *) *)
 
-Section Trust.
+(* Section Trust. *)
 
-(* Axiom 1: Equality of integer is embedded within Coq's propositional equality: *)
+(* (* Axiom 1: Equality of integer is embedded within Coq's propositional equality: *) *)
 Axiom eqIntP : Equality.axiom NativeInt.eq.
 
 Definition viewP (P: pred NativeInt.Int) (PP: NativeInt.Int -> Prop) := forall x, reflect (PP x) (P x).
 
-(* Axiom 2: If a property is true for all integers, then it is propositionally true *)
+(* (* Axiom 2: If a property is true for all integers, then it is propositionally true *) *)
 Axiom forallIntP : forall w P PP,
     viewP P PP ->
     reflect (forall x, PP x) (forallIntG w (fun x => P x)).
 
-End Trust.
+(* End Trust. *)
 
-(* Extract Constant eqIntP => "fun _ -> failwith ""eqIntP: not extractable.""". *)
+(* (* Extract Constant eqIntP => "fun _ -> failwith ""eqIntP: not extractable.""". *) *)
 
 
 Module Make (WS: WORDSIZE).
 
-Fixpoint bitsFromInt_rec (k: nat)(n: NativeInt.Int): bitseq :=
+Fixpoint bitsFromInt_rec (k: nat) (n: NativeInt.Int) : bitseq :=
   (match k with
     | 0 => [::]
     | k.+1 =>
       let p := bitsFromInt_rec k (n >>> 1) in
-      ((n && 1) == 1) :: p                     
+      ((n && 1) == 1) :: p
   end)%C.
 
-Lemma bitsFromInt_recP {k} (n: NativeInt.Int): size (bitsFromInt_rec k n) == k.
+Lemma bitsFromInt_rec_tupleP {k} (n: NativeInt.Int): size (bitsFromInt_rec k n) == k.
+Proof. by elim: k n => //= k ihk n; rewrite (eqP (ihk _)). Qed.
+
+Canonical bitsFromIntB (n: NativeInt.Int) : 'B_WS.wordsize
+  := Tuple (@bitsFromInt_rec_tupleP WS.wordsize n).
+
+Definition bitsToIntK_test : Prop :=
+ forall bs : 'B_WS.wordsize, bitsFromIntB (bitsToInt bs) == bs.
+
+Definition bitsToIntK_testC :=
+  all [pred s | bitsFromInt_rec WS.wordsize (bitsToInt s) == s]
+      (all_seqs [:: true; false] WS.wordsize).
+
+Lemma bitsToIntK_testP :
+  reflect (bitsToIntK_test) (bitsToIntK_testC).
 Proof.
-  elim: k n => // [k IH] n //=.
-  rewrite eqSS //.
+apply: (iffP idP); first by move/forall_bitP.
+by move=> H; apply/forall_bitP.
 Qed.
 
-Canonical bitsFromIntB (n: NativeInt.Int): 'B_WS.wordsize
-  := Tuple (@bitsFromInt_recP WS.wordsize n).
 
 Definition Int := NativeInt.Int.
 Definition eq := NativeInt.eq.
@@ -168,25 +278,25 @@ Definition forallInt := forallIntG wordsize.
 
 (** * Cancelation of [bitsToInt] on [bitsFromInt] *)
 
-Definition bitsToIntK_test: bool :=
- [forall bs: 'B_WS.wordsize, bitsFromIntB (bitsToIntB bs) == bs ].
+(* Definition bitsToIntK_test: bool := *)
+(*  [forall bs: 'B_WS.wordsize, bitsFromIntB (bitsToInt bs) == bs ]. *)
 
 (* Validation condition:
     Experimentally, [bitsToInt32] must be cancelled by [bitsFromInt32] *)
 Axiom bitsToIntK_valid: bitsToIntK_test.
 
-Lemma bitsToIntK: cancel bitsToIntB bitsFromIntB.
-Proof.
-  move=> bs; apply/eqP; move: bs.
-  apply/forallP: bitsToIntK_valid.
-Qed.
+(* Lemma bitsToIntK: cancel bitsToIntB bitsFromIntB. *)
+(* Proof. *)
+(*   move=> bs; apply/eqP; move: bs. *)
+(*   apply/forallP: bitsToIntK_valid. *)
+(* Qed. *)
 
 (** * Injectivity of [bitsFromInt32] *)
 
 
-Definition bitsFromInt_inj_test: bool := 
+Definition bitsFromInt_inj_test: bool :=
   forallInt (fun x =>
-    forallInt (fun y => 
+    forallInt (fun y =>
       (bitsFromIntB x == bitsFromIntB y) ==> eq x y)).
 
 Axiom bitsFromInt_inj_valid: bitsFromInt_inj_test.
@@ -202,18 +312,18 @@ Proof.
   move=> x; apply idP.
 Qed.
 
-Lemma bitsFromIntK: cancel bitsFromIntB bitsToIntB.
-Proof.
-  apply: inj_can_sym; auto using bitsToIntK, bitsFromInt_inj.
-Qed.
+(* Lemma bitsFromIntK: cancel bitsFromIntB bitsToIntB. *)
+(* Proof. *)
+(*   apply: inj_can_sym; auto using bitsToIntK, bitsFromInt_inj. *)
+(* Qed. *)
 
-(** * Bijection [Int32] vs. [BITS wordsize] *)
+(* (** * Bijection [Int32] vs. [BITS wordsize] *) *)
 
-Lemma bitsFromInt32_bij: bijective bitsFromIntB.
-Proof.
-  split with (g := bitsToIntB);
-  auto using bitsToIntK, bitsFromIntK.
-Qed.
+(* Lemma bitsFromInt32_bij: bijective bitsFromIntB. *)
+(* Proof. *)
+(*   split with (g := bitsToIntB); *)
+(*   auto using bitsToIntK, bitsFromIntK. *)
+(* Qed. *)
 
 
 (** * Representation relation *)
@@ -231,6 +341,7 @@ Definition Rnative: Int -> 'B_WS.wordsize -> Type := test_native.
 
 (** * Representation lemma: equality *)
 
+(*
 Lemma eq_adj: forall i bs, eq i (bitsToIntB bs) = (bitsFromIntB i == bs) .
 Proof.
   move=> i bs.
@@ -249,6 +360,7 @@ Proof.
     by apply/eqIntP/eqP; intro; subst; auto using bitsFromInt_inj.
   exact: bool_Rxx.
 Qed.
+*)
 
 (** * Representation lemma: individuals *)
 
@@ -614,7 +726,7 @@ Definition unop_tests x :=
 
 Definition tests
   := allb
-       [:: bitsToIntK_test (*;
+       [:: bitsToIntK_testC (*;
          zero_test ;
          one_test ;
          forallInt32 
@@ -796,7 +908,7 @@ End Wordsize_8.
 Module Int8 := Make(Wordsize_8).
 
 Cd "../test".
-Extraction "test_int8.ml" Int8.tests.
+Extraction "test_int8.ml"  Int8.tests.
 Extraction "test_int16.ml" Int16.tests.
 Extraction "test_int32.ml" Int32.tests.
 
