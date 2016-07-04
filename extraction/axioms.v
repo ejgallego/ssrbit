@@ -145,28 +145,28 @@ Proof.
 by rewrite -all_tuplesE; case/mapP=> [t _] ->; rewrite size_tuple.
 Qed.
 
+Lemma enum_bool : enum {: bool} = [:: true; false].
+Proof. by rewrite enumT unlock. Qed.
+
 (* XXX: State up to permutation of enum {: bool} ? *)
 Lemma perm_benum_bits n :
   perm_eq (map val (enum {:'B_n})) (all_seqs [:: true; false] n).
 Proof.
-have -> : [:: true; false] = enum {: bool} by rewrite enumT unlock.
-by rewrite -all_tuplesE perm_map ?perm_enum_tuples.
+by rewrite -enum_bool -all_tuplesE perm_map ?perm_enum_tuples.
 Qed.
 
-(* XXX: Doing a pred-only version for simplicity *)
+(* XXX: Doing a pred-only version for now *)
+Lemma forall_bitE n (p : pred bitseq) :
+  [forall b : 'B_n, p b] = all p (all_seqs [:: true; false] n).
+Proof.
+rewrite -enum_bool -all_tuplesE all_map.
+have/perm_eq_mem/eq_all_r <- := perm_enum_tuples n [finType of bool].
+by apply/forallP/allP => //= hx x; apply: (hx x); rewrite mem_enum.
+Qed.
+
 Lemma forall_bitP n (p : pred bitseq) :
   reflect (forall b : 'B_n, p b) (all p (all_seqs [:: true; false] n)).
-Proof.
-apply: (iffP idP).
-  move/allP=> H; apply/forallP/pred0P => x /=.
-  have -> // := H x.
-  rewrite -(perm_eq_mem (perm_benum_bits _)).
-  by rewrite (mem_map val_inj) ?mem_enum.
-move/forallP/pred0P=> /= H.
-apply/allP=> x hx.
-have x_tup : size x == n by rewrite (size_mem_all_seqs hx).
-by have/negbFE := H (Tuple x_tup).
-Qed.
+Proof. by rewrite -forall_bitE; exact: forallP. Qed.
 
 End TupleEnum.
 
@@ -230,6 +230,8 @@ Canonical bitsFromIntB (n: NativeInt.Int) : 'B_WS.wordsize
 
 Definition bitsToIntK_test : Prop :=
  forall bs : 'B_WS.wordsize, bitsFromIntB (bitsToInt bs) == bs.
+
+Definition bittest p := all (fun s => p s) (all_seqs [:: true; false] WS.wordsize).
 
 Definition bitsToIntK_testC :=
   all [pred s | bitsFromInt_rec WS.wordsize (bitsToInt s) == s]
@@ -363,22 +365,24 @@ Qed.
 
 (** * Representation lemma: individuals *)
 
-(*
-Definition zero_test: bool 
-  := eq zero (bitsToIntB (B0 WS.wordsize)).
-  
+Open Scope bits_scope.
+Definition zero_test : bool :=
+    eq zero (bitsToInt ('0_WS.wordsize)).
+
 (* Validation condition:
    bit vector [#0] corresponds to machine [0] *)
+(*
 Axiom zero_valid: zero_test.
 
 Global Instance zero_Rnative: refines Rnative 0%C 0%C.
 Proof. rewrite refinesE. apply zero_valid. Qed.
-  
-Definition one_test: bool
-  := eq one (bitsToInt32 #1).
+*)
+
+Definition one_test : bool := eq one (bitsToInt '1_WS.wordsize).
 
 (* Validation condition:
    bit vector [#1] corresponds to machine [1] *)
+(*
 Axiom one_valid: one_test.
 
 Global Instance one_Rnative: refines Rnative 1%C 1%C.
@@ -710,24 +714,26 @@ Definition binop_tests x bitsX y :=
       implb (toNat bitsY <= wordsize)%nat (test_native (lsl x y) (shlBn bitsX (toNat bitsY))) ;
       test_native (add x y) (addB bitsX bitsY)].
 
+*)
+
+(*
 Definition unop_tests x :=
   let bitsX := bitsFromInt32 x in
   allb
     [:: (*Rnative (succ x) (incB bitsX) ;*)
       test_native (lnot x) (invB bitsX) ;
       test_native (neg x) (negB bitsX) ;
-(*      Rnative (dec x) (decB bitsX) ; *)
+      Rnative (dec x) (decB bitsX) ;
       forallInt32
         (fun y => binop_tests x bitsX y)].
 *)
-
 Definition tests
   := all id
-       [:: bitsToIntK_testC (*;
-         zero_test ;
-         one_test ;
-         forallInt32 
-           (fun x => unop_tests x) *)].
+       [:: bitsToIntK_testC
+         ; zero_test
+         ; one_test
+         (* ; bittest unop_tests *)
+       ].
 
 (*
 Lemma implies_unop : tests -> forall x, unop_tests x.
