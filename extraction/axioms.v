@@ -192,14 +192,14 @@ Module Type WORDSIZE.
 End WORDSIZE.
 
 Axiom forallIntG : NativeInt.Int -> (NativeInt.Int -> bool) -> bool.
-(* Extract Inlined Constant forallIntG => "Forall.forall_int". *)
+Extract Inlined Constant forallIntG => "Forall.forall_int".
 
-(* (* Our trusted computing base sums up in these two operations and *)
-(* their associated  reflection principles in Coq. *) *)
+(* Our trusted computing base sums up in these two operations and *)
+(* their associated  reflection principles in Coq. *)
 
-(* Section Trust. *)
+Section Trust.
 
-(* (* Axiom 1: Equality of integer is embedded within Coq's propositional equality: *) *)
+(* Axiom 1: Equality of integer is embedded within Coq's propositional equality: *)
 Axiom eqIntP : Equality.axiom NativeInt.eq.
 
 Definition viewP (P: pred NativeInt.Int) (PP: NativeInt.Int -> Prop) := forall x, reflect (PP x) (P x).
@@ -209,10 +209,7 @@ Axiom forallIntP : forall w P PP,
     viewP P PP ->
     reflect (forall x, PP x) (forallIntG w (fun x => P x)).
 
-(* End Trust. *)
-
-(* (* Extract Constant eqIntP => "fun _ -> failwith ""eqIntP: not extractable.""". *) *)
-
+End Trust.
 
 Module Make (WS: WORDSIZE).
 
@@ -244,22 +241,23 @@ apply: (iffP idP); first by move/forall_bitP.
 by move=> H; apply/forall_bitP.
 Qed.
 
-
-Definition Int := NativeInt.Int.
-Definition eq := NativeInt.eq.
+Definition Int  := NativeInt.Int.
+Definition eq   := NativeInt.eq.
 Definition zero := NativeInt.zero.
-Definition one := NativeInt.one.
-Definition lor := NativeInt.lor.
+Definition one  := NativeInt.one.
+Definition lor  := NativeInt.lor.
 Definition land := NativeInt.land.
-Definition lsr := NativeInt.lsr.
+Definition lsr  := NativeInt.lsr.
 Definition lxor := NativeInt.lxor.
 
 Definition wordsize := bitsToInt (bitn 63 WS.wordsize).
-Definition bitmask := 
+
+Definition bitmask :=
   NativeInt.sub
-    (NativeInt.lsl one wordsize) 
+    (NativeInt.lsl one wordsize)
     one.
-Definition mask_unop (f : Int -> Int) x := land bitmask (f x).
+
+Definition mask_unop  (f : Int -> Int) x := land bitmask (f x).
 Definition mask_binop (f : Int -> Int -> Int) x y := land bitmask (f x y).
 
 Definition neg := mask_unop NativeInt.neg.
@@ -293,11 +291,11 @@ Axiom bitsToIntK_valid: bitsToIntK_test.
 
 (** * Injectivity of [bitsFromInt32] *)
 
-
 Definition bitsFromInt_inj_test: bool :=
   forallInt (fun x =>
     forallInt (fun y =>
-      (bitsFromIntB x == bitsFromIntB y) ==> eq x y)).
+                 (* XXX use the refined operator for bitseq *)
+      (bitsFromInt_rec WS.wordsize x == bitsFromInt_rec WS.wordsize y) ==> eq x y)).
 
 Axiom bitsFromInt_inj_valid: bitsFromInt_inj_test.
 
@@ -330,7 +328,7 @@ Qed.
 
 (** We say that an [n : Int32] is the representation of a bitvector
 [bs : BITS ] if they satisfy the axiom [repr_native]. Morally, it
-means that both represent the same number (ie. the same 
+means that both represent the same number (ie. the same
 booleans). *)
 
 Definition test_native (i: Int)(bs: 'B_WS.wordsize): bool
@@ -699,8 +697,6 @@ Qed.
 
 (** Extract the tests: they should all return true! *)
 
-Definition allb s := foldr (andb) true s.
-
 (*
 Definition binop_tests x bitsX y :=
   let bitsY := bitsFromInt32 y in
@@ -725,7 +721,7 @@ Definition unop_tests x :=
 *)
 
 Definition tests
-  := allb
+  := all id
        [:: bitsToIntK_testC (*;
          zero_test ;
          one_test ;
@@ -871,22 +867,7 @@ Lemma implies_add : tests -> add_test.
 Qed.
 *)
 
-
 End Make.
-
-(*
-Extract Constant inj_eqAxiom => "failwith ""a""".
-Extract Constant choice.PcanChoiceMixin => "failwith ""foo""".
-Extract Constant inj_eqAxiom => "failwith ""b""".
-Extract Constant inj_eqAxiom => "failwith ""eqseqP""".
-Extract Constant choice.seq_choiceMixin => "failwith ""c""".
-Extract Constant eqnP => "failwith ""c""".
-Extract Constant eqbP => "failwith ""d""".
-Extract Constant eqP => "failwith ""eqP""".
-Extract Constant idP => "failwith ""idP""".
-Extract Constant choice.nat_choiceMixin => "failwith ""d""".
-Extract Constant val_eqP => "failwith ""e""".
-*)
 
 Module Wordsize_32.
   Definition wordsize := 32.
@@ -907,7 +888,6 @@ End Wordsize_8.
 
 Module Int8 := Make(Wordsize_8).
 
-Cd "../test".
 Extraction "test_int8.ml"  Int8.tests.
 Extraction "test_int16.ml" Int16.tests.
 Extraction "test_int32.ml" Int32.tests.
