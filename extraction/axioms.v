@@ -122,11 +122,6 @@ Fixpoint all_seqs T (e : seq T) n : seq (seq T) :=
   if n isn't m.+1 then [:: [::]] else
     [seq [:: x & t] | x <- e, t <- all_seqs e m].
 
-Lemma size_mem_all_seqs (T : eqType) (e : seq T) n (l : seq T) :
-  l \in all_seqs e n -> size l = n.
-Proof.
-Admitted.
-
 Lemma map_allpairs S T R O s t (op : S -> T -> R) (f : R -> O) :
   [seq f x | x <- allpairs op s t] = [seq f (op x y) | x <- s, y <- t].
 Proof.
@@ -142,6 +137,12 @@ Lemma all_tuplesE T (e : seq T) n :
   map val (all_tuples e n) = all_seqs e n.
 Proof.
 by elim: n => //= n <-; rewrite !map_allpairs map_val_allpairs.
+Qed.
+
+Lemma size_mem_all_seqs (T : eqType) (e : seq T) n (l : seq T) :
+  l \in all_seqs e n -> size l = n.
+Proof.
+by rewrite -all_tuplesE; case/mapP=> [t _] ->; rewrite size_tuple.
 Qed.
 
 (* XXX: State up to permutation of enum {: bool} ? *)
