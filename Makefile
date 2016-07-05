@@ -22,8 +22,11 @@ TEST_FILES=$(addprefix extraction/test_int,8 16 32)
 TEST_BYTE:=$(TEST_FILES:=.byte)
 TEST_NATIVE:=$(TEST_FILES:=.native)
 
-tests: extraction $(addsuffix .ml, $(TEST_FILES))
-	$(OCB) $(TEST_NATIVE)
+test:
+	mkdir -p test
+
+tests: test extraction $(addsuffix .ml, $(TEST_FILES))
+	$(OCB) -package unix $(TEST_NATIVE)
 
 clean: Makefile.coq
 	$(MAKE) -f Makefile.coq clean
