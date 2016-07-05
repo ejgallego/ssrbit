@@ -173,9 +173,9 @@ Proof. by rewrite -forall_bitE; exact: forallP. Qed.
 
 End TupleEnum.
 
+(* This section is useful to have cleaner extraction. *)
 Section EqOps.
 
-(* This is useful to have cleaner extraction. *)
 Definition eqseqb := (fix eqseq (s1 s2 : seq bool) {struct s2} : bool :=
      match s1 with
      | [::] => match s2 with
@@ -286,7 +286,7 @@ Definition test_bitsToIntK :=
 Definition prop_bitsToIntK := forall b : 'B_n,
     [fun s => bitsFromInt n (bitsToInt s) == s] b.
 
-(* XXX: Improve *)
+(* XXX: Improve: Avoid redundancy *)
 (* [Avoid reflect to clean up extraction, can we may blacklist it?] *)
 Lemma iff_bitsToIntK :
   test_bitsToIntK <-> prop_bitsToIntK.
@@ -297,10 +297,8 @@ Qed.
 
 Axiom bitsToIntK_valid : prop_bitsToIntK.
 
-Lemma bitsToIntK: cancel bitsToInt (bitsFromInt n).
-Proof.
-move=> bs; apply/eqP.
-Admitted.
+Lemma bitsToIntK (b : 'B_n) : (bitsFromInt n) (bitsToInt b) = b.
+Proof. exact/eqP/bitsToIntK_valid. Qed.
 
 
 (** * Injectivity of [bitsFromInt32] *)
@@ -332,6 +330,7 @@ Qed.
 Lemma bitsFromIntK: cancel (bitsFromInt n) bitsToInt.
 Proof.
 Admitted.
+
 (* apply: inj_can_sym; auto using bitsToIntK, bitsFromInt_inj. *)
 (* Qed. *)
 
@@ -350,7 +349,7 @@ Definition Rnative: Int -> 'B_WS.wordsize -> Type := test_native.
 
 (** * Representation lemma: equality *)
 
-Lemma eq_adj i bs : (i == bitsToInt bs)%C = (bs == bitsFromInt n i).
+Lemma eq_adj i (bs : 'B_n) : (i == bitsToInt bs)%C = (val bs == bitsFromInt n i).
 Proof. by apply/eqIntP/eqP => ->; rewrite ?bitsFromIntK ?bitsToIntK. Qed.
 
 (*
