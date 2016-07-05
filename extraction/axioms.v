@@ -210,7 +210,13 @@ Fixpoint bitsToInt s : NativeInt.Int :=
     | [:: true  & s] => 1 || (bitsToInt s <<< 1)
   end)%C.
 
-Definition bitsToIntB b : NativeInt.Int := bitsToInt b.
+Fixpoint bitsFromInt (k: nat) (n: NativeInt.Int) : bitseq :=
+  (match k with
+    | 0 => [::]
+    | k.+1 =>
+      let p := bitsFromInt k (n >>> 1) in
+      ((n && 1) == 1) :: p
+  end)%C.
 
 End BitExtract.
 
@@ -220,59 +226,29 @@ Module Type WORDSIZE.
   Variable wordsize: nat.
 End WORDSIZE.
 
+(* Our trusted computing base is formed by:
+ - a trusted equality operator.
+ - a trusted efficient checker operator.
+ *)
+
 Axiom forallIntG : NativeInt.Int -> (NativeInt.Int -> bool) -> bool.
 Extract Inlined Constant forallIntG => "Forall.forall_int".
-
-(* Our trusted computing base sums up in these two operations and *)
-(* their associated  reflection principles in Coq. *)
 
 Section Trust.
 
 (* Axiom 1: Equality of integer is embedded within Coq's propositional equality: *)
 Axiom eqIntP : Equality.axiom NativeInt.eq.
 
-Definition viewP (P: pred NativeInt.Int) (PP: NativeInt.Int -> Prop) := forall x, reflect (PP x) (P x).
-
-(* (* Axiom 2: If a property is true for all integers, then it is propositionally true *) *)
-Axiom forallIntP : forall w P PP,
-    viewP P PP ->
-    reflect (forall x, PP x) (forallIntG w (fun x => P x)).
+(* Axiom 2: If a property is true for all integers, then it is
+   propositionally true. We restrict to boolean properties *)
+Axiom forallIntP : forall w (P : pred _),
+    reflect (forall x, P x) (forallIntG w P).
 
 End Trust.
 
 Module Make (WS: WORDSIZE).
 
-Fixpoint bitsFromInt_rec (k: nat) (n: NativeInt.Int) : bitseq :=
-  (match k with
-    | 0 => [::]
-    | k.+1 =>
-      let p := bitsFromInt_rec k (n >>> 1) in
-      ((n && 1) == 1) :: p
-  end)%C.
-
-Lemma bitsFromInt_rec_tupleP {k} (n: NativeInt.Int): size (bitsFromInt_rec k n) == k.
-Proof. by elim: k n => //= k ihk n; rewrite (eqP (ihk _)). Qed.
-
-Canonical bitsFromIntB (n: NativeInt.Int) : 'B_WS.wordsize
-  := Tuple (@bitsFromInt_rec_tupleP WS.wordsize n).
-
-Definition bitsToIntK_test : Prop :=
- forall bs : 'B_WS.wordsize, bs == bitsFromIntB (bitsToInt bs).
-
-Definition bittest p := all (fun s => p s) (all_seqs [:: true; false] WS.wordsize).
-
-Definition bitsToIntK_testC :=
-  all (fun s => eqseqb s (bitsFromInt_rec WS.wordsize (bitsToInt s)))
-      (all_seqs [:: true; false] WS.wordsize).
-
-(* Emilio: Don't extract, reflect is in Type!
-Lemma bitsToIntK_testP :
-  reflect (bitsToIntK_test) (bitsToIntK_testC).
-Proof.
-apply: (iffP idP); first by move/forall_bitP.
-by move=> H; apply/forall_bitP.
-Qed.
-*)
+Definition n := WS.wordsize.
 
 Definition Int  := NativeInt.Int.
 Definition eq   := NativeInt.eq.
@@ -285,15 +261,12 @@ Definition lxor := NativeInt.lxor.
 
 Definition wordsize := bitsToInt (bitn 63 WS.wordsize).
 
-Definition bitmask :=
-  NativeInt.sub
-    (NativeInt.lsl one wordsize)
-    one.
+Definition bitmask := ((NativeInt.lsl one wordsize) - one)%C.
 
 Definition mask_unop  (f : Int -> Int) x := land bitmask (f x).
 Definition mask_binop (f : Int -> Int -> Int) x y := land bitmask (f x y).
 
-Definition neg := mask_unop NativeInt.neg.
+Definition neg  := mask_unop NativeInt.neg.
 Definition lnot := mask_unop NativeInt.lnot.
 
 Definition lsl := mask_binop NativeInt.lsl.
@@ -301,29 +274,38 @@ Definition add := mask_binop NativeInt.add.
 Definition sub := mask_binop NativeInt.sub.
 Definition mul := mask_binop NativeInt.mul.
 
-
 Definition forallInt := forallIntG wordsize.
 
-
-(* All the axiomatized properties below are exhautively tested. *)
-
-(** * Cancelation of [bitsToInt] on [bitsFromInt] *)
-
-(* Definition bitsToIntK_test: bool := *)
-(*  [forall bs: 'B_WS.wordsize, bitsFromIntB (bitsToInt bs) == bs ]. *)
-
 (* Validation condition:
-    Experimentally, [bitsToInt32] must be cancelled by [bitsFromInt32] *)
-Axiom bitsToIntK_valid: bitsToIntK_test.
+   Experimentally, [bitsToInt32] must be cancelled by [bitsFromInt32] *)
+Definition test_bitsToIntK :=
+  all (fun s => eqseqb (bitsFromInt n (bitsToInt s)) s)
+      (all_seqs [:: true; false] n).
 
-(* Lemma bitsToIntK: cancel bitsToIntB bitsFromIntB. *)
-(* Proof. *)
-(*   move=> bs; apply/eqP; move: bs. *)
-(*   apply/forallP: bitsToIntK_valid. *)
-(* Qed. *)
+(* XXX: Fix *)
+Definition prop_bitsToIntK := forall b : 'B_n,
+    [fun s => bitsFromInt n (bitsToInt s) == s] b.
+
+(* XXX: Improve *)
+(* [Avoid reflect to clean up extraction, can we may blacklist it?] *)
+Lemma iff_bitsToIntK :
+  test_bitsToIntK <-> prop_bitsToIntK.
+Proof.
+split; last by move/forall_bitP.
+by move=> hall x; apply/forall_bitP.
+Qed.
+
+Axiom bitsToIntK_valid : prop_bitsToIntK.
+
+Lemma bitsToIntK: cancel bitsToInt (bitsFromInt n).
+Proof.
+move=> bs; apply/eqP.
+Admitted.
+
 
 (** * Injectivity of [bitsFromInt32] *)
 
+(* Emilio: this seems more expensive than just doing the test.
 Definition bitsFromInt_inj_test: bool :=
   forallInt (fun x =>
     forallInt (fun y =>
@@ -331,9 +313,12 @@ Definition bitsFromInt_inj_test: bool :=
       (eqseqb (bitsFromInt_rec WS.wordsize x) (bitsFromInt_rec WS.wordsize y)) ==> eq x y)).
 
 Axiom bitsFromInt_inj_valid: bitsFromInt_inj_test.
+*)
 
-Lemma bitsFromInt_inj: injective bitsFromIntB.
+(*
+Lemma bitsFromInt_inj: injective bitsFromInt.
 Proof.
+have := can_inj bitsToIntK.
   move=> x y /eqP H.
   apply/eqIntP.
   move: H; apply/implyP.
@@ -342,44 +327,33 @@ Proof.
   move: x; apply/forallIntP; last by apply bitsFromInt_inj_valid.
   move=> x; apply idP.
 Qed.
+*)
 
-(* Lemma bitsFromIntK: cancel bitsFromIntB bitsToIntB. *)
-(* Proof. *)
-(*   apply: inj_can_sym; auto using bitsToIntK, bitsFromInt_inj. *)
+Lemma bitsFromIntK: cancel (bitsFromInt n) bitsToInt.
+Proof.
+Admitted.
+(* apply: inj_can_sym; auto using bitsToIntK, bitsFromInt_inj. *)
 (* Qed. *)
-
-(* (** * Bijection [Int32] vs. [BITS wordsize] *) *)
-
-(* Lemma bitsFromInt32_bij: bijective bitsFromIntB. *)
-(* Proof. *)
-(*   split with (g := bitsToIntB); *)
-(*   auto using bitsToIntK, bitsFromIntK. *)
-(* Qed. *)
-
 
 (** * Representation relation *)
 
 (** We say that an [n : Int32] is the representation of a bitvector
-[bs : BITS ] if they satisfy the axiom [repr_native]. Morally, it
-means that both represent the same number (ie. the same
-booleans). *)
+    [bs : BITS ] if they satisfy the axiom [repr_native]. Morally, it
+    means that both represent the same number (ie. the same
+    booleans). *)
 
-Definition test_native (i: Int)(bs: 'B_WS.wordsize): bool
-  := eq i (bitsToIntB bs).
+Definition test_native (i: Int) (bs: 'B_WS.wordsize) : bool :=
+  (i == bitsToInt bs)%C.
 
 (* TODO: use [fun_hrel] *)
 Definition Rnative: Int -> 'B_WS.wordsize -> Type := test_native.
 
 (** * Representation lemma: equality *)
 
-(*
-Lemma eq_adj: forall i bs, eq i (bitsToIntB bs) = (bitsFromIntB i == bs) .
-Proof.
-  move=> i bs.
-  apply/eqIntP/eqP; intro; subst;
-  auto using bitsFromIntK, bitsToIntK.
-Qed.
+Lemma eq_adj i bs : (i == bitsToInt bs)%C = (bs == bitsFromInt n i).
+Proof. by apply/eqIntP/eqP => ->; rewrite ?bitsFromIntK ?bitsToIntK. Qed.
 
+(*
 Lemma eq_Rnative:
   refines (Rnative ==> Rnative ==> param.bool_R)%rel eq_op eqtype.eq_op.
 Proof.
@@ -396,8 +370,8 @@ Qed.
 (** * Representation lemma: individuals *)
 
 Open Scope bits_scope.
-Definition zero_test : bool :=
-    eq zero (bitsToInt ('0_WS.wordsize)).
+
+Definition zero_test : bool := (zero == bitsToInt ('0_WS.wordsize))%C.
 
 (* Validation condition:
    bit vector [#0] corresponds to machine [0] *)
@@ -408,7 +382,7 @@ Global Instance zero_Rnative: refines Rnative 0%C 0%C.
 Proof. rewrite refinesE. apply zero_valid. Qed.
 *)
 
-Definition one_test : bool := eq one (bitsToInt '1_WS.wordsize).
+Definition one_test : bool := (one == bitsToInt '1_WS.wordsize)%C.
 
 (* Validation condition:
    bit vector [#1] corresponds to machine [1] *)
@@ -732,177 +706,39 @@ Qed.
 
 (** Extract the tests: they should all return true! *)
 
-(*
+(* Tests we need:
+
+## Binary ops.
+
 Definition binop_tests x bitsX y :=
   let bitsY := bitsFromInt32 y in
-  allb
-    [:: implb (bitsX == bitsY) (eq x y) ;
-      test_native (land x y) (andB bitsX bitsY) ;
-      test_native (lor x y) (orB bitsX bitsY) ;
-      test_native (lxor x y) (xorB bitsX bitsY) ;
-      implb (toNat bitsY <= wordsize)%nat (test_native (lsr x y) (shrBn bitsX (toNat bitsY))) ;
-      implb (toNat bitsY <= wordsize)%nat (test_native (lsl x y) (shlBn bitsX (toNat bitsY))) ;
-      test_native (add x y) (addB bitsX bitsY)].
-
-*)
-
-(*
-Definition unop_tests x :=
-  let bitsX := bitsFromInt32 x in
-  allb
-    [:: (*Rnative (succ x) (incB bitsX) ;*)
-      test_native (lnot x) (invB bitsX) ;
-      test_native (neg x) (negB bitsX) ;
-      Rnative (dec x) (decB bitsX) ;
-      forallInt32
-        (fun y => binop_tests x bitsX y)].
-*)
-Definition tests
-  := all id
-       [:: bitsToIntK_testC
-         ; zero_test
-         ; one_test
-         (* ; bittest unop_tests *)
+  allb [:: implb (bitsX == bitsY) (eq x y)
+        ;  test_native (land x y) (andB bitsX bitsY)
+        ;  test_native (lor  x y) (orB  bitsX bitsY)
+        ;  test_native (lxor x y) (xorB bitsX bitsY)
+        ;  implb (toNat bitsY <= wordsize)%nat (test_native (lsr x y) (shrBn bitsX (toNat bitsY)))
+        ;  implb (toNat bitsY <= wordsize)%nat (test_native (lsl x y) (shlBn bitsX (toNat bitsY)))
+        ;  test_native (add x y) (addB bitsX bitsY)
        ].
 
-(*
-Lemma implies_unop : tests -> forall x, unop_tests x.
-  move=> /andP [_ /andP [_ /andP[_ /andP [H _]]]] x.
-  rewrite /unop_tests.
-  move: H=> /forallInt32P H.
-  move: (H unop_tests)=> H'.
-  apply H'=> x'.
-  by apply idP.
-Qed.
+## Unary ops.
 
-Lemma implies_binop : tests -> forall x y, binop_tests x (bitsFromInt32 x) y.
-  move => H x y.
-  have H': unop_tests x by apply implies_unop.
-  move: H'=> /andP [_ /andP [_ /andP [H1 _]]].
-  move: H1=> /forallInt32P H1.
-  move: (H1 (binop_tests x (bitsFromInt32 x)))=> H2.
-  apply H2=> y'.
-  by apply idP.
-Qed.
-
-Lemma implies_bitsToInt32K : tests -> bitsToInt32K_test.
-  by move=> /andP [H _].
-Qed.
-
-Lemma implies_bitsFromInt32_inj : tests -> bitsFromInt32_inj_test.
-  move=> H.
-  apply/forallInt32P=> x.
-  apply idP.
-  apply/forallInt32P=> y.
-  apply idP.
-  have H': binop_tests x (bitsFromInt32 x) y by apply implies_binop.
-  by move: H'=> /andP [H' _].
-Qed.
-
-Lemma implies_zero : tests -> zero_test.
-  by move=> /andP [_ /andP [H _]].
-Qed.
-
-Lemma implies_one : tests -> one_test.
-  by move=> /andP [_ /andP [_ /andP[H _]]].
-Qed.
-
-(*
-Lemma implies_succ : tests -> succ_test.
-  move=> H.
-  apply/forallInt32P=> x.
-  apply idP.
-  have H': unop_tests x by apply implies_unop.
-  by move: H'=> /andP [H1 _].
-Qed.
+ Definition unop_tests x :=
+  let bitsX := bitsFromInt32 x in
+  allb [:: (*Rnative (succ x) (incB bitsX) ;*)
+         ; test_native (lnot x) (invB bitsX)
+         ; test_native (neg x)  (negB bitsX)
+         ; Rnative (dec x) (decB bitsX)
+         ; forallInt (fun y => binop_tests x bitsX y)
+         ].
 *)
 
-Lemma implies_lnot : tests -> lnot_test.
-  move=> H.
-  apply/forallInt32P=> x.
-  apply idP.
-  have H': unop_tests x by apply implies_unop.
-  by move: H'=> /andP [H1 _].
-Qed.
-
-Lemma implies_land : tests -> land_test.
-  move=> H.
-  apply/forallInt32P=> x.
-  apply idP.
-  apply/forallInt32P=> y.
-  apply idP.
-  have H': binop_tests x (bitsFromInt32 x) y by apply implies_binop.
-  by move: H'=> /andP [_ /andP [H' _]].
-Qed.
-
-Lemma implies_lor : tests -> lor_test.
-  move=> H.
-  apply/forallInt32P=> x.
-  apply idP.
-  apply/forallInt32P=> y.
-  apply idP.
-  have H': binop_tests x (bitsFromInt32 x) y by apply implies_binop.
-  by move: H'=> /andP [_ /andP [_ /andP [H' _]]].
-Qed.
-
-Lemma implies_lxor : tests -> lxor_test.
-  move=> H.
-  apply/forallInt32P=> x.
-  apply idP.
-  apply/forallInt32P=> y.
-  apply idP.
-  have H': binop_tests x (bitsFromInt32 x) y by apply implies_binop.
-  by move: H'=> /andP [_ /andP [_ /andP [_ /andP [H' _]]]].
-Qed.
-
-Lemma implies_lsr : tests -> lsr_test.
-  move=> H.
-  apply/forallInt32P=> x.
-  apply idP.
-  apply/forallInt32P=> y.
-  apply idP.
-  have H': binop_tests x (bitsFromInt32 x) y by apply implies_binop.
-  by move: H'=> /andP [_ /andP [_ /andP [_ /andP [_ /andP [H' _]]]]].
-Qed.
-
-Lemma implies_lsl : tests -> lsl_test.
-  move=> H.
-  apply/forallInt32P=> x.
-  apply idP.
-  apply/forallInt32P=> y.
-  apply idP.
-  have H': binop_tests x (bitsFromInt32 x) y by apply implies_binop.
-  by move: H'=> /andP [_ /andP [_ /andP [_ /andP [_ /andP [_ /andP [H' _]]]]]].
-Qed.
-
-Lemma implies_neg : tests -> neg_test.
-  move=> H.
-  apply/forallInt32P=> x.
-  apply idP.
-  have H': unop_tests x by apply implies_unop.
-  by move: H'=> /andP [_ /andP [H1 _]].
-Qed.
-
-(*
-Lemma implies_dec : tests -> dec_test.
-  move=> H.
-  apply/forallInt32P=> x.
-  apply idP.
-  have H': unop_tests x by apply implies_unop.
-  by move: H'=> /andP [_ /andP [_ /andP [H1 _]]].
-Qed.
-*)
-
-Lemma implies_add : tests -> add_test.
-  move=> H.
-  apply/forallInt32P=> x.
-  apply idP.
-  apply/forallInt32P=> y.
-  apply idP.
-  have H': binop_tests x (bitsFromInt32 x) y by apply implies_binop.
-  by move: H'=> /andP [_ /andP [_ /andP [_ /andP [_ /andP [_ /andP [_ /andP [H' _]]]]]]].
-Qed.
-*)
+Definition tests
+  := all id
+       [:: test_bitsToIntK
+         ; zero_test
+         ; one_test
+       ].
 
 End Make.
 
@@ -911,7 +747,6 @@ Module Wordsize_32.
 End Wordsize_32.
 
 Module Int32 := Make(Wordsize_32).
-
 
 Module Wordsize_16.
   Definition wordsize := 16.
