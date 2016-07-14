@@ -206,7 +206,7 @@ Implicit Types (s : bitseq) (b : 'B_n).
 Fixpoint bitsToInt s : NativeInt.Int :=
   (match s with
     | [::]           => 0
-    | [:: false & s] =>       bitsToInt s <<< 1
+    | [:: false & s] =>      bitsToInt s <<< 1
     | [:: true  & s] => 1 || (bitsToInt s <<< 1)
   end)%C.
 
@@ -215,7 +215,7 @@ Fixpoint bitsFromInt (k: nat) (n: NativeInt.Int) : bitseq :=
     | 0 => [::]
     | k.+1 =>
       let p := bitsFromInt k (n >>> 1) in
-      ((n && 1) == 1) :: p
+      (n && 1 == 1) :: p
   end)%C.
 
 End BitExtract.
@@ -251,7 +251,7 @@ Extract Constant assertion => "fun b -> if b then b else failwith ""Test failure
 
 Module Make (WS: WORDSIZE).
 
-Definition n := WS.wordsize.
+Definition w := WS.wordsize.
 
 Definition Int  := NativeInt.Int.
 Definition eq   := NativeInt.eq.
@@ -264,10 +264,10 @@ Definition lxor := NativeInt.lxor.
 
 Definition wordsize := bitsToInt (bitn 63 WS.wordsize).
 
-Definition bitmask := ((NativeInt.lsl one wordsize) - one)%C.
+Definition bitmask := ((1 <<< wordsize) - 1)%C.
 
-Definition mask_unop  (f : Int -> Int) x := land bitmask (f x).
-Definition mask_binop (f : Int -> Int -> Int) x y := land bitmask (f x y).
+Definition mask_unop  (f : Int -> Int) x := (bitmask && f x)%C.
+Definition mask_binop (f : Int -> Int -> Int) x y := (bitmask && f x y)%C.
 
 Definition neg  := mask_unop NativeInt.neg.
 Definition lnot := mask_unop NativeInt.lnot.
@@ -278,30 +278,29 @@ Definition sub := mask_binop NativeInt.sub.
 Definition mul := mask_binop NativeInt.mul.
 
 Definition forallInt := forallIntG wordsize.
+Definition forallSeq (p : pred bitseq) := all p (all_seqs [:: true; false] w).
+
+
+(** ** Cancelativity of bitsFromInt *)
 
 (* Validation condition:
-   Experimentally, [bitsToInt32] must be cancelled by [bitsFromInt32] *)
+   Experimentally, [bitsToInt] must be cancelled by [bitsFromInt] *)
 Definition test_bitsToIntK :=
-  all (fun s => eqseqb (bitsFromInt n (bitsToInt s)) s)
-      (all_seqs [:: true; false] n).
+  forallSeq (fun s => eqseqb (bitsFromInt w (bitsToInt s)) s).
 
-(* XXX: Fix *)
-Definition prop_bitsToIntK := forall b : 'B_n,
-    [fun s => bitsFromInt n (bitsToInt s) == s] b.
+Axiom bitsToIntK_valid : test_bitsToIntK.
 
-(* XXX: Improve: Avoid redundancy *)
-(* [Avoid reflect to clean up extraction, can we may blacklist it?] *)
-Lemma iff_bitsToIntK :
-  test_bitsToIntK <-> prop_bitsToIntK.
+Lemma bitsToIntK: forall b : 'B_w, (bitsFromInt w) (bitsToInt b) = b.
 Proof.
-split; last by move/forall_bitP.
-by move=> hall x; apply/forall_bitP.
+  move=> b.
+  apply /eqP.
+  rewrite eqseqR -[eqseqb _ _]/([fun b => eqseqb (bitsFromInt w (bitsToInt b)) b] b).
+  move: b.
+  apply/forall_bitP. 
+  by apply bitsToIntK_valid.
 Qed.
 
-Axiom bitsToIntK_valid : prop_bitsToIntK.
-
-Lemma bitsToIntK (b : 'B_n) : (bitsFromInt n) (bitsToInt b) = b.
-Proof. exact/eqP/bitsToIntK_valid. Qed.
+(** * Injectivity of [bitsFromInt] *)
 
 
 (** * Injectivity of [bitsFromInt32] *)
@@ -330,7 +329,7 @@ have := can_inj bitsToIntK.
 Qed.
 *)
 
-Lemma bitsFromIntK: cancel (bitsFromInt n) bitsToInt.
+Lemma bitsFromIntK: cancel (bitsFromInt w) bitsToInt.
 Proof.
 Admitted.
 
@@ -339,20 +338,16 @@ Admitted.
 
 (** * Representation relation *)
 
-(** We say that an [n : Int32] is the representation of a bitvector
-    [bs : BITS ] if they satisfy the axiom [repr_native]. Morally, it
-    means that both represent the same number (ie. the same
-    booleans). *)
+(** We say that an [n : Int] is the representation of a bitvector [bs
+    : B_w] if they satisfy the axiom [Rnative]. Morally, it means that
+    both represent the same number. *)
 
-Definition test_native (i: Int) (bs: 'B_WS.wordsize) : bool :=
-  (i == bitsToInt bs)%C.
-
-(* TODO: use [fun_hrel] *)
-Definition Rnative: Int -> 'B_WS.wordsize -> Type := test_native.
+Definition Tnative (i: Int) (bs: 'B_w) : bool := (i == bitsToInt bs)%C.
+Definition Rnative: Int -> 'B_w -> Type := Tnative.
 
 (** * Representation lemma: equality *)
 
-Lemma eq_adj i (bs : 'B_n) : (i == bitsToInt bs)%C = (val bs == bitsFromInt n i).
+Lemma eq_adj i (bs : 'B_w) : (i == bitsToInt bs)%C = (val bs == bitsFromInt w i).
 Proof. by apply/eqIntP/eqP => ->; rewrite ?bitsFromIntK ?bitsToIntK. Qed.
 
 (*
