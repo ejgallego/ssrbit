@@ -246,6 +246,9 @@ Axiom forallIntP : forall w (P : pred _),
 
 End Trust.
 
+Axiom assertion : bool -> bool.
+Extract Constant assertion => "fun b -> if b then b else failwith ""Test failure""".
+
 Module Make (WS: WORDSIZE).
 
 Definition n := WS.wordsize.
@@ -733,13 +736,14 @@ Definition binop_tests x bitsX y :=
 *)
 
 Definition tests
-  := all id
-       [:: test_bitsToIntK
-         ; zero_test
-         ; one_test
-       ].
+  := assertion (all id
+       [:: test_bitsToIntK 
+        ; zero_test
+        ; one_test 
+       ]).
 
 End Make.
+
 
 Module Wordsize_32.
   Definition wordsize := 32.
