@@ -307,6 +307,7 @@ Canonical setlB bv j b := Tuple (setls_tupleP bv j b).
 
 Definition ors  := liftz false orb.
 Definition ands := liftz true andb.
+Definition xors := liftz false xorb.
 
 Lemma ors_cons b1 b2 bs1 bs2 : ors (b1 :: bs1) (b2 :: bs2) = b1 || b2 :: ors bs1 bs2.
 Proof. by []. Qed.
