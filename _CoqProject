@@ -1,7 +1,10 @@
 -R theories ssrbit
+-R extraction ssrbit
+-R refinement ssrbit
 
 theories/bitseq.v
 theories/bitword.v
 theories/bitset.v
 theories/notation.v
 extraction/axioms.v
+refinement/bits.v
