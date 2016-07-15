@@ -384,31 +384,31 @@ Definition rolB n (t : 'B_k) := [bits of rols n t].
 Definition rorB n (t : 'B_k) := [bits of rors n t].
 
 (* Shift to left/right *)
-Definition shls n s := '0_(minn (size s) n) ++ take (size s - n) s.
-Definition shrs n s := drop n s ++ '0_(minn (size s) n).
+Definition shls s n := '0_(minn (size s) n) ++ take (size s - n) s.
+Definition shrs s n := drop n s ++ '0_(minn (size s) n).
 
 (* XXX *)
-Lemma size_shls n s : size (shls n s) = size s.
+Lemma size_shls n s : size (shls s n) = size s.
 Proof. by rewrite size_cat size_nseq size_takel ?minnE ?subnK ?leq_subr. Qed.
 
-Lemma size_shrs n s : size (shrs n s) = size s.
+Lemma size_shrs n s : size (shrs s n) = size s.
 Proof. by rewrite size_cat size_nseq size_drop minnE subnKC ?leq_subr. Qed.
 
 (* Lemma take_nseq T n m (x : T) : take n (nseq m x) = nseq (minn n m) x. *)
 (* Proof. by elim: n m => [|n ihn] [|m]; rewrite ?minnSS //= ihn. Qed. *)
 
 (* Example lemmas from the old lib: compare *)
-Lemma shls_overflow n s (hs : size s <= n) : shls n s = '0_(size s).
+Lemma shls_overflow n s (hs : size s <= n) : shls s n = '0_(size s).
 Proof. by rewrite /shls (eqP hs) (minn_idPl hs) take0 cats0. Qed.
 
-Lemma shrs_overflow n s (hs : size s <= n) : shrs n s = '0_(size s).
+Lemma shrs_overflow n s (hs : size s <= n) : shrs s n = '0_(size s).
 Proof.
 Proof. by rewrite /shrs (minn_idPl hs) drop_oversize. Qed.
 
-Lemma shls_tupleP n (t : 'B_k) : size (shls n t) == k.
+Lemma shls_tupleP n (t : 'B_k) : size (shls t n) == k.
 Proof. by rewrite size_shls size_tuple. Qed.
 
-Lemma shrs_tupleP n (t : 'B_k) : size (shrs n t) == k.
+Lemma shrs_tupleP n (t : 'B_k) : size (shrs t n) == k.
 Proof. by rewrite size_shrs size_tuple. Qed.
 
 Canonical shlB n (t : 'B_k) := Tuple (shls_tupleP n t).
