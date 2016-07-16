@@ -591,9 +591,14 @@ Proof. by elim: n => // n ihn; rewrite expnS mul2n -addnn ltn_addl. Qed.
 Lemma ltn_bv (bv : 'B_k.+1) : nats bv < (2^k.+1).-2.+2.
 Proof. by have := natb_ltn bv; rewrite size_tuple nPPSS // expkS_ge2. Qed.
 
+Lemma ltn_bvI (bv : 'B_k) : nats bv < (2^k).-1.+1.
+Proof. by have := natb_ltn bv; rewrite size_tuple prednK ?expn_gt0. Qed.
+
+(* Old-style .+1 theory
 Definition ordB  (bv : 'B_k.+1) : 'Z_(2^k.+1) := Ordinal (ltn_bv bv).
+
 (* Does one more computation. *)
-Definition ordB' (bv : 'B_k.+1) : 'Z_(2^k.+1) := inZp (nats bv).
+Definition ordB' (bv : 'B_k) : 'Z_(2^k) := inZp (nats bv).
 
 Lemma ordBK : cancel ordB (@bito _).
 Proof.
@@ -616,20 +621,40 @@ Lemma bitoK' : cancel (@bito _) ordB'.
 Proof. move=> o; apply/val_inj; rewrite /= modn_small ?ltn_bv //.
 by apply/bitnK; rewrite -ZeP.
 Qed.
+*)
+Definition ordB (bv : 'B_k) : 'Z_(2^k) := inZp (nats bv).
+
+(* XXX: Improve *)
+Lemma ordBK : cancel ordB (@bito _).
+Proof.
+move=> b; apply/val_inj; rewrite /= modn_small.
+  by rewrite -{1}(size_tuple b) natbK.
+have/leq_trans->// := natb_ltn b.
+rewrite /Zp_trunc size_tuple.
+by case: k => // n; rewrite nPPSS // expkS_ge2.
+Qed.
+
+Lemma bitoK : cancel (@bito _) ordB.
+Proof.
+move=> o; apply/val_inj; rewrite /= modn_small.
+apply/bitnK. admit.
+have/leq_trans->// := natb_ltn (bitn k o).
+rewrite size_bitn.
+by case: k => // n; rewrite nPPSS // expkS_ge2.
+Admitted.
 
 End BitTuples.
 
 Prenex Implicits bitoK ordBK.
 
-Section BitAlgebra.
+Section BitZModule.
 
 Variable k : nat.
 
-Definition B0          : 'B_k.+1  := bito 0%R.
-Definition B1          : 'B_k.+1  := bito 1%R.
-Definition addB (b1 b2 : 'B_k.+1) := bito (ordB b1 + ordB b2)%R.
-Definition oppB (b     : 'B_k.+1) := bito (- ordB b)%R.
-Definition mulB (b1 b2 : 'B_k.+1) := bito (ordB b1 * ordB b2)%R.
+Definition B0          : 'B_k  := bito 0%R.
+Definition B1          : 'B_k  := bito 1%R.
+Definition addB (b1 b2 : 'B_k) := bito (ordB b1 + ordB b2)%R.
+Definition oppB (b     : 'B_k) := bito (- ordB b)%R.
 
 Import GRing.Theory.
 
@@ -647,28 +672,42 @@ Lemma addBC : commutative addB.
 Proof. by move=> x y; apply: val_inj; rewrite /= addnC. Qed.
 
 Definition B_zmodMixin := ZmodMixin addBA addBC add0B addNB.
-Canonical B_zmodType := Eval hnf in ZmodType ('B_k.+1) B_zmodMixin.
-Canonical B_finZmodType := Eval hnf in [finZmodType of 'B_k.+1].
-Canonical B_baseFinGroupType := Eval hnf in [baseFinGroupType of 'B_k.+1 for +%R].
-Canonical B_finGroupType := Eval hnf in [finGroupType of 'B_k.+1 for +%R].
+Canonical B_zmodType := Eval hnf in ZmodType ('B_k) B_zmodMixin.
+Canonical B_finZmodType := Eval hnf in [finZmodType of 'B_k].
+Canonical B_baseFinGroupType := Eval hnf in [baseFinGroupType of 'B_k for +%R].
+Canonical B_finGroupType := Eval hnf in [finGroupType of 'B_k for +%R].
+
+End BitZModule.
+
+Arguments B0 [k].
+Arguments B1 [k].
+
+Section BitRing.
+
+Import GRing.Theory.
+
+Variable k : nat.
+
+Definition mulB (b1 b2 : 'B_k.+1) := bito (ordB b1 * ordB b2)%R.
 
 Lemma mulBA : associative mulB.
 Proof. by move => x y z; apply/(can_inj ordBK); rewrite !bitoK mulrA. Qed.
 
-Lemma mul1B : left_id  B1 mulB.
+Lemma mul1B : left_id B1 mulB.
 Proof. by move => x; apply/(can_inj ordBK); rewrite !bitoK mul1r. Qed.
 
 Lemma mulB1 : right_id B1 mulB.
 Proof. by move => x; apply/(can_inj ordBK); rewrite !bitoK mulr1. Qed.
 
-Lemma mulBDl : left_distributive mulB addB.
+Lemma mulBDl : left_distributive mulB (@addB k.+1).
 Proof. by move => x y z; apply/(can_inj ordBK); rewrite !bitoK mulrDl. Qed.
 
-Lemma mulBDr : right_distributive mulB addB.
+Lemma mulBDr : right_distributive mulB (@addB k.+1).
 Proof. by move => x y z; apply/(can_inj ordBK); rewrite !bitoK mulrDr. Qed.
 
-Lemma oneB_neq0 : B1 != B0.
+Lemma oneB_neq0 : (@B1 k.+1) != B0.
 Proof. by []. Qed.
+
 
 Definition B_ringMixin := RingMixin mulBA mul1B mulB1 mulBDl mulBDr oneB_neq0.
 Canonical B_ringType := Eval hnf in RingType _ B_ringMixin.
@@ -678,7 +717,7 @@ Proof. by move => x y; apply/(can_inj ordBK); rewrite !bitoK mulrC. Qed.
 
 Canonical B_comRingType := Eval hnf in ComRingType _ mulBC.
 
-End BitAlgebra.
+End BitRing.
 End Unsigned.
 
 Arguments B0 [_].
