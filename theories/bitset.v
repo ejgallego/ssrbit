@@ -316,6 +316,10 @@ Proof.
 by move->; rewrite /finB can_enum; apply/setP=> ?; rewrite !inE -mem_setb inE.
 Qed.
 
+Lemma Funion_morphL (b1 b2 : 'B_#|T|) :
+  finB (orB b1 b2) = (finB b1 :|: finB b2).
+Proof. by rewrite /finB -imsetU union_morphL. Qed.
+
 End FinSet.
 
 (******************************************************************************)
