@@ -45,9 +45,30 @@ Definition Rnum: Native.Int -> nat -> Type := Rnative \o (@Rnat w).
 
 (* Pierre: there is a problem with [eq_adj] and the way we deal with [bitseq]s. *)
 
-Global Instance eq_Rnative:
-  refines (Rnative ==> Rnative ==> param.bool_R)%rel eq_op eqtype.eq_op.
-Admitted.
+Section Try.
+
+Import Native.
+Definition NInt_rel (i: Int) (bs: bitseq) : Prop := bs = bitsFromInt w i.
+
+Global Instance eq_Rnative_try:
+  refines (NInt_rel ==> NInt_rel ==> param.bool_R)%rel Native.eq (eqtype.eq_op).
+Proof.
+rewrite !refinesE => w1 bs1 -> w2 bs2 ->.
+suff -> : eq w1 w2 = (bitsFromInt w w1 == bitsFromInt w w2).
+  exact: bool_Rxx.
+by apply/eqIntP/eqP => [->//|]; exact: bitsFromInt_inj.
+Qed.
+
+Global Instance land_Rnative_try:
+  refines (NInt_rel ==> NInt_rel ==> NInt_rel) Native.land ands.
+Proof.
+rewrite !refinesE => w1 bs1 -> w2 bs2 ->.
+have /forallIntP /(_ w1) /forallIntP /(_ w2) /eqIntP -> := land_valid.
+by rewrite /NInt_rel bitsToIntK.
+Qed.
+
+End Try.
+
 (*
 Proof.
   rewrite refinesE=> i1 bs1 Ribs1 i2 bs2 Ribs2.
@@ -67,7 +88,7 @@ Proof. rewrite refinesE. apply Native.zero_valid. Qed.
 Global Instance one_Rnative: refines Rnative Native.one (bitn w 1).
 Proof. rewrite refinesE. apply Native.one_valid. Qed.
 
-Global Instance lnot_Rnative: 
+Global Instance lnot_Rnative:
   refines (Rnative ==> Rnative) Native.lnot negs.
 Admitted.
 (*
