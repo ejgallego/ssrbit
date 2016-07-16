@@ -679,6 +679,22 @@ Canonical B_finGroupType := Eval hnf in [finGroupType of 'B_k for +%R].
 
 End BitZModule.
 
+Section SeqZModule.
+
+Lemma size_zip_proof bs1 bs2 :
+  size (zip bs1 bs2) == minn (size bs1) (size bs2).
+Proof. by rewrite size_zip. Qed.
+
+Definition lift_top bs1 bs2 :=
+  ([tuple of unzip1 (Tuple (size_zip_proof bs1 bs2))],
+   [tuple of unzip2 (Tuple (size_zip_proof bs1 bs2))]).
+
+Definition adds bs1 bs2 : bitseq :=
+  let t := lift_top bs1 bs2 in
+  val (t.1 + t.2)%R.
+
+End SeqZModule.
+
 Arguments B0 [k].
 Arguments B1 [k].
 
