@@ -243,6 +243,20 @@ rewrite nth_set_nth /=; case: eqP => [/eqP|] heq.
 by rewrite -val_eqE (gets0 k.+1); apply/esym/eqP.
 Qed.
 
+(* Operations to do *)
+(* remove. *)
+(* keep_min. *)
+(* inter. *)
+(* symdiff. *)
+(* create. *)
+(* insert. *)
+(* union. *)
+(* cardinal. *)
+(* min. *)
+(* compl. *)
+(* shift. *)
+(* get. *)
+
 (* Cardinality *)
 Definition cardb k (s : k.-tuple bool) := count id s.
 

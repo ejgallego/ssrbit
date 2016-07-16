@@ -95,7 +95,7 @@ Global Instance  mul_NativeInt : mul_of  NativeInt.Int := NativeInt.mul.
 
 (** * Conversion between machine integers and bit sequences *)
 
-(* Enumeration for 'B_n, from G. Gonthier's mailing list post at:
+(* Enumeration for tuples, from G. Gonthier's mailing list post at:
 
  *)
 Section AllPairsExtra.
@@ -121,13 +121,17 @@ End AllPairsExtra.
 
 Section TupleEnum.
 
-Fixpoint all_seqs T (e : seq T) n : seq (seq T) :=
-  if n isn't m.+1 then [:: [::]] else
-    [seq [:: x & t] | x <- e, t <- all_seqs e m].
-
 Fixpoint all_tuples T (e : seq T) n : seq (n.-tuple T) :=
   if n isn't m.+1 then [:: [tuple]] else
     [seq cons_tuple x t | x <- e, t <- all_tuples e m].
+
+(* We add a version of all_tuples but operating plain lists. The
+   benefits in extraction are mininal as the tuple proof component is
+   erased anyways, however, we feel it is a bit clearer.
+ *)
+Fixpoint all_seqs T (e : seq T) n : seq (seq T) :=
+  if n isn't m.+1 then [:: [::]] else
+    [seq [:: x & t] | x <- e, t <- all_seqs e m].
 
 Lemma all_tuplesE T (e : seq T) n :
   map val (all_tuples e n) = all_seqs e n.
@@ -135,11 +139,12 @@ Proof.
 by elim: n => //= n <-; rewrite !map_allpairs -{3}[e]map_id allpairs_map.
 Qed.
 
+(* Thanks to George Gonthier *)
 Lemma perm_enum_tuples n (T : finType) :
   perm_eq (enum {:n.-tuple T}) (all_tuples (enum T) n).
 Proof.
 rewrite uniq_perm_eq ?enum_uniq //.
-elim: n => //= n IHn; rewrite allpairs_uniq ?enum_uniq //.
+  elim: n => //= n IHn; rewrite allpairs_uniq ?enum_uniq //.
   by move=> [x1 t1] [x2 t2] _ _ [-> /val_inj->].
 elim: n => [|n IHn] t; rewrite mem_enum ?tuple0 //=; apply/esym/allpairsP.
 by case/tupleP: t => x t; exists (x, t); rewrite -IHn !mem_enum.
@@ -154,9 +159,7 @@ Proof. by rewrite enumT unlock. Qed.
 (* XXX: State up to permutation of enum {: bool} ? *)
 Lemma perm_benum_bits n :
   perm_eq (map val (enum {:'B_n})) (all_seqs [:: true; false] n).
-Proof.
-by rewrite -enum_bool -all_tuplesE perm_map ?perm_enum_tuples.
-Qed.
+Proof. by rewrite -enum_bool -all_tuplesE perm_map ?perm_enum_tuples. Qed.
 
 (* XXX: Doing a pred-only version for now *)
 Lemma forall_bitE n (p : pred bitseq) :
@@ -298,16 +301,17 @@ Definition forallSeq (p : pred bitseq) := all p (all_seqs [:: true; false] w).
 Definition test_bitsToIntK :=
   forallSeq (fun s => eqseqb (bitsFromInt w (bitsToInt s)) s).
 
+(* This was the previous condition: *)
+(*
+Definition test_bitsToIntK :=
+  forallInt (fun s => (bitsToInt (bitsFromInt n s) == s)%C).
+*)
+
 Axiom bitsToIntK_valid : test_bitsToIntK.
 
-Lemma bitsToIntK: forall b: 'B_w, bitsFromInt w (bitsToInt b) = b.
+Lemma bitsToIntK (b: 'B_w) : bitsFromInt w (bitsToInt b) = b.
 Proof.
-  move=> b.
-  apply/eqP.
-  rewrite eqseqR -[eqseqb _ _]/([fun b => eqseqb (bitsFromInt w (bitsToInt b)) b] b).
-  move: b.
-  apply/forall_bitP. 
-  by apply bitsToIntK_valid.
+by have/forall_bitP/(_ b) := bitsToIntK_valid; rewrite -eqseqR => /eqP.
 Qed.
 
 (*

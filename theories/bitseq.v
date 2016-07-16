@@ -659,7 +659,7 @@ Definition oppB (b     : 'B_k) := bito (- ordB b)%R.
 Import GRing.Theory.
 
 Lemma add0B : left_id B0 addB.
-Proof. by move => x; apply/(can_inj ordBK); rewrite !bitoK add0r. Qed.
+Proof. by move=> x; apply/(can_inj ordBK); rewrite !bitoK add0r. Qed.
 
 Lemma addNB : left_inverse B0 oppB addB.
 Proof. by move=> x; apply/(can_inj ordBK); rewrite !bitoK addNr. Qed.
