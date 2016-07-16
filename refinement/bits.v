@@ -76,6 +76,9 @@ CoInductive Ridx: nat -> Native.Int -> Type :=
 (************************************************************************)
 
 
+Lemma eq_bool_R x y : x = y -> bool_R x y.
+Proof. by move->; apply/bool_Rxx. Qed.
+
 Global Instance Rnative_eq:
   refines (Rnative ==> Rnative ==> param.bool_R)%rel (eqtype.eq_op) Native.eq.
 Proof.
