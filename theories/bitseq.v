@@ -693,6 +693,17 @@ Definition adds bs1 bs2 : bitseq :=
   let t := lift_top bs1 bs2 in
   val (t.1 + t.2)%R.
 
+(* Example of refinement *)
+Definition R_seqtup k bs (bt : 'B_k) : Prop := bs = bt.
+Local Notation "b ≈ f" := (R_seqtup b f) (at level 42).
+
+Lemma adds_relE k bs1 bs2 (bv1 bv2 : 'B_k) :
+  bs1 ≈ bv1 -> bs2 ≈ bv2 -> adds bs1 bs2 ≈ (bv1 + bv2)%R.
+Proof.
+move=> ->->.
+by rewrite /adds /lift_top /= !size_tuple !minnn unzip1_zip ?unzip2_zip ?size_tuple.
+Qed.
+
 End SeqZModule.
 
 Arguments B0 [k].
