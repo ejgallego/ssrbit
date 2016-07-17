@@ -878,3 +878,47 @@ Search _ zip.
 Definition from_set' k s := \
 *)
 *)
+
+(******************************************************************************)
+(* Typeclass notations                                                        *)
+(******************************************************************************)
+
+From CoqEAL
+     Require Import refinements.
+Require Import notation.
+
+Import Refinements.Op.
+Import Logical.Op.
+
+(* For bit sequences: *)
+
+Global Instance eq_s   : eq_of bitseq   := fun x y => x == y.
+
+Global Instance not_s  : not_of bitseq  := negs.
+Global Instance or_s   : or_of bitseq   := ors.
+Global Instance and_s  : and_of bitseq  := ands.
+Global Instance xor_s  : xor_of bitseq  := xors.
+Global Instance shr_s  : shr_of bitseq  := (fun x y => shrs x (nats y)).
+Global Instance shl_s  : shl_of bitseq  := (fun x y => shls x (nats y)).
+
+(* XXX: don't know the size of the words *)
+(*
+Global Instance zero_s : zero_of bitseq := .
+Global Instance one_s  : one_of bitseq  := B1.
+Global Instance sub_s  : sub_of bitseq  := (@subB _).
+*)
+
+(* For bit vectors: *)
+
+Global Instance eq_B {n} : eq_of 'B_n := fun x y => x == y.
+
+Global Instance not_B {n} : not_of 'B_n := @negB _.
+Global Instance or_B {n} : or_of 'B_n := @orB _.
+Global Instance and_B {n} : and_of 'B_n := @andB _.
+Global Instance xor_B {n} : xor_of 'B_n := @xorB _.
+Global Instance shr_B {n} : shr_of 'B_n := (fun x y => @shrB _ x (nats y)).
+Global Instance shl_B {n} : shl_of 'B_n := (fun x y => @shlB _ x (nats y)).
+
+Global Instance zero_B {n} : zero_of ('B_n.+1) := B0.
+Global Instance one_B {n} : one_of ('B_n.+1) := B1.
+Global Instance sub_B {n} : sub_of ('B_n.+1) := (@subB _).
