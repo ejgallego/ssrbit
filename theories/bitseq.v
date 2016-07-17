@@ -412,8 +412,8 @@ Proof. by rewrite size_shls size_tuple. Qed.
 Lemma shrs_tupleP n (t : 'B_k) : size (shrs t n) == k.
 Proof. by rewrite size_shrs size_tuple. Qed.
 
-Canonical shlB n (t : 'B_k) := Tuple (shls_tupleP n t).
-Canonical shrB n (t : 'B_k) := Tuple (shrs_tupleP n t).
+Canonical shlB (t : 'B_k) n := Tuple (shls_tupleP n t).
+Canonical shrB (t : 'B_k) n := Tuple (shrs_tupleP n t).
 
 (* Inversion of bits *)
 Definition negs s := [seq negb b | b <- s].
