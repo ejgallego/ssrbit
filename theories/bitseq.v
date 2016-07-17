@@ -352,6 +352,7 @@ Implicit Type (t : 'B_k').
 
 Definition orB  t1 t2 := [bits of ors  t1 t2].
 Definition andB t1 t2 := [bits of ands t1 t2].
+Definition xorB t1 t2 := [bits of xors t1 t2].
 
 Lemma and0B t : andB [bits of '0_k'] t = [bits of '0_k'].
 Proof.
