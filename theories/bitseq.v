@@ -656,6 +656,7 @@ Definition B0          : 'B_k  := bito 0%R.
 Definition B1          : 'B_k  := bito 1%R.
 Definition addB (b1 b2 : 'B_k) := bito (ordB b1 + ordB b2)%R.
 Definition oppB (b     : 'B_k) := bito (- ordB b)%R.
+Definition subB (b1 b2 : 'B_k) := bito (ordB b1 - ordB b2)%R.
 
 Import GRing.Theory.
 
