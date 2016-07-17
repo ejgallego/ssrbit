@@ -45,7 +45,7 @@ Require Import choice fintype finset tuple path bigop.
 (******************************************************************************)
 
 (* Import bits operations. *)
-Require Import bitseq.
+Require Import bitseq notation.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -338,3 +338,96 @@ Lemma count_repr k (bs : k.-tuple bool) E : s_repr bs E -> count_mem true bs = #
 Proof. by move -> ; rewrite -setb_def cardbP; apply: eq_count; case. Qed.
 End ReprUniq.
 
+
+(** * Generic set-theoretic operations *)
+
+(**
+
+  The following operations are defined parametrically wrt. the
+  underlying implementation of bitvectors. This means that we can
+  instantiate them to [BITS n] and later to, say, Int32. This also
+  means that we can use domain-specific notations for defining them.
+
+ *)
+
+From CoqEAL Require Import hrel param refinements.
+
+Import Refinements.Op.
+Import Logical.Op.
+
+Section Operations.
+
+Variables (Bits : Type).
+
+Context `{eq_of Bits}.
+Context `{sub_of Bits}.
+Context `{zero_of Bits}.
+Context `{one_of Bits}.
+
+Context `{not_of Bits}.
+Context `{or_of Bits}.
+Context `{and_of Bits}.
+Context `{xor_of Bits}.
+Context `{shl_of Bits}.
+Context `{shr_of Bits}.
+
+Definition get (k: Bits)(bs: Bits): bool
+  := ((bs >>> k) && 1 == 1)%C.
+
+Definition singleton (n: Bits): Bits 
+  := (1 <<< n)%C.
+
+Definition compl (n: Bits): Bits 
+  := (~ n)%C.
+
+Definition create (b: bool): Bits
+  := (if b then 0 - 1 else 0)%C.
+
+Definition inter (bs bs': Bits): Bits 
+  := (bs && bs')%C.
+
+Definition union (bs bs': Bits): Bits
+  := (bs || bs')%C.
+
+Definition min (bs: Bits): Bits
+  := (bs && ~ bs)%C.
+
+Definition insert (k bs: Bits): Bits
+  := (bs || (1 <<< k))%C.
+
+Definition remove (bs k: Bits): Bits
+  := (bs && (~ (1 <<< k)))%C.
+
+Definition symdiff (bs1 bs2: Bits): Bits
+  := (bs1 ^^ bs2)%C.
+
+Definition subset (bs1 bs2: Bits): bool
+  := ((bs1 && bs2) == bs1)%C.
+
+End Operations.
+
+Arguments get {_}{_}{_}{_}{_} k bs.
+Arguments singleton {_}{_}{_} n.
+Arguments compl {_}{_} n.
+Arguments create {_}{_}{_}{_} b.
+Arguments inter {_}{_} bs bs'.
+Arguments union {_}{_} bs bs'.
+Arguments min {_}{_}{_} bs.
+Arguments insert {_}{_}{_}{_} k bs.
+Arguments remove {_}{_}{_}{_}{_} bs k.
+Arguments symdiff {_}{_} bs1 bs2.
+Arguments subset {_}{_}{_} bs1 bs2.
+
+Parametricity get. 
+Parametricity singleton.
+Parametricity compl.
+Parametricity create.
+Parametricity inter.
+Parametricity union.
+Parametricity min.
+Parametricity insert.
+Parametricity remove.
+Parametricity symdiff.
+Parametricity subset.
+
+End Operations.
