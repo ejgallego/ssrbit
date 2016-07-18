@@ -373,15 +373,15 @@ Lemma andB_cons b1 b2 (t1 t2 : 'B_k) :
   [bits of b1 && b2 :: andB t1 t2].
 Proof. exact: val_inj. Qed.
 
-(* Aliases for rotation *)
-Definition rols := @rot bool.
-Definition rors := @rotr bool.
+(* Aliases for rotation, note the discrepancy in direction *)
+Definition rors := @rot bool.
+Definition rols := @rotr bool.
 
 Lemma rolK n : cancel (rols n) (rors n).
-Proof. exact: rotK. Qed.
+Proof. exact: rotrK. Qed.
 
 Lemma rorK n : cancel (rors n) (rols n).
-Proof. exact: rotrK. Qed.
+Proof. exact: rotK. Qed.
 
 Definition rolB n (t : 'B_k) := [bits of rols n t].
 Definition rorB n (t : 'B_k) := [bits of rors n t].
