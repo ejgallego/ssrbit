@@ -418,7 +418,7 @@ Arguments remove {_}{_}{_}{_}{_} bs k.
 Arguments symdiff {_}{_} bs1 bs2.
 Arguments subset {_}{_}{_} bs1 bs2.
 
-Parametricity get. 
+Parametricity get.
 Parametricity singleton.
 Parametricity compl.
 Parametricity create.
@@ -429,5 +429,3 @@ Parametricity insert.
 Parametricity remove.
 Parametricity symdiff.
 Parametricity subset.
-
-End Operations.
