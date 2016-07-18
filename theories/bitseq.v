@@ -53,15 +53,17 @@ Require Import bigop ssralg ssrnum fingroup perm finalg zmodp ssrint.
 (*  We provide conversion functions to/from bitseqs to natural numbers.       *)
 (*                                                                            *)
 (*     bito o  == k.-bit sequence for ordinal o : 'I_(2^k)                    *)
-(*     ordB bs == 2^k.+1 ordinal for k.+1.-bit sequence bs                    *)
+(*     ordB bs == 2^k ordinal for k.-bit sequence bs                          *)
+(*                                                                            *)
+(*  Note that we actually use 'Z_2^k to inherit algebraic instances, so be    *)
+(*  aware of the implications.                                                *)
 (*                                                                            *)
 (*  Note the choice to reject producing 0-size ordinals.                      *)
 (*                                                                            *)
-(*  'B_n.+1. inherits the zmodType and ringType structure.                    *)
+(*  'B_n/'B_n.+1 inherit the zmodType/ringType structures.                    *)
 (*                                                                            *)
 (*                                                                            *)
 (*  ** Signed modular arithmetic.                                             *)
-(*                                                                            *)
 (*                                                                            *)
 (*                                                                            *)
 (* This file uses the following suffix conventions:                           *)
@@ -540,7 +542,7 @@ Proof. exact/eqP/size_bitn. Qed.
 
 Canonical bitn_tuple n k := Tuple (size_bitnP n k).
 
-Lemma natbK : forall m, bitn (size m) (nats m) = m.
+Lemma natsK : forall m, bitn (size m) (nats m) = m.
 Proof.
 elim=> // -[] /= m ihm.
   by rewrite !bitn_cons !nats_cons /= odd_double uphalf_double ihm.
@@ -558,7 +560,7 @@ by rewrite -{2}[n](odd_double_half n) leq_addl.
 Qed.
 
 (* Bound on the integer we get... *)
-Lemma natb_ltn m : nats m < 2^(size m).
+Lemma nats_ltn m : nats m < 2^(size m).
 Proof.
 elim: m => //= b m ihm.
 rewrite nats_cons expnS mul2n -!addnn addnA -addnS leq_add //.
@@ -566,83 +568,49 @@ by case: b; rewrite //= ltnW.
 Qed.
 
 (* Development of the bounded operators *)
+Section BitSizeCast.
+
+Lemma cast_ord_P_proof k : 2^k = (2^k).-1.+1.
+Proof. by rewrite prednK ?expn_gt0. Qed.
+
+Definition cast_ord_P k (o : 'I_(2^k)) : 'I_(2^k).-1.+1 :=
+  cast_ord (cast_ord_P_proof k) o.
+
+(* Lemma nPPSS n : 2 <= n -> n.-2.+2 = n. *)
+(* Proof. by case: n => // -[]. Qed. *)
+
+(* Lemma expkS_ge2 n : 2 <= 2 ^ n.+1. *)
+(* Proof. by elim: n => // n ihn; rewrite expnS mul2n -addnn ltn_addl. Qed. *)
+
+(* Lemma cast_ord_PP_proof k : 2^k.+1 = (2^k.+1).-2.+2. *)
+(* Proof. by rewrite nPPSS ?expkS_ge2. Qed. *)
+
+(* Definition cast_ord_PP k (o : 'Z_(2^k.+1)) : 'I_(2^k.+1).-2.+2 := *)
+(*   cast_ord (cast_ord_PP_proof k) o. *)
+
+End BitSizeCast.
+
 Section BitTuples.
 
 Variable k : nat.
 Implicit Types (bv : 'B_k).
-Implicit Types (o  : 'Z_(2^k)).
+Implicit Types (o  : 'I_(2^k).-1.+1).
 
 (* Bits of an unsigned *)
-Definition bito k (o : 'Z_(2^k))  := [tuple of bitn k o].
+Definition bito o     := [tuple of bitn k o].
+(* Unsigned of bits *)
+Lemma nats_ltn_exp bv : nats bv < 2^k.
+Proof. by have := nats_ltn bv; rewrite size_tuple. Qed.
 
-Lemma texp_fact bv : 2^size bv = 2^k.
-Proof. by rewrite size_tuple. Qed.
+Definition ordB bv : 'I_(2^k).-1.+1 := cast_ord_P (Ordinal (nats_ltn_exp bv)).
 
-Lemma cast_zord_proof n m (i : 'Z_n) : n = m -> i < m.-2.+2.
-Proof. by move <-. Qed.
+Lemma ordBK : cancel ordB bito.
+Proof. by move=> b; apply/val_inj; rewrite /= -{1}(size_tuple b) natsK. Qed.
 
-Definition cast_zord n m eq_n_m i := Ordinal (@cast_zord_proof n m i eq_n_m).
-
-Lemma nPPSS n : 2 <= n -> n.-2.+2 = n.
-Proof. by case: n => // -[]. Qed.
-
-Lemma expkS_ge2 n : 2 <= 2 ^ n.+1.
-Proof. by elim: n => // n ihn; rewrite expnS mul2n -addnn ltn_addl. Qed.
-
-Lemma ltn_bv (bv : 'B_k.+1) : nats bv < (2^k.+1).-2.+2.
-Proof. by have := natb_ltn bv; rewrite size_tuple nPPSS // expkS_ge2. Qed.
-
-Lemma ltn_bvI (bv : 'B_k) : nats bv < (2^k).-1.+1.
-Proof. by have := natb_ltn bv; rewrite size_tuple prednK ?expn_gt0. Qed.
-
-(* Old-style .+1 theory
-Definition ordB  (bv : 'B_k.+1) : 'Z_(2^k.+1) := Ordinal (ltn_bv bv).
-
-(* Does one more computation. *)
-Definition ordB' (bv : 'B_k) : 'Z_(2^k) := inZp (nats bv).
-
-Lemma ordBK : cancel ordB (@bito _).
+Lemma bitoK : cancel bito ordB.
 Proof.
-by move=> b; apply/val_inj; rewrite /= -{1}(size_tuple b); apply/natbK.
+by move=> b; apply/val_inj; rewrite /= bitnK // {2}cast_ord_P_proof.
 Qed.
-
-Lemma ordBK' : cancel ordB' (@bito _).
-Proof.
-move=> b. apply/val_inj; rewrite /= modn_small ?ltn_bv //.
-by rewrite /= -{1}(size_tuple b); apply/natbK.
-Qed.
-
-Lemma ZeP n : (n < (Zp_trunc (2 ^ k.+1)).+2) = (n < 2 ^ k.+1).
-Proof. by rewrite /Zp_trunc /= nPPSS ? expkS_ge2. Qed.
-
-Lemma bitoK : cancel (@bito _) ordB.
-Proof. by move=> o; apply/val_inj/bitnK; rewrite -ZeP. Qed.
-
-Lemma bitoK' : cancel (@bito _) ordB'.
-Proof. move=> o; apply/val_inj; rewrite /= modn_small ?ltn_bv //.
-by apply/bitnK; rewrite -ZeP.
-Qed.
-*)
-Definition ordB (bv : 'B_k) : 'Z_(2^k) := inZp (nats bv).
-
-(* XXX: Improve *)
-Lemma ordBK : cancel ordB (@bito _).
-Proof.
-move=> b; apply/val_inj; rewrite /= modn_small.
-  by rewrite -{1}(size_tuple b) natbK.
-have/leq_trans->// := natb_ltn b.
-rewrite /Zp_trunc size_tuple.
-by case: k => // n; rewrite nPPSS // expkS_ge2.
-Qed.
-
-Lemma bitoK : cancel (@bito _) ordB.
-Proof.
-move=> o; apply/val_inj; rewrite /= modn_small.
-apply/bitnK. admit.
-have/leq_trans->// := natb_ltn (bitn k o).
-rewrite size_bitn.
-by case: k => // n; rewrite nPPSS // expkS_ge2.
-Admitted.
 
 End BitTuples.
 
@@ -653,7 +621,6 @@ Section BitZModule.
 Variable k : nat.
 
 Definition B0          : 'B_k  := bito 0%R.
-Definition B1          : 'B_k  := bito 1%R.
 Definition addB (b1 b2 : 'B_k) := bito (ordB b1 + ordB b2)%R.
 Definition oppB (b     : 'B_k) := bito (- ordB b)%R.
 Definition subB (b1 b2 : 'B_k) := bito (ordB b1 - ordB b2)%R.
@@ -709,13 +676,15 @@ Qed.
 End SeqZModule.
 
 Arguments B0 [k].
-Arguments B1 [k].
 
+(*
 Section BitRing.
 
 Import GRing.Theory.
 
 Variable k : nat.
+
+Definition B1 : 'B_k.+1  := bito 1%R.
 
 Definition mulB (b1 b2 : 'B_k.+1) := bito (ordB b1 * ordB b2)%R.
 
@@ -747,10 +716,12 @@ Proof. by move => x y; apply/(can_inj ordBK); rewrite !bitoK mulrC. Qed.
 Canonical B_comRingType := Eval hnf in ComRingType _ mulBC.
 
 End BitRing.
+*)
+
 End Unsigned.
 
 Arguments B0 [_].
-Arguments B1 [_].
+(* Arguments B1 [_]. *)
 
 Section Examples.
 
@@ -782,8 +753,8 @@ case: m / lastP => // num sig.
 rewrite /intb /sign /bnum !size_rcons //= andbT.
 case: num => // [|s num] //=; case: sig => //=;
 rewrite !last_rcons !belast_rcons /=.
-  by rewrite -add1n addnC leq_add // natb_ltn.
-by rewrite addn0 natb_ltn.
+  by rewrite -add1n addnC leq_add // nats_ltn.
+by rewrite addn0 nats_ltn.
 Qed.
 
 Definition bitz z k := match z with
@@ -910,15 +881,16 @@ Global Instance sub_s  : sub_of bitseq  := (@subB _).
 
 (* For bit vectors: *)
 
-Global Instance eq_B {n} : eq_of 'B_n := fun x y => x == y.
+Global Instance eq_B  {n} : eq_of 'B_n := fun x y => x == y.
 
 Global Instance not_B {n} : not_of 'B_n := @negB _.
-Global Instance or_B {n} : or_of 'B_n := @orB _.
+Global Instance or_B  {n} : or_of 'B_n := @orB _.
 Global Instance and_B {n} : and_of 'B_n := @andB _.
 Global Instance xor_B {n} : xor_of 'B_n := @xorB _.
 Global Instance shr_B {n} : shr_of 'B_n := (fun x y => @shrB _ x (nats y)).
 Global Instance shl_B {n} : shl_of 'B_n := (fun x y => @shlB _ x (nats y)).
 
-Global Instance zero_B {n} : zero_of ('B_n.+1) := B0.
-Global Instance one_B {n} : one_of ('B_n.+1) := B1.
-Global Instance sub_B {n} : sub_of ('B_n.+1) := (@subB _).
+Global Instance zero_B {n} : zero_of ('B_n) := [tuple of '0_n].
+Global Instance sub_B  {n} : sub_of  ('B_n) := (@subB _).
+
+Global Instance one_B  {n} : one_of ('B_n)  := [tuple of '1_n].
