@@ -195,7 +195,7 @@ Qed.
 (* XXX: rename to follow convention *)
 Lemma andB_mask1:
   forall n (bs: 'B_n.+1),
-    andB bs B1 = if bs`_0 then B1 else B0.
+    andB bs [tuple of '1__] = if bs`_0 then [tuple of '1__] else B0.
 Admitted.
 
 Lemma getBit_shrBn:
