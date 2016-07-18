@@ -378,14 +378,6 @@ Qed.
 
 Definition Tnative (i: Int) (bs: bitseq) : bool := (i == bitsToInt bs)%C.
 
-(** ** Equality *)
-
-(* Pierre: this lemma is not so useful. We define our tests on
-[bitseq]s, not on ['B_w] *)
-
-Lemma eq_adj i (bs : 'B_w) : (i == bitsToInt bs)%C = (val bs == bitsFromInt w i).
-Proof. by apply/eqIntP/eqP => ->; rewrite ?bitsFromIntK ?bitsToIntK. Qed.
-
 (** ** Individuals *)
 
 Open Scope bits_scope.
