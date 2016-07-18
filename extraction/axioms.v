@@ -372,9 +372,9 @@ Qed.
 
 (** * Representation tests *)
 
-(** We say that an [n : Int] is the representation of a bitvector [bs
-    : B_w] if they satisfy the axiom [Rnative]. Morally, it means that
-    both represent the same number. *)
+(** We say that an [n : Int] is the representation of a bit sequence
+    [bs : bitseq] if they satisfy the axiom [Rnative]. Morally, it
+    means that both represent the same number. *)
 
 Definition Tnative (i: Int) (bs: bitseq) : bool := (i == bitsToInt bs)%C.
 
