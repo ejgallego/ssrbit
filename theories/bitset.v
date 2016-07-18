@@ -429,3 +429,80 @@ Parametricity insert.
 Parametricity remove.
 Parametricity symdiff.
 Parametricity subset.
+
+(******************************************************************************)
+(* Typeclass notations                                                        *)
+(******************************************************************************)
+
+From CoqEAL
+     Require Import refinements.
+Require Import notation.
+
+Import Refinements.Op.
+Import Logical.Op.
+Import Sets.Op.
+
+(* For finset: *)
+
+Section OpFin.
+
+Variable T: finType.
+
+Global Instance eq_fin: eq_of {set T} 
+  := fun x y => x == y.
+
+Global Instance get_fin: get_of T {set T} 
+  := fun k E => k \in E.
+Global Instance singleton_fin: singleton_of T {set T}
+  := fun k => [set k].
+Global Instance compl_fin: compl_of {set T} 
+  := @setC _.
+Global Instance full_fin: full_of {set T}
+  := [set : T ].
+Global Instance empty_fin: empty_of {set T} 
+  := set0.
+Global Instance set_fin: set_of T {set T} 
+  := fun k E => k |: E.
+Global Instance remove_fin: remove_of T {set T}
+  := fun A a => A :\ a.
+Global Instance inter_fin: inter_of {set T} 
+  := @setI _.
+Global Instance union_fin: union_of {set T} 
+  := @setU _.
+Global Instance symdiff_fin: symdiff_of {set T} 
+  := fun E E' =>  ((E :\: E') :|: (E' :\: E)).
+Global Instance subset_fin: subset_of {set T} 
+  := fun E E' => E \subset E'.
+
+End OpFin.
+
+(* For bit vectors: *)
+
+Section OpB.
+
+Variable n: nat.
+
+Global Instance get_B: get_of 'B_n 'B_n
+  := get.
+Global Instance singleton_B: singleton_of 'B_n 'B_n 
+  := singleton.
+Global Instance compl_B: compl_of 'B_n
+  := compl.
+Global Instance full_B: full_of 'B_n
+  := create (Bits := 'B_n) true.
+Global Instance empty_B: empty_of 'B_n
+  := create (Bits := 'B_n) false.
+Global Instance set_B: set_of 'B_n 'B_n
+  := insert.
+Global Instance remove_B: remove_of 'B_n 'B_n
+  := remove.
+Global Instance inter_B: inter_of 'B_n
+  := inter.
+Global Instance union_B: union_of 'B_n
+  := union.
+Global Instance symdiff_B: symdiff_of 'B_n
+  := symdiff.
+Global Instance subset_B: subset_of 'B_n
+  := subset.
+
+End OpB.
