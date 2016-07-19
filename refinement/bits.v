@@ -47,25 +47,28 @@ Require Import bitset.
 Parameter T: finType.
 
 Definition Rfin: {set T} -> 'B_#| T | -> Type  := fun_hrel (@finB T). 
-(* Definition Rword {n} : word n -> 'B_n -> Type := fun_hrel (@wrdB n). *)
-(* Definition Rtuple {n} : 'B_n -> bitseq -> Type. Admitted. (* := fun_hrel val. *) *)
 
-(* Definition Rnat: nat -> bitseq -> Type := fun_hrel nats. *)
 CoInductive Rord: T -> 'B_#| T | -> Type := 
   Rord_spec (t: T)(bs: 'B_#| T |)(k: 'I_#| T |) of
       t = enum_val k 
     & bs = [tuple of bitn #| T | k ] : Rord t bs.
 
+Definition Rtuple: 'B_#| T | -> bitseq -> Type :=  fun a b => val a = b.
+
+(* Definition Rnat: nat -> bitseq -> Type := fun_hrel nats. *)
+(* Definition Rword {n} : word n -> 'B_n -> Type := fun_hrel (@wrdB n). *)
+
 (** ** Refinement from bit sequences to machines words *)
 
-Parameter w: nat.
-
 Module Wordsize.
-  Definition wordsize := w.
+  Definition wordsize := #| T |.
 End Wordsize.
 Module Native := Make(Wordsize).
 
 Definition Rnative: bitseq -> Native.Int -> Type := fun_hrel (bitsFromInt Native.w).
+
+Definition Rbitset: {set T} -> Native.Int -> Type :=
+  Rfin \o Rtuple \o Rnative.
 
 (* "small" integers (ie. less than the word size) for shifts *)
 CoInductive Ridx: nat -> Native.Int -> Type := 
@@ -81,19 +84,19 @@ Global Instance Rnative_eq:
   refines (Rnative ==> Rnative ==> param.bool_R)%rel (eqtype.eq_op) Native.eq.
 Proof.
   rewrite !refinesE => bs1 w1 <- bs2 w2 <-.
-  suff -> : Native.eq w1 w2 = (bitsFromInt w w1 == bitsFromInt w w2)
+  suff -> : Native.eq w1 w2 = (bitsFromInt Native.w w1 == bitsFromInt Native.w w2)
     by exact: bool_Rxx.
   apply/eqIntP/eqP => [->//|]; exact: Native.bitsFromInt_inj.
 Qed.
 
-Global Instance Rnative_zero: refines Rnative '0_w Native.zero.
+Global Instance Rnative_zero: refines Rnative '0_Native.w Native.zero.
 Proof. 
   rewrite refinesE. 
   have /eqIntP -> := Native.zero_valid.
   by rewrite /Rnative/fun_hrel Native.bitsToIntK. 
 Qed.
 
-Global Instance Rnative_one: refines Rnative (bitn w 1) Native.one.
+Global Instance Rnative_one: refines Rnative (bitn Native.w 1) Native.one.
 Proof. 
   rewrite refinesE. 
   have /eqIntP -> := Native.one_valid.
@@ -157,7 +160,7 @@ Proof.
 Qed.
 
 (************************************************************************)
-(** * From finset to bit word                                           *)
+(** * From finset to bit vectors                                        *)
 (************************************************************************)
 
 Lemma eq_bool_R x y : x = y -> bool_R x y.
@@ -193,6 +196,7 @@ Proof.
   apply eq_bool_R.
   rewrite /finB/get_op/get_fin/get_B Htk mem_can_imset ?mem_setb; 
     last by apply (can_inj (@enum_valK _)).
+  
 Admitted.
 
 
