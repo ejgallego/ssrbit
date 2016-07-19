@@ -648,6 +648,11 @@ by move=> x y z; apply/(can_inj ordBK); rewrite !bitoK addrA. Qed.
 Lemma addBC : commutative addB.
 Proof. by move=> x y; apply: val_inj; rewrite /= addnC. Qed.
 
+
+Lemma one_def: '1 = subB '0 [bits of bitn k 1].
+Admitted.
+
+
 Definition B_zmodMixin := ZmodMixin addBA addBC add0B addNB.
 Canonical B_zmodType := Eval hnf in ZmodType ('B_k) B_zmodMixin.
 Canonical B_finZmodType := Eval hnf in [finZmodType of 'B_k].
