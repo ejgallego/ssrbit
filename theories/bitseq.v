@@ -115,7 +115,7 @@ Notation "''B_' n" := (n.-tuple bool)
 
 Notation "''0'" := [bits of nseq _ false] (at level 8) : bits_scope.
 
-Notation "''1" := [bits of nseq _ true] (at level 8) : bits_scope.
+Notation "''1'" := [bits of nseq _ true] (at level 8) : bits_scope.
 
 Section AuxTheory.
 
