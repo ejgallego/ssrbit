@@ -232,6 +232,20 @@ Proof.
 by apply/setP=> i; rewrite !mem_setb inE !mem_setb nth_liftz ?size_tuple.
 Qed.
 
+Lemma neg_morphL k (b : k.-tuple bool) :
+  setB (negB b) = ~: (setB b).
+Proof.
+by apply/setP=> i; rewrite !mem_setb inE !mem_setb (nth_map false) ?size_tuple.
+Qed.
+
+Lemma symdiff_morphL k (b1 b2 : k.-tuple bool) :
+  setB (xorB b1 b2) = (setB b1 :\: setB b2 :|: setB b2 :\: setB b1).
+Proof.
+apply/setP=> i.
+rewrite !mem_setb 2!inE !mem_setb inE !mem_setb nth_liftz ?size_tuple //.
+case: b1`_i b2`_i=> -[] // .
+Qed.
+
 (* More properties: singleton *)
 (* XXX: This should be one liner as you can see with the mismatches *)
 Lemma setB1 k (n : 'I_k.+1) :
@@ -385,9 +399,13 @@ Proof.
 by move->; rewrite /finB can_enum; apply/setP=> ?; rewrite !inE -mem_setb inE.
 Qed.
 
+Lemma setDB (b: 'B_#| T |):
+  [set enum_val x | x in ~: setB b] =  ~: [set enum_val x | x in setB b].
+Proof. by apply/setP=> t; rewrite in_setC !can_enum !inE. Qed.
+
 Lemma Fcompl_morphL (b : 'B_#|T|) :
   finB (negB b) = ~: (finB b).
-Admitted.
+Proof. by rewrite /finB neg_morphL setDB. Qed.
 
 Lemma Funion_morphL (b1 b2 : 'B_#|T|) :
   finB (orB b1 b2) = (finB b1 :|: finB b2).
@@ -402,8 +420,12 @@ Qed.
 
 Lemma Fsymdiff_morphL (b1 b2 : 'B_#|T|) :
   finB (xorB b1 b2) = (finB b1 :\: finB b2 :|: finB b2 :\: finB b1).
-Admitted.
-
+Proof.
+rewrite !setDE /finB symdiff_morphL imsetU !setDE !imsetI;
+  first by rewrite !setDB.
+- move=> x y _ _; apply: enum_val_inj.
+- move=> x y _ _; apply: enum_val_inj.
+Qed.
 
 End FinSet.
 
