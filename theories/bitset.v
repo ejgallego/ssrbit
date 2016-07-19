@@ -385,13 +385,25 @@ Proof.
 by move->; rewrite /finB can_enum; apply/setP=> ?; rewrite !inE -mem_setb inE.
 Qed.
 
+Lemma Fcompl_morphL (b : 'B_#|T|) :
+  finB (negB b) = ~: (finB b).
+Admitted.
+
 Lemma Funion_morphL (b1 b2 : 'B_#|T|) :
   finB (orB b1 b2) = (finB b1 :|: finB b2).
 Proof. by rewrite /finB -imsetU union_morphL. Qed.
 
 Lemma Finter_morphL (b1 b2 : 'B_#|T|) :
   finB (andB b1 b2) = (finB b1 :&: finB b2).
-Proof. by rewrite /finB -imsetU inter_morphL. Qed.
+Proof. 
+rewrite /finB inter_morphL imsetI //.
+move=> x y _ _; apply: enum_val_inj.
+Qed.
+
+Lemma Fsymdiff_morphL (b1 b2 : 'B_#|T|) :
+  finB (xorB b1 b2) = (finB b1 :\: finB b2 :|: finB b2 :\: finB b1).
+Admitted.
+
 
 End FinSet.
 
