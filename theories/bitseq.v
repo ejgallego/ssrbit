@@ -373,6 +373,10 @@ Proof. by move=> t1 t2; apply/val_inj/andsC. Qed.
 
 End OpsTup.
 
+Lemma or0B bv : orB '0 bv = bv.
+Admitted.
+
+
 Lemma andB_cons b1 b2 (t1 t2 : 'B_k) :
   andB [bits of b1 :: t1] [bits of b2 :: t2] =
   [bits of b1 && b2 :: andB t1 t2].
