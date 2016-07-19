@@ -668,8 +668,8 @@ Canonical B_finGroupType := Eval hnf in [finGroupType of 'B_k for +%R].
 
 Implicit Types (b : 'B_k).
 
-Definition incB b := b + [bits of bitn k 1].
-Definition decB b := b - [bits of bitn k 1].
+Definition incB b := (b + [bits of bitn k 1])%R.
+Definition decB b := (b - [bits of bitn k 1])%R.
 
 Lemma one_def: '1 = decB '0.
 Proof.
