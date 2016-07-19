@@ -890,5 +890,5 @@ Global Instance shr_B {n} : shr_of 'B_n := (fun x y => @shrB _ x (nats y)).
 Global Instance shl_B {n} : shl_of 'B_n := (fun x y => @shlB _ x (nats y)).
 
 Global Instance zero_B {n} : zero_of 'B_n := [tuple of '0_n].
-Global Instance one_B  {n} : one_of  'B_n := [tuple of '1_n].
+Global Instance one_B  {n} : one_of  'B_n := [tuple of bitn n 1].
 Global Instance sub_B {n} : sub_of 'B_n := (@subB _).

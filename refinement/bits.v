@@ -159,6 +159,9 @@ Qed.
 (** * From finset to bit word                                           *)
 (************************************************************************)
 
+Lemma eq_bool_R x y : x = y -> bool_R x y.
+Proof. by move->; apply/bool_Rxx. Qed.
+
 Global Instance Rfin_eq:
   refines (Rfin ==> Rfin ==> param.bool_R) eq_op eq_op.
 Admitted.
@@ -195,7 +198,7 @@ Qed.
 (* XXX: rename to follow convention *)
 Lemma andB_mask1:
   forall n (bs: 'B_n.+1),
-    andB bs [tuple of '1__] = if bs`_0 then [tuple of '1__] else B0.
+    (andB bs 1 = if bs`_0 then 1 else 0)%C.
 Admitted.
 
 Lemma getBit_shrBn:
