@@ -638,10 +638,6 @@ Variable k : nat.
 Definition B0          : 'B_k  := bito 0%R.
 Definition addB (b1 b2 : 'B_k) := bito (ordB b1 + ordB b2)%R.
 Definition oppB (b     : 'B_k) := bito (- ordB b)%R.
-Definition subB (b1 b2 : 'B_k) := bito (ordB b1 - ordB b2)%R.
-(* XXX: Emilio?
-Definition decB (b     : 'B_k) := bito (ordB b - 1)%R.
-*)
 
 Import GRing.Theory.
 
@@ -668,6 +664,7 @@ Canonical B_finGroupType := Eval hnf in [finGroupType of 'B_k for +%R].
 
 Implicit Types (b : 'B_k).
 
+Definition subB b1 b2 := (b1 - b2)%R.
 Definition incB b := (b + [bits of bitn k 1])%R.
 Definition decB b := (b - [bits of bitn k 1])%R.
 

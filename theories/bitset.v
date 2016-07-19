@@ -501,8 +501,7 @@ Definition singleton (n: Bits): Bits
 Definition compl (n: Bits): Bits 
   := (~ n)%C.
 
-Definition create (b: bool): Bits
-  := (if b then 0 - 1 else 0)%C.
+Definition create (b: bool): Bits := (if b then 0 - 1 else 0)%C.
 
 Definition inter (bs bs': Bits): Bits 
   := (bs && bs')%C.
@@ -578,10 +577,8 @@ Global Instance singleton_fin: singleton_of T {set T}
   := fun k => [set k].
 Global Instance compl_fin: compl_of {set T} 
   := @setC _.
-Global Instance full_fin: full_of {set T}
-  := [set : T ].
-Global Instance empty_fin: empty_of {set T} 
-  := set0.
+Global Instance full_fin: full_of {set T}    := [set : T ].
+Global Instance empty_fin: empty_of {set T}  := set0.
 Global Instance set_fin: set_of T {set T} 
   := fun k E => k |: E.
 Global Instance remove_fin: remove_of T {set T}
