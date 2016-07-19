@@ -188,9 +188,6 @@ Proof.
   apply: (can_inj (@bitFK _)).
 Qed.
 
-Lemma zero_def: '0_#| T | = bitn #| T | 0.
-Admitted.
-
 Global Instance Rfin_get: 
   refines (Rord ==> Rfin ==> param.bool_R) get_op get_op.
 Proof.
@@ -204,7 +201,7 @@ Proof.
     last by (eapply leq_ltn_trans; 
              [ apply ltnW, ltn_ord 
              | apply: ltn_expl ]).
-  by rewrite -val_eqE !size_tuple -zero_def.
+  by rewrite -val_eqE !size_tuple -bitn_zero.
 Qed.
 
 Global Instance Rfin_singleton:

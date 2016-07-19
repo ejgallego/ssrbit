@@ -581,6 +581,9 @@ Admitted.
 Lemma nats_zero j : nats '0_j = 0%N.
 Admitted.
 
+Lemma bitn_zero j : '0_j = bitn j 0.
+Admitted.
+
 
 (* Development of the bounded operators *)
 Section BitSizeCast.
@@ -672,6 +675,8 @@ Lemma one_def: '1 = decB '0.
 Proof.
 apply: (can_inj ordBK).
 Admitted.
+
+
 
 End BitZModule.
 
