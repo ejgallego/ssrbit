@@ -493,7 +493,7 @@ Context `{shl_of Bits}.
 Context `{shr_of Bits}.
 
 Definition get (k: Bits)(bs: Bits): bool
-  := ((bs >>> k) && 1 == 1)%C.
+  := negb (bs && (1 <<< k) == 0)%C.
 
 Definition singleton (n: Bits): Bits 
   := (1 <<< n)%C.
@@ -526,7 +526,7 @@ Definition subset (bs1 bs2: Bits): bool
 
 End Operations.
 
-Arguments get {_}{_}{_}{_}{_} k bs.
+Arguments get {_}{_}{_}{_}{_}{_} k bs.
 Arguments singleton {_}{_}{_} n.
 Arguments compl {_}{_} n.
 Arguments create {_}{_}{_}{_} b.
