@@ -4,7 +4,9 @@
 (*                                                                            *)
 (* (c) 2016, MINES ParisTech                                                  *)
 (*                                                                            *)
-(* Written by Emilio J. Gallego Arias                                         *)
+(* Written by Arthur Blot                                                     *)
+(*            Pierre-Evariste Dagand                                          *)
+(*            Emilio J. Gallego Arias                                         *)
 (*                                                                            *)
 (* LICENSE: CECILL-B                                                          *)
 (*                                                                            *)
@@ -270,6 +272,9 @@ Qed.
 (* Cardinality *)
 Definition cardb k (s : k.-tuple bool) := count id s.
 
+(* ss is a partition of S then *)
+(*  "cardb S = \sum(s <- ss) cardb s" *)
+
 Arguments seqb_uniq [k s].
 
 (* This follows directly from the library *)
@@ -281,32 +286,41 @@ Qed.
 (* Optimized cardinality *)
 Definition bit_tmp k o := [tuple of bitn k o]. (* XXX: Emilio? *)
 
-Definition pop_table {n}(k: nat) : seq 'B_n := mkseq (fun i => bit_tmp n (count_mem true (bitn k i))) (2^k).
+(* XXX: Factor out k of the recursion *)
+Definition pop_table {n} (k: nat) : seq 'B_n :=
+  mkseq (fun i => bit_tmp n (count_mem true (bitn k i))) (2^k).
+
+Eval compute in (map val (@pop_table 4 2)).
 
 Definition pop_elem {n}(k: nat)(bs: 'B_n)(i: nat): 'B_n
-  := let x := andB (shrB bs (i * k)) (decB (shlB (bito (inord 1)) k)) in
-     nth B0 (pop_table k) (nats x).
+  := let x :=
+         andB (shrB bs (i * k))
+              (decB (shlB [bits of bitn n 1] k)) in
+     nth '0 (pop_table k) (nats x).
 
-Fixpoint popAux {n}(k: nat)(bs: 'B_n)(i: nat): 'B_n :=
+Eval compute in (val (@pop_elem 3 1 [tuple true; false; true] 0)).
+
+Fixpoint popAux {n}(k: nat) (bs: 'B_n) (i: nat): 'B_n :=
   match i with
-  | 0 => B0
+  | 0     => '0
   | i'.+1 => addB (pop_elem k bs i') (popAux k bs i')
   end.
 
-Definition cardinal {n}(k: nat)(bs: 'B_n): 'B_n
+Definition cardinal {n} (k: nat)(bs: 'B_n): 'B_n
   := popAux k bs (n %/ k).
 
-Eval compute in (@pop_table 4 2).
+Eval compute in (map val (@pop_table 4 2)).
 
-Eval compute in (cardinal 1 [tuple true; false]).
+Eval compute in (val (cardinal 1 [tuple true; false])).
 
 (* cardbP might be used in the proof here *)
 Lemma cardinalP k (s : 'B_k) i (div_i: i %| k) (ltz_i: i > 0): #| setB s | = nats (cardinal k s).
+Proof.
 Admitted.
 
 (* Set containing only the minimum *)
 Definition keep_min {n} (bs: 'B_n): 'B_n
-  := andB bs (negB bs).
+  := andB bs (oppB bs).
 
 Lemma keep_min_repr:
   forall n (bs: 'B_n) x y, x \in setB bs ->
@@ -315,7 +329,7 @@ Lemma keep_min_repr:
 Admitted.
 
 (* Value of the minimum (ie number of trailing zeroes) *)
-Definition ntz n (k: nat) (bs: 'B_n) : 'B_n := subB (bit_tmp n n) (cardinal k (orB bs (negB bs))).
+Definition ntz n (k: nat) (bs: 'B_n) : 'B_n := subB (bit_tmp n n) (cardinal k (orB bs (oppB bs))).
 
 Lemma ntz_repr k (bs : 'B_k) i (div_i : i %| k) (ltz_i : i > 0) x y : x \in setB bs ->
     ntz i bs = bit_tmp k [arg min_(k < y in setB bs) k].
@@ -589,27 +603,16 @@ Section OpB.
 
 Variable n: nat.
 
-Global Instance get_B: get_of 'B_n 'B_n
-  := get.
-Global Instance singleton_B: singleton_of 'B_n 'B_n 
-  := singleton.
-Global Instance compl_B: compl_of 'B_n
-  := compl.
-Global Instance full_B: full_of 'B_n
-  := create (Bits := 'B_n) true.
-Global Instance empty_B: empty_of 'B_n
-  := create (Bits := 'B_n) false.
-Global Instance set_B: set_of 'B_n 'B_n
-  := insert.
-Global Instance remove_B: remove_of 'B_n 'B_n
-  := remove.
-Global Instance inter_B: inter_of 'B_n
-  := inter.
-Global Instance union_B: union_of 'B_n
-  := union.
-Global Instance symdiff_B: symdiff_of 'B_n
-  := symdiff.
-Global Instance subset_B: subset_of 'B_n
-  := subset.
+Global Instance get_B       : get_of 'B_n 'B_n       := get.
+Global Instance singleton_B : singleton_of 'B_n 'B_n := singleton.
+Global Instance compl_B     : compl_of 'B_n          := compl.
+Global Instance full_B      : full_of 'B_n           := create (Bits := 'B_n) true.
+Global Instance empty_B     : empty_of 'B_n          := create (Bits := 'B_n) false.
+Global Instance set_B       : set_of 'B_n 'B_n       := insert.
+Global Instance remove_B    : remove_of 'B_n 'B_n    := remove.
+Global Instance inter_B     : inter_of 'B_n          := inter.
+Global Instance union_B     : union_of 'B_n          := union.
+Global Instance symdiff_B   : symdiff_of 'B_n        := symdiff.
+Global Instance subset_B    : subset_of 'B_n         := subset.
 
 End OpB.

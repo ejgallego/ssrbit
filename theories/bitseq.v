@@ -4,7 +4,8 @@
 (*                                                                            *)
 (* (c) 2016, MINES ParisTech                                                  *)
 (*                                                                            *)
-(* Written by Pierre-Evariste Dagand                                          *)
+(* Written by Arthur Blot                                                     *)
+(*            Pierre-Evariste Dagand                                          *)
 (*            Emilio J. Gallego Arias                                         *)
 (*                                                                            *)
 (* LICENSE: CECILL-B                                                          *)
@@ -571,6 +572,16 @@ rewrite nats_cons expnS mul2n -!addnn addnA -addnS leq_add //.
 by case: b; rewrite //= ltnW.
 Qed.
 
+(* Theory on nats *)
+Lemma nats_one k : nats '1_k = 2^k - 1.
+Proof.
+
+Admitted.
+
+Lemma nats_zero j : nats '0_j = 0%N.
+Admitted.
+
+
 (* Development of the bounded operators *)
 Section BitSizeCast.
 
@@ -631,7 +642,6 @@ Definition subB (b1 b2 : 'B_k) := bito (ordB b1 - ordB b2)%R.
 (* XXX: Emilio?
 Definition decB (b     : 'B_k) := bito (ordB b - 1)%R.
 *)
-Axiom decB : 'B_k -> 'B_k.
 
 Import GRing.Theory.
 
@@ -648,16 +658,23 @@ by move=> x y z; apply/(can_inj ordBK); rewrite !bitoK addrA. Qed.
 Lemma addBC : commutative addB.
 Proof. by move=> x y; apply: val_inj; rewrite /= addnC. Qed.
 
-
-Lemma one_def: '1 = subB '0 [bits of bitn k 1].
-Admitted.
-
-
 Definition B_zmodMixin := ZmodMixin addBA addBC add0B addNB.
 Canonical B_zmodType := Eval hnf in ZmodType ('B_k) B_zmodMixin.
 Canonical B_finZmodType := Eval hnf in [finZmodType of 'B_k].
 Canonical B_baseFinGroupType := Eval hnf in [baseFinGroupType of 'B_k for +%R].
 Canonical B_finGroupType := Eval hnf in [finGroupType of 'B_k for +%R].
+
+(* Start of theory: *)
+
+Implicit Types (b : 'B_k).
+
+Definition incB b := b + [bits of bitn k 1].
+Definition decB b := b - [bits of bitn k 1].
+
+Lemma one_def: '1 = decB '0.
+Proof.
+apply: (can_inj ordBK).
+Admitted.
 
 End BitZModule.
 
@@ -895,22 +912,21 @@ Global Instance eq_s   : eq_of bitseq   := fun x y => x == y.
 Global Instance not_s  : not_of bitseq  := negs.
 Global Instance or_s   : or_of bitseq   := ors.
 Global Instance and_s  : and_of bitseq  := ands.
-Global Instance xor_s  : xor_of bitseq  := xors.
+Global Instance xxor_s : xor_of bitseq  := xors.
 Global Instance shr_s  : shr_of bitseq  := (fun x y => shrs x (nats y)).
 Global Instance shl_s  : shl_of bitseq  := (fun x y => shls x (nats y)).
 
 (* XXX: don't know the size of the words *)
-Global Instance zero_s : zero_of bitseq. Admitted.
-Global Instance one_s  : one_of bitseq. Admitted.
-Global Instance sub_s  : sub_of bitseq. Admitted.
-
+Global Instance zero_s : zero_of bitseq . Admitted.
+Global Instance one_s  : one_of bitseq  . Admitted.
+Global Instance sub_s  : sub_of bitseq  . Admitted.
 
 (* For bit vectors: *)
 
 Global Instance eq_B  {n} : eq_of 'B_n := fun x y => x == y.
 
 Global Instance not_B {n} : not_of 'B_n := @negB _.
-Global Instance or_B  {n} : or_of 'B_n := @orB _.
+Global Instance or_B  {n} : or_of  'B_n := @orB _.
 Global Instance and_B {n} : and_of 'B_n := @andB _.
 Global Instance xor_B {n} : xor_of 'B_n := @xorB _.
 Global Instance shr_B {n} : shr_of 'B_n := (fun x y => @shrB _ x (nats y)).
@@ -918,4 +934,5 @@ Global Instance shl_B {n} : shl_of 'B_n := (fun x y => @shlB _ x (nats y)).
 
 Global Instance zero_B {n} : zero_of 'B_n := [tuple of '0_n].
 Global Instance one_B  {n} : one_of  'B_n := [tuple of bitn n 1].
-Global Instance sub_B {n} : sub_of 'B_n := (@subB _).
+Global Instance sub_B  {n} : sub_of 'B_n  := (@subB _).
+
