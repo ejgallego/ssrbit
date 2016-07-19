@@ -188,6 +188,14 @@ Proof.
   apply: (can_inj (@bitFK _)).
 Qed.
 
+
+Lemma ltn_2ord: forall n (k: 'I_n), k < 2 ^ n.
+Proof. 
+move=> n k.
+apply: leq_ltn_trans; last by apply: ltn_expl.
+apply ltnW, ltn_ord.
+Qed.
+
 Global Instance Rfin_get: 
   refines (Rord ==> Rfin ==> param.bool_R) get_op get_op.
 Proof.
@@ -197,42 +205,32 @@ Proof.
     last by apply (can_inj (@enum_valK _)).
   rewrite /get /one_op /one_B /zero_op /zero_B /shl_op /shl_B
           /eq_op /eq_B /and_op/and_B.
-  rewrite gets_def Hbs1k bitnK; 
-    last by (eapply leq_ltn_trans; 
-             [ apply ltnW, ltn_ord 
-             | apply: ltn_expl ]).
+  rewrite gets_def Hbs1k bitnK ?ltn_2ord //.
   by rewrite -val_eqE !size_tuple -bitn_zero.
 Qed.
 
 Global Instance Rfin_singleton:
     refines (Rord ==> Rfin) singleton_op singleton_op.
 Proof.
-  rewrite refinesE => _ _ [t bs k Ttk Hbsk].
-  rewrite /Rfin/fun_hrel/singleton_op/singleton_B/singleton_fin/singleton.
-  rewrite /shl_op/shl_B.
-  rewrite /one_op/one_B.
-  rewrite /finB.
-(* XXX: waiting for Emilio's characterisation of bitset *)
-Admitted.
-(*
-Proof.
-  rewrite refinesE=> bs k Hbsk.
-  rewrite /Rfin -setP 
-          /singleton_op/singleton_Finset/singleton_Bitset
-          /singleton/one_op/one_Bits/shl_op/shl_Bits Hbsk /eq_mem=> x.
-  rewrite !in_set.
-  case x_eq_k: (x == k).
-  + (* x == k *)
-    move/eqP: x_eq_k ->.
-    by rewrite getBit_shlBn_true.
-  + (* x <> k *)
-    rewrite getBit_shlBn_false //.
-    apply not_eq_sym=> x_is_k.
-    move/eqP: x_eq_k=>x_eq_k.
-    apply x_eq_k.
-    by apply ord_inj.
+rewrite refinesE => _ _ [t bs k Htk Hbsk].
+apply/setP=> x.
+rewrite /Rfin /fun_hrel /finB 
+        /singleton_op /singleton_B /singleton_fin /singleton
+        /shl_op /shl_B /one_op /one_B.
+rewrite Htk !inE can_enum inE mem_setb Hbsk bitnK ?ltn_2ord //.
+have ->: val (shlB [bits of bitn #|T| 1] k) = sets '0_#| T | k true
+  by rewrite -[shlB _ _]or0B
+             -[orB _ _]/[bits of ors _ (shls (bitn _ _) _) ] /=
+             sets_def size_tuple.
+rewrite nth_set_nth /= gets0.
+apply/idP/eqP; 
+  last by move=> ->; rewrite enum_valK eq_refl.
+case: ifP=>  [Hk _|] //.
+apply enum_rank_inj.
+rewrite val_eqE in Hk.
+move/eqP: Hk=> ->.
+by rewrite enum_valK.
 Qed.
-*)
 
 Global Instance Rfin_full: 
   refines Rfin full_op full_op.
