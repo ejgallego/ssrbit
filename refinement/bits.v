@@ -188,17 +188,24 @@ Proof.
   apply: (can_inj (@bitFK _)).
 Qed.
 
+Lemma zero_def: '0_#| T | = bitn #| T | 0.
+Admitted.
+
 Global Instance Rfin_get: 
   refines (Rord ==> Rfin ==> param.bool_R) get_op get_op.
-(* XXX: waiting for Emilio's characterisation of bit test *)
 Proof.
   rewrite refinesE => _ _ [t bs1 k Htk Hbs1k] E2 bs2 <- .
   apply eq_bool_R.
   rewrite /finB/get_op/get_fin/get_B Htk mem_can_imset ?mem_setb; 
     last by apply (can_inj (@enum_valK _)).
-  
-Admitted.
-
+  rewrite /get /one_op /one_B /zero_op /zero_B /shl_op /shl_B
+          /eq_op /eq_B /and_op/and_B.
+  rewrite gets_def Hbs1k bitnK; 
+    last by (eapply leq_ltn_trans; 
+             [ apply ltnW, ltn_ord 
+             | apply: ltn_expl ]).
+  by rewrite -val_eqE !size_tuple -zero_def.
+Qed.
 
 Global Instance Rfin_singleton:
     refines (Rord ==> Rfin) singleton_op singleton_op.
