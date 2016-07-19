@@ -554,15 +554,25 @@ elim=> // -[] /= m ihm.
 by rewrite bitn_cons odd_double (half_bit_double _ false) ihm.
 Qed.
 
-(* We may want a truncation here. *)
-Lemma bitnK n k : n < 2^k -> nats (bitn k n) = n.
+Lemma nats_inj k : {in [pred x | size x == k] &
+                       [pred x | size x == k] , injective nats}.
 Proof.
-elim: k n => //= [|k ihk] n hn; first by case: n hn.
-rewrite nats_cons ihk ?odd_double_half // -ltn_double.
+move=> x y /eqP sx /eqP sy /(congr1 (bitn (size x))).
+by rewrite {2}sx -sy !natsK.
+Qed.
+
+(* We may want a truncation here. *)
+Lemma bitnK k : {in [pred n | n < 2^k], cancel (bitn k) nats}.
+Proof.
+elim: k => //= [|k ihk] n hn; first by case: n hn.
+rewrite nats_cons ihk ?odd_double_half //= inE -ltn_double.
 suff U: (n./2).*2 <= n.
   by rewrite (leq_ltn_trans U); rewrite // -mul2n expnS in hn *.
 by rewrite -{2}[n](odd_double_half n) leq_addl.
 Qed.
+
+Lemma bitn_inj k : {in [pred n | n < 2^k] &, injective (bitn k)}.
+Proof. exact: can_in_inj (@bitnK k). Qed.
 
 (* Bound on the integer we get... *)
 Lemma nats_ltn m : nats m < 2^(size m).
@@ -573,17 +583,18 @@ by case: b; rewrite //= ltnW.
 Qed.
 
 (* Theory on nats *)
-Lemma nats_one k : nats '1_k = 2^k - 1.
-Proof.
-
-Admitted.
-
 Lemma nats_zero j : nats '0_j = 0%N.
-Admitted.
+Proof. by elim: j => //= j ihj; rewrite nats_cons ihj. Qed.
 
 Lemma bitn_zero j : '0_j = bitn j 0.
-Admitted.
+Proof.
+apply: (@nats_inj j); rewrite ?inE ?size_nseq ?size_bitn ?eqxx //.
+by rewrite nats_zero bitnK // inE expn_gt0.
+Qed.
 
+Lemma nats_one  k : nats '1_k = 2^k - 1.
+Proof.
+Admitted.
 
 (* Development of the bounded operators *)
 Section BitSizeCast.
@@ -627,7 +638,7 @@ Proof. by move=> b; apply/val_inj; rewrite /= -{1}(size_tuple b) natsK. Qed.
 
 Lemma bitoK : cancel bito ordB.
 Proof.
-by move=> b; apply/val_inj; rewrite /= bitnK // {2}cast_ord_P_proof.
+by move=> b; apply/val_inj; rewrite /= bitnK // inE {2}cast_ord_P_proof.
 Qed.
 
 End BitTuples.
@@ -671,12 +682,12 @@ Definition subB b1 b2 := (b1 - b2)%R.
 Definition incB b := (b + [bits of bitn k 1])%R.
 Definition decB b := (b - [bits of bitn k 1])%R.
 
+(* XXX: Vs *)
+(* Lemma nats_one  k : nats '1_k = 2^k - 1. *)
 Lemma one_def: '1 = decB '0.
 Proof.
 apply: (can_inj ordBK).
 Admitted.
-
-
 
 End BitZModule.
 
