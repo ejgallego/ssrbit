@@ -736,6 +736,20 @@ End Unsigned.
 Arguments B0 [_].
 (* Arguments B1 [_]. *)
 
+(* Definition of get/test bit in terms of shifts *)
+Lemma gets_def s i : let B n := bitn (size s) n in
+  s`_i = (ands s (shls (B 1) i) != B 0).
+Proof.
+Admitted.
+
+Lemma sets_def s i b : let B n := bitn (size s) n in
+  sets s i b = if b then
+                 ors  s (      shls (B 1) i)
+               else
+                 ands s (negs (shls (B 1) i)).
+Proof.
+Admitted.
+
 Section Examples.
 
 Eval compute in val (addB [tuple true; false; true] [tuple false; true; true]).
