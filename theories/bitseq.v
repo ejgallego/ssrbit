@@ -113,6 +113,10 @@ Notation "[ 'bits' 'of' s ]" := (tuple (fun sP => @Tuple _ bool s sP))
 Notation "''B_' n" := (n.-tuple bool)
   (at level 8, n at level 2, format "''B_' n").
 
+Notation "''0'" := [bits of nseq _ false] (at level 8) : bits_scope.
+
+Notation "''1" := [bits of nseq _ true] (at level 8) : bits_scope.
+
 Section AuxTheory.
 
 Lemma tnth_nseq m T (x : T) i : tnth [tuple of nseq m x] i = x.
@@ -356,7 +360,7 @@ Definition orB  t1 t2 := [bits of ors  t1 t2].
 Definition andB t1 t2 := [bits of ands t1 t2].
 Definition xorB t1 t2 := [bits of xors t1 t2].
 
-Lemma and0B t : andB [bits of '0_k'] t = [bits of '0_k'].
+Lemma and0B t : andB '0 t = '0.
 Proof.
 (* XXX : use right_zero *)
 apply: val_inj; case: t => [t /= /eqP ht].
