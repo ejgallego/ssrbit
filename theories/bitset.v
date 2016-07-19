@@ -389,6 +389,10 @@ Lemma Funion_morphL (b1 b2 : 'B_#|T|) :
   finB (orB b1 b2) = (finB b1 :|: finB b2).
 Proof. by rewrite /finB -imsetU union_morphL. Qed.
 
+Lemma Finter_morphL (b1 b2 : 'B_#|T|) :
+  finB (andB b1 b2) = (finB b1 :&: finB b2).
+Proof. by rewrite /finB -imsetU inter_morphL. Qed.
+
 End FinSet.
 
 (******************************************************************************)
