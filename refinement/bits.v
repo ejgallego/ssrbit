@@ -46,14 +46,15 @@ Require Import bitset.
 
 Parameter T: finType.
 
-Definition Rfin (A: {set T})(b: 'B_#| T |): Type  := A = [set x : T | b`_(enum_rank x)].
+Definition Rfin: {set T} -> 'B_#| T | -> Type  := fun_hrel (@finB T). 
+(* Definition Rword {n} : word n -> 'B_n -> Type := fun_hrel (@wrdB n). *)
+(* Definition Rtuple {n} : 'B_n -> bitseq -> Type. Admitted. (* := fun_hrel val. *) *)
 
-Definition Rword {n} : word n -> 'B_n -> Type := fun_hrel (@wrdB n).
-Definition Rtuple {n} : 'B_n -> bitseq -> Type. Admitted. (* := fun_hrel val. *)
-
-Definition Rnat: nat -> bitseq -> Type := fun_hrel nats.
-Definition Renum: T -> nat -> Type. Admitted.
-Definition Rord: T -> 'B_#| T | -> Type := Renum \o Rnat.
+(* Definition Rnat: nat -> bitseq -> Type := fun_hrel nats. *)
+CoInductive Rord: T -> 'B_#| T | -> Type := 
+  Rord_spec (t: T)(bs: 'B_#| T |)(k: 'I_#| T |) of
+      t = enum_val k 
+    & bs = [tuple of bitn #| T | k ] : Rord t bs.
 
 (** ** Refinement from bit sequences to machines words *)
 
@@ -162,70 +163,48 @@ Qed.
 Lemma eq_bool_R x y : x = y -> bool_R x y.
 Proof. by move->; apply/bool_Rxx. Qed.
 
+Lemma mem_can_imset (aT rT: finType)(f: aT -> rT)(A: {set aT}) y:
+  injective f -> f y \in [set f x | x in A ] = (y \in A).
+Proof.
+  move=> Hinj.
+  apply/imsetP/idP=> [[a Ha Hfeq] | H].
+  - rewrite (Hinj _ _ Hfeq) //=.
+  - exists y=> //.
+Qed.
+
+Let can_enum D := can2_imset_pre D (@enum_valK T) (@enum_rankK _).
+Let enum_can D := can2_imset_pre D (@enum_rankK T) (@enum_valK _).
+
+
 Global Instance Rfin_eq:
   refines (Rfin ==> Rfin ==> param.bool_R) eq_op eq_op.
 Proof.
-  rewrite refinesE=> E bs -> E' bs' ->.
+  rewrite refinesE=> E bs <- E' bs' <-.
   apply/eq_bool_R.
-
-  have: [set x : T | bs`_(enum_rank x)] == [set x | bs'`_(enum_rank x)] <-> bs == bs'.
-  split.
-  - move/eqP/setP=> H.
-    apply/eqP/eq_from_tnth=> x.
-    move/(_ (enum_val x)): H.
-    by rewrite !in_set !enum_valK -!tnth_nth.
-  - by move/eqP=> -> ; apply/eqP/setP=> //=.
-
-Admitted.
-
-
-(* XXX: re-prove these theorems. *)
-(* XXX: rename to follow convention *)
-Lemma andB_mask1:
-  forall n (bs: 'B_n.+1),
-    (andB bs 1 = if bs`_0 then 1 else 0)%C.
-Admitted.
-
-Lemma getBit_shrBn:
-  forall n (bs: 'B_n) k k', k + k' < n ->
-    (shrB bs k)`_k' = bs`_(k + k').
-Admitted.
+  apply/eqP/eqP=> [|-> //].
+  apply: (can_inj (@bitFK _)).
+Qed.
 
 Global Instance Rfin_get: 
   refines (Rord ==> Rfin ==> param.bool_R) get_op get_op.
+(* XXX: waiting for Emilio's characterisation of bit test *)
 Proof.
-  rewrite refinesE=> k bs1 [n [Rkn Rnbs1]] E bs2 -> /=.
+  rewrite refinesE => _ _ [t bs1 k Htk Hbs1k] E2 bs2 <- .
+  apply eq_bool_R.
+  rewrite /finB/get_op/get_fin/get_B Htk mem_can_imset ?mem_setb; 
+    last by apply (can_inj (@enum_valK _)).
 Admitted.
-(*
-  case eq:(k < n.+1).
-  - rewrite /Rord/fun_hrel in Hbs1.
-    apply f_equal with (f := nats) in Hbs1.
-    rewrite bitnK in Hbs1; last by admit.
-    rewrite Hbs1 in eq.
-    rewrite /get/and_op/and_Bits/shr_op/shr_Bits andB_mask1 getBit_shrBn addn0;
-      last by apply eq.
-    rewrite -Hbs1=> //.
-    rewrite /Rfin/fun_hrel in HE.
-    apply f_equal with (f := @setB _) in HE.
-    rewrite setnK in HE.
-    rewrite HE.
-    rewrite setb_def.
-    rewrite in_set.
-    case: (bs2`_k)=> //=.
-    have //= ->: (B1 == B1) by move=> m; apply/eqP=> //.
-      by apply bool_Rxx.
-  - have H:= leq_total k n.
-    rewrite -ltnS in H.
-    rewrite eq in H.
-    rewrite /= in H.
-
-Qed.
-*)
-
 
 
 Global Instance Rfin_singleton:
     refines (Rord ==> Rfin) singleton_op singleton_op.
+Proof.
+  rewrite refinesE => _ _ [t bs k Ttk Hbsk].
+  rewrite /Rfin/fun_hrel/singleton_op/singleton_B/singleton_fin/singleton.
+  rewrite /shl_op/shl_B.
+  rewrite /one_op/one_B.
+  rewrite /finB.
+(* XXX: waiting for Emilio's characterisation of bitset *)
 Admitted.
 (*
 Proof.
@@ -247,56 +226,30 @@ Proof.
 Qed.
 *)
 
-Global Instance Rfin_compl: 
-  refines (Rfin ==> Rfin) compl_op compl_op.
-Admitted.
-(*
-Proof.
-  rewrite refinesE /Rfin=> bs E HE.
-  rewrite -setP /eq_mem=> x.
-  by rewrite in_setC HE !in_set getBit_liftUnOp.
-Qed.
-*)
-
-
 Global Instance Rfin_full: 
   refines Rfin full_op full_op.
-Admitted.
-(*
 Proof.
-  Local Arguments full_op /.
-  Local Arguments full_Finset /.
-  Local Arguments full_Bitset /.
-
-  rewrite refinesE.
-  rewrite /Rfin /= -setP /eq_mem=> x.
-  rewrite !in_set.
-  rewrite /sub_op/sub_Bits/sub/zero_op/zero_Bits.
-  by rewrite subB1 -fromNat0 -makeOnes getBit_ones=> //.
+rewrite refinesE.
+rewrite /full_op/full_B/full_fin/create/Rfin/fun_hrel
+        /finB/zero_op/zero_B/sub_op/sub_B/one_op/one_B.
+rewrite -one_def.
+apply/setP=> t.
+by rewrite can_enum inE mem_setb nth_nseq ltn_ord inE.
 Qed.
-*)
-
 
 Global Instance Rfin_empty: 
   refines Rfin empty_op empty_op.
-Admitted.
-(*
 Proof.
-  Local Arguments empty_op /.
-  Local Arguments empty_Finset /.
-  Local Arguments empty_Bitset /.
-  Local Arguments zero_op /.
-  Local Arguments zero_Bits /.
-  Local Arguments create /.
-
-  rewrite refinesE //= /Rfin -setP /eq_mem=> i.
-  by rewrite in_set in_set0 /empty_op/empty_Bitset/create -fromNat0 getBit_zero.
+rewrite refinesE.
+rewrite /empty_op/empty_B/empty_fin/create/Rfin/fun_hrel
+        /finB/zero_op/zero_B/sub_op/sub_B/one_op/one_B.
+apply/setP=> t.
+by rewrite can_enum inE mem_setb nth_nseq ltn_ord inE.
 Qed.
-*)
-
 
 Global Instance Rfin_insert:
   refines (Rord ==> Rfin ==> Rfin) set_op set_op.
+(* XXX: waiting for Emilio's characterisation of bit set *)
 Admitted.
 (*
 Proof.
@@ -319,6 +272,7 @@ Qed.
 
 Global Instance Rfin_remove:
   refines (Rfin ==> Rord ==> Rfin) remove_op remove_op.
+(* XXX: waiting for Emilio's characterisation of bit set *)
 Admitted.
 (*
 Proof.
@@ -340,59 +294,43 @@ Qed.
 *)
 
 
-Global Instance Rfin_inter:
-  refines (Rfin ==> Rfin ==> Rfin) inter_op inter_op.
-Admitted.
-(*
-Proof.
-  rewrite refinesE.
-  move=> bs E HE bs' E' HE'.
-  rewrite /Rfin -setP /eq_mem=> x.
-  by rewrite in_setI /inter /andB HE HE' !in_set getBit_liftBinOp.
+Global Instance Rfin_compl: 
+  refines (Rfin ==> Rfin) compl_op compl_op.
+Proof. 
+rewrite refinesE => E bs <-.
+by rewrite /Rfin /fun_hrel Fcompl_morphL.
 Qed.
-*)
-
 
 Global Instance Rfin_union:
   refines (Rfin ==> Rfin ==> Rfin) union_op union_op.
-Admitted.
-(*
 Proof.
-  rewrite refinesE.
-  move=> bs E HE bs' E' HE'.
-  rewrite /Rfin -setP /eq_mem=> x.
-  by rewrite in_setU /union /orB HE HE' !in_set getBit_liftBinOp.
+rewrite refinesE => E1 bs1 <- E2 bs2 <- .
+by rewrite /Rfin /fun_hrel Funion_morphL.
 Qed.
-*)
+
+Global Instance Rfin_inter:
+  refines (Rfin ==> Rfin ==> Rfin) inter_op inter_op.
+Proof.
+rewrite refinesE => E1 bs1 <- E2 bs2 <- .
+by rewrite /Rfin /fun_hrel Finter_morphL.
+Qed.
 
 Global Instance Rfin_symdiff:
   refines (Rfin ==> Rfin ==> Rfin) symdiff_op symdiff_op.
-Admitted.
-(*
 Proof.
-  rewrite refinesE.
-  move=> bs E HE bs' E' HE'.
-  rewrite /Rfin -setP /eq_mem=> x /=.
-  rewrite in_setU !in_setD.
-  rewrite /symdiff /xorB HE HE' !in_set getBit_liftBinOp=> //.
-  case: (getBit bs x)=> //.
-  + (* getBit bs x = true *)
-    by rewrite andbT orbF Bool.xorb_true_l.
-  + (* getBit bs x = false *)
-    by rewrite andbF orbC orbF andbC andbT Bool.xorb_false_l.
+rewrite refinesE => E1 bs1 <- E2 bs2 <- .
+by rewrite /Rfin /fun_hrel Fsymdiff_morphL.
 Qed.
-*)
-
 
 Global Instance Rfin_subset:
   refines (Rfin ==> Rfin ==> bool_R) subset_op subset_op.
-Admitted.
-(*
 Proof.
-  rewrite refinesE=> bs E HE bs' E' HE'.
-  rewrite /subset_op/subset_Bitset/subset_Finset/subset.
-  have ->: E \subset E' = (E :&: E' == E).
-  apply/setIidPl/eqP=> //=.
-  eapply refinesP; tc.
+rewrite refinesE => E1 bs1 <- E2 bs2 <- .
+apply eq_bool_R.
+rewrite /subset_op/subset_fin/subset_B/subset.
+apply/setIidPl/idP.
+- rewrite -Finter_morphL=> H.
+  apply/eqP. 
+  by apply: (can_inj (@bitFK _))=> //.
+- rewrite -Finter_morphL=> /eqP {2}<- //. 
 Qed.
-*)
