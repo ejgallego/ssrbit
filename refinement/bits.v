@@ -164,34 +164,19 @@ Proof. by move->; apply/bool_Rxx. Qed.
 
 Global Instance Rfin_eq:
   refines (Rfin ==> Rfin ==> param.bool_R) eq_op eq_op.
-Admitted.
-(*
 Proof.
-  (* XXX: clean up this proof *)
-  rewrite refinesE=> bs E H bs' E' H'.
-  rewrite /Rfin in H, H'.
-  case Heq: (E == E').
-  + (* E == E' *)
-    have ->: bs == bs'; last by exact: bool_Rxx.
-    move/eqP: Heq=> -> in H.
-    rewrite -H -H'.
-    apply/eqP.
-    by apply: can_inj=> //; apply setbK.
+  rewrite refinesE=> E bs -> E' bs' ->.
+  apply/eq_bool_R.
 
-  + (* E <> E' *)
-    case Hbs: (bs == bs')=> //.
-    move/eqP: Hbs=> -> in H.
-    have Habs: E == E'.
-      apply/eqP.
-      rewrite -setP /eq_mem=> i.
-      apply f_equal with (f := @setB _) in H.
-      rewrite setnK in H.
-      apply f_equal with (f := @setB _) in H'.
-      rewrite setnK in H'. 
-      by subst.
-    by rewrite Habs in Heq.
-Qed.
-*)
+  have: [set x : T | bs`_(enum_rank x)] == [set x | bs'`_(enum_rank x)] <-> bs == bs'.
+  split.
+  - move/eqP/setP=> H.
+    apply/eqP/eq_from_tnth=> x.
+    move/(_ (enum_val x)): H.
+    by rewrite !in_set !enum_valK -!tnth_nth.
+  - by move/eqP=> -> ; apply/eqP/setP=> //=.
+
+Admitted.
 
 
 (* XXX: re-prove these theorems. *)
@@ -208,15 +193,10 @@ Admitted.
 
 Global Instance Rfin_get: 
   refines (Rord ==> Rfin ==> param.bool_R) get_op get_op.
+Proof.
+  rewrite refinesE=> k bs1 [n [Rkn Rnbs1]] E bs2 -> /=.
 Admitted.
 (*
-Proof.
-  Local Arguments one_op /.
-  Local Arguments one_Bits /.
-  Local Arguments eq_op /.
-  Local Arguments eq_Bits /.
-
-  rewrite refinesE=> bs1 k Hbs1 bs2 E HE /=.
   case eq:(k < n.+1).
   - rewrite /Rord/fun_hrel in Hbs1.
     apply f_equal with (f := nats) in Hbs1.
