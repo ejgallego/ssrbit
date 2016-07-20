@@ -257,50 +257,63 @@ Qed.
 
 Global Instance Rfin_insert:
   refines (Rord ==> Rfin ==> Rfin) set_op set_op.
-(* XXX: waiting for Emilio's characterisation of bit set *)
-Admitted.
-(*
 Proof.
-  rewrite refinesE.
-  move=> bs k Hbsk bs' E HE /=.
-  rewrite /Rfin -setP /eq_mem=> x.
-  rewrite /set_op/set_Finset/set_Bitset
-          /insert/one_op/one_Bits/or_op/or_Bits/shl_op/shl_Bits.
-  rewrite in_set Hbsk getBit_set_true=> //.
-  rewrite fun_if.
-  case H: (x == k).
-    + (* Case: x == k *)
-      move/eqP: H ->.
-      by rewrite eq_refl setU11.
-    + (* Case: x <> k *)
-      rewrite ifF=> //.
-      by rewrite in_setU1 H HE in_set.
+rewrite refinesE => _ _ [t bs1 k Htk Hbs1k] E bs2 <- /=.
+rewrite /Rfin /fun_hrel /set_op /set_B /set_fin.
+rewrite /insert/one_op/one_B/or_op/or_B/shl_op/shl_B.
+rewrite /finB.
+apply/setP=> x.
+rewrite can_enum inE mem_setb.
+
+have ->: val (orB bs2 (shlB [bits of bitn #|T| 1] (nats bs1))) = sets bs2 k true
+    by rewrite sets_def /= size_tuple Hbs1k bitnK ?inE ?ltn_2ord.
+
+rewrite nth_set_nth /= !inE.
+case: ifP.
+- move=> H.
+  have -> : x == t
+    by apply/eqP; apply enum_rank_inj;
+       rewrite val_eqE in H;
+       rewrite Htk enum_valK; 
+       apply/eqP: H.
+  done.
+- move=> H.
+  have -> // : (x == t) = false
+    by apply/eqP=> Hxt;
+       rewrite Hxt Htk enum_valK eq_refl // in H.
+  by rewrite can_enum inE mem_setb.
 Qed.
-*)
+
 
 Global Instance Rfin_remove:
   refines (Rfin ==> Rord ==> Rfin) remove_op remove_op.
-(* XXX: waiting for Emilio's characterisation of bit set *)
-Admitted.
-(*
 Proof.
-  rewrite refinesE.
-  move=> bs E HE bs' k Hbsk.
-  rewrite /Rfin -setP /eq_mem=> x.
-  rewrite /remove_op/remove_Bitset/remove/and_op/and_Bits/shl_op/shl_Bits Hbsk.
-  rewrite in_set getBit_set_false=> //.
-  rewrite fun_if.
-  case H: (x == k).
-    + (* Case: x == k *)
-      move/eqP: H ->.
-      rewrite ifT=> //.
-      by rewrite setD11.
-    + (* Case: x <> k *)
-      rewrite ifF=> //.
-      by rewrite in_setD1 H HE in_set.
-Qed.
-*)
+(* XXX: proof duplication with [Rfin_insert] *)
+rewrite refinesE => E bs2 <- _ _ [t bs1 k Htk Hbs1k]  /=.
+rewrite /Rfin /fun_hrel /remove_op /remove_B /remove_fin.
+rewrite /remove/one_op/one_B/or_op/or_B/shl_op/shl_B.
+rewrite /finB.
+apply/setP=> x.
+rewrite can_enum inE mem_setb.
 
+have ->: val (andB bs2 (negB (shlB [bits of bitn #| T | 1] (nats bs1)))) = sets bs2 k false
+    by rewrite sets_def /= size_tuple Hbs1k bitnK ?inE ?ltn_2ord.
+
+rewrite nth_set_nth /= !inE.
+case: ifP.
+- move=> H.
+  have -> : x == t
+    by apply/eqP; apply enum_rank_inj;
+       rewrite val_eqE in H;
+       rewrite Htk enum_valK; 
+       apply/eqP: H.
+  done.
+- move=> H.
+  have -> // : (x == t) = false
+    by apply/eqP=> Hxt;
+       rewrite Hxt Htk enum_valK eq_refl // in H.
+  by rewrite can_enum inE mem_setb.
+Qed.
 
 Global Instance Rfin_compl: 
   refines (Rfin ==> Rfin) compl_op compl_op.
