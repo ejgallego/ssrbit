@@ -858,9 +858,6 @@ apply/negP; rewrite negbK; apply/eq_b0 => i0.
 by have := nth_ands_bit s i0 i; case: eqP; try congruence.
 Qed.
 
-Lemma sets_def s i : let B n := bitn (size s) n in
-  s`_i = (ands s (shls (B 1) i) != B 0).
-
 (* Be a bit stringent as to be commutative *)
 Lemma set_bitE bs n : sets bs n true = ors bs (sets [::] n true).
 Proof.
