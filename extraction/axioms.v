@@ -46,7 +46,6 @@ Axiom eq  : Int -> Int -> bool.
 
 Axiom zero : Int.
 Axiom one  : Int.
-Axiom neg  : Int -> Int.
 Axiom add  : Int -> Int -> Int.
 Axiom sub  : Int -> Int -> Int.
 Axiom mul  : Int -> Int -> Int.
@@ -71,7 +70,6 @@ Extract Inlined Constant lxor => "(lxor)".
 using them at smaller wordsize: *)
 
 Extract Inlined Constant lsl  => "(lsl)".
-Extract Inlined Constant neg  => "(fun x -> -x)".
 Extract Inlined Constant lnot => "lnot".
 Extract Inlined Constant add  => "(+)".
 Extract Inlined Constant sub  => "(-)".
@@ -282,7 +280,6 @@ Definition bitmask := ((1 <<< wordsize) - 1)%C.
 Definition mask_unop  (f : Int -> Int) x := (bitmask && f x)%C.
 Definition mask_binop (f : Int -> Int -> Int) x y := (bitmask && f x y)%C.
 
-Definition neg  := mask_unop NativeInt.neg.
 Definition lnot := mask_unop NativeInt.lnot.
 
 Definition lsl := mask_binop NativeInt.lsl.
