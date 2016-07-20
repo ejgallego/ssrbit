@@ -103,14 +103,10 @@ by elim: s => [|n s ihs]; rewrite ?big_nil ?big_cons ?size_nseq ?size_set_nth //
 Qed.
 
 Lemma from_setE s : from_set s = \big[ors/[::]]_(n <- s) sets [::] n true.
-(* XXX: [set_bitE] missing. *)
-Admitted.
-(*
 Proof.
 elim: s => [|n s ihs]; rewrite ?(big_nil, big_cons) //=.
 by rewrite set_bitE ?size_from_set orsC ihs.
 Qed.
-*)
 
 Lemma eq_perm_from_set s1 s2 : perm_eq s1 s2 ->
   from_set s1 = from_set s2.

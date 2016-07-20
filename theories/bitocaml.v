@@ -143,6 +143,8 @@ Lemma keep_minP n (bs: 'B_n) :
 (* XXX: maybe ripple_repr could be useful here, as neg is (inv + 1) *)
 Admitted.
 
+Definition bit_tmp n: nat -> 'B_n. Admitted.
+
 (* Value of the minimum (ie number of trailing zeroes) *)
 Definition ntz n (k: nat) (bs: 'B_n) : 'B_n :=
   subB (bit_tmp n n) (cardinal k (orB bs (oppB bs))).
