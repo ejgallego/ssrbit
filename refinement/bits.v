@@ -181,7 +181,7 @@ Proof.
   rewrite /finB/get_op/get_fin/get_B
           /get /one_op /one_B /zero_op /zero_B /shl_op /shl_B
           /eq_op /eq_B /and_op/and_B.
-by rewrite  can_enum inE mem_setb gets_def !size_tuple -val_eqE -bitn_zero.
+by rewrite  can_enum inE mem_setb gets_def !size_tuple -val_eqE bitn_zero.
 Qed.
 
 Global Instance Rfin_singleton:
@@ -193,11 +193,11 @@ rewrite /Rfin /fun_hrel /finB
         /singleton_op /singleton_B /singleton_fin /singleton
         /shl_op /shl_B /one_op /one_B.
 rewrite !inE can_enum inE mem_setb.
-have ->: val (shlB [bits of bitn #|T| 1] (enum_rank t)) = sets '0_#| T | (enum_rank t) true
-  by rewrite -[shlB _ _]or0B
+have ->: val (shlB [bits of bitn #|T| 1] (enum_rank t)) = setls '0_#| T | (enum_rank t) true.
+by rewrite -[shlB _ _]or0B
              -[orB _ _]/[bits of ors _ (shls (bitn _ _) _) ] /=
              sets_def size_tuple.
-rewrite nth_set_nth /= gets0 val_eqE.
+rewrite /setls size_tuple ltn_ord nth_set_nth /= gets0 val_eqE.
 apply/idP/eqP=> [ | ->  ].
 by case: ifP=> /eqP => //= He _; apply: enum_rank_inj.
 by rewrite eq_refl.
@@ -236,10 +236,10 @@ rewrite /finB.
 apply/setP=> x.
 rewrite can_enum inE mem_setb.
 
-have ->: val (orB bs2 (shlB [bits of bitn #|T| 1] (enum_rank t))) = sets bs2 (enum_rank t) true
+have ->: val (orB bs2 (shlB [bits of bitn #|T| 1] (enum_rank t))) = setls bs2 (enum_rank t) true
     by rewrite sets_def /= size_tuple.
 
-rewrite nth_set_nth /= !inE.
+rewrite /setls size_tuple ltn_ord nth_set_nth /= !inE.
 (* XXX: this is not pretty. There must be a better way. *)
 case: ifP.
 - move=> H.
@@ -267,10 +267,10 @@ rewrite /finB.
 apply/setP=> x.
 rewrite can_enum inE mem_setb.
 
-have ->: val (andB bs2 (negB (shlB [bits of bitn #| T | 1] (enum_rank t)))) = sets bs2 (enum_rank t) false
+have ->: val (andB bs2 (negB (shlB [bits of bitn #| T | 1] (enum_rank t)))) = setls bs2 (enum_rank t) false
     by rewrite sets_def /= size_tuple.
 
-rewrite nth_set_nth /= !inE.
+rewrite /setls size_tuple ltn_ord nth_set_nth /= !inE.
 case: ifP.
 - move=> H.
   have -> : x == t
