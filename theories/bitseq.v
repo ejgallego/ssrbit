@@ -303,10 +303,14 @@ Canonical setB bv j b := Tuple (sets_tupleP bv j b).
 Definition setls bs i b :=
   if i < size bs then set_nth false bs i b else bs.
 
+Lemma setls_cons x bs i b : setls [:: x & bs] i.+1 b = [:: x & setls bs i b].
+Proof. by rewrite /setls -fun_if. Qed.
+
+Lemma size_setls s i b : size (setls s i b) = (size s).
+Proof. by rewrite fun_if size_set_nth; case: ifP => // /maxn_idPr ->. Qed.
+
 Lemma setls_tupleP bv i b : size (setls bv i b) == k.
-Proof.
-by rewrite fun_if size_set_nth size_tuple; case: ifP => // /maxn_idPr ->.
-Qed.
+Proof. by rewrite size_setls size_tuple. Qed.
 
 Canonical setlB bv j b := Tuple (setls_tupleP bv j b).
 
@@ -593,7 +597,7 @@ Qed.
 Lemma nats_zero j : nats '0_j = 0%N.
 Proof. by elim: j => //= j ihj; rewrite nats_cons ihj. Qed.
 
-Lemma bitn_zero j : '0_j = bitn j 0.
+Lemma bitn_zero j : bitn j 0 = '0_j.
 Proof.
 apply: (@nats_inj j); rewrite ?inE ?size_nseq ?size_bitn ?eqxx //.
 by rewrite nats_zero bitnK // inE expn_gt0.
@@ -795,18 +799,30 @@ Qed.
 Lemma shlsS x s i : shls [:: x & s] i.+1 = [:: false & shls (belast x s) i].
 Proof. by rewrite /shls minnSS size_belast subSS take_belast ?leq_subr. Qed.
 
-Lemma shl_one k i : i < k -> shls (bitn k 1) i = sets '0_k i true.
+Lemma shl_one k i : shls (bitn k 1) i = setls '0_k i true.
 Proof.
-elim: i k => [|i ihi] [|k] // i_lt; first by rewrite shls0 bitn_cons bitn_zero.
-by rewrite bitn_cons shlsS /= -bitn_zero -ihi ?bitn_one_def.
+elim: i k => [|i ihi] [|k] //; first by rewrite shls0 bitn_cons bitn_zero.
+by rewrite bitn_cons shlsS /= bitn_zero setls_cons -ihi bitn_one_def.
 Qed.
+
+Lemma eq_b0 s : reflect (forall i, s`_i = false) (s == '0_(size s)).
+Proof.
+apply: (iffP eqP) => [-> i|hi]; first by rewrite nth_nseq if_same.
+apply: (@eq_from_nth _ false); rewrite ?size_nseq // => i his.
+by rewrite hi nth_nseq his.
+Qed.
+
+Lemma ands_set1 s i b : ands s (setls '0_(size s) i b) = setls '0_(size s) i b.
+Proof.
+apply: (@eq_from_nth _ false).
+  by rewrite size_liftz size_setls size_nseq maxnn.
+Admitted.
 
 (* Definition of get/test bit in terms of shifts *)
 Lemma gets_def s i : let B n := bitn (size s) n in
   s`_i = (ands s (shls (B 1) i) != B 0).
 Proof.
-elim: s i => [|x s ihs] i //=.
-  by rewrite nth_nil and1s /bitn /= /shls min0n.
+rewrite /= shl_one bitn_zero.
 Admitted.
 
 (* Be a bit stringent as to be commutative *)

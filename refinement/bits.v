@@ -206,7 +206,7 @@ Proof.
   rewrite /get /one_op /one_B /zero_op /zero_B /shl_op /shl_B
           /eq_op /eq_B /and_op/and_B.
   rewrite gets_def Hbs1k bitnK ?inE ?ltn_2ord //.
-  by rewrite -val_eqE !size_tuple -bitn_zero.
+  by rewrite -val_eqE !size_tuple bitn_zero.
 Qed.
 
 Global Instance Rfin_singleton:
