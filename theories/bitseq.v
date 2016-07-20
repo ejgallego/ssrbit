@@ -841,6 +841,9 @@ apply/negP; rewrite negbK; apply/eq_b0 => i0.
 by have := nth_ands_bit s i0 i; case: eqP; try congruence.
 Qed.
 
+Lemma sets_def s i : let B n := bitn (size s) n in
+  s`_i = (ands s (shls (B 1) i) != B 0).
+
 (* Be a bit stringent as to be commutative *)
 Lemma set_bitE bs n : sets bs n true = ors bs (sets [::] n true).
 Proof.
@@ -850,15 +853,25 @@ elim: bs n => [|b bs ihb] [|n] //=; first by rewrite or0s.
 by rewrite ors_cons orbF ihb /sets set_nth_nil.
 Qed.
 
-Lemma sets_def s i b : let B n := bitn (size s) n in
-  sets s i b = if b then
-                 ors  s (      shls (B 1) i)
-               else
-                 ands s (negs (shls (B 1) i)).
+(* We need to figure out the above duplication *)
+Lemma setlsE bs n : setls bs n true = ors bs (setls '0_(size bs) n true).
 Proof.
-case: b => //=.
-  rewrite set_bitE; congr ors.
-Search ors.
+apply: (@eq_from_nth _ false).
+  by rewrite size_liftz !size_setls size_nseq maxnn.
+move=> i hi; have hi': i < size bs by rewrite size_setls in hi.
+rewrite /setls size_nseq; case: ifP => hn; last by rewrite ors0' ?inE.
+rewrite nth_liftz ?size_set_nth ?size_nseq ?(maxn_idPr hn) //.
+by rewrite !nth_set_nth (fun_if (orb bs`_i)) orbT nth_nseq hi' orbF.
+Qed.
+
+Lemma sets_def s i b : let B n := bitn (size s) n in
+  setls s i b = if b then
+                  ors  s (      shls (B 1) i)
+                else
+                  ands s (negs (shls (B 1) i)).
+Proof.
+rewrite /= shl_one; case: b; first by rewrite setlsE.
+(* Use neg/ands theory *)
 Admitted.
 
 Section Examples.
