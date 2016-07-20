@@ -374,8 +374,7 @@ Proof. by move=> t1 t2; apply/val_inj/andsC. Qed.
 End OpsTup.
 
 Lemma or0B bv : orB '0 bv = bv.
-Admitted.
-
+Proof. by apply: val_inj; rewrite /= or0s' ?inE ?size_tuple. Qed.
 
 Lemma andB_cons b1 b2 (t1 t2 : 'B_k) :
   andB [bits of b1 :: t1] [bits of b2 :: t2] =
@@ -596,9 +595,11 @@ apply: (@nats_inj j); rewrite ?inE ?size_nseq ?size_bitn ?eqxx //.
 by rewrite nats_zero bitnK // inE expn_gt0.
 Qed.
 
-Lemma nats_one  k : nats '1_k = 2^k - 1.
+Lemma nats_one k : nats '1_k = 2^k - 1.
 Proof.
-Admitted.
+elim: k => //= k ihk; rewrite nats_cons ihk.
+by rewrite expnS -addnn !mulSn mul0n addn0 addnA subnKC ?addnBA ?expn_gt0.
+Qed.
 
 (* Development of the bounded operators *)
 Section BitSizeCast.
@@ -612,8 +613,8 @@ Definition cast_ord_P k (o : 'I_(2^k)) : 'I_(2^k).-1.+1 :=
 (* Lemma nPPSS n : 2 <= n -> n.-2.+2 = n. *)
 (* Proof. by case: n => // -[]. Qed. *)
 
-(* Lemma expkS_ge2 n : 2 <= 2 ^ n.+1. *)
-(* Proof. by elim: n => // n ihn; rewrite expnS mul2n -addnn ltn_addl. Qed. *)
+Lemma expnS_ge2 n : 2 <= 2 ^ n.+1.
+Proof. by elim: n => // n ihn; rewrite expnS mul2n -addnn ltn_addl. Qed.
 
 (* Lemma cast_ord_PP_proof k : 2^k.+1 = (2^k.+1).-2.+2. *)
 (* Proof. by rewrite nPPSS ?expkS_ge2. Qed. *)
@@ -686,12 +687,15 @@ Definition subB b1 b2 := (b1 - b2)%R.
 Definition incB b := (b + [bits of bitn k 1])%R.
 Definition decB b := (b - [bits of bitn k 1])%R.
 
-(* XXX: Vs *)
+(* XXX: Improve Vs *)
 (* Lemma nats_one  k : nats '1_k = 2^k - 1. *)
 Lemma one_def: '1 = decB '0.
 Proof.
-apply: (can_inj ordBK).
-Admitted.
+apply: (can_inj ordBK); apply: val_inj => /=.
+rewrite prednK ?expn_gt0 // nats_zero nats_one add0n.
+case: k => // j; rewrite !bitnK ?inE ?expnS_ge2 ?ltn_pmod ?expn_gt0 //.
+by rewrite modn_mod modn_small // -addn1 subnK ?expn_gt0.
+Qed.
 
 End BitZModule.
 
