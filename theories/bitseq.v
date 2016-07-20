@@ -812,17 +812,19 @@ apply: (@eq_from_nth _ false); rewrite ?size_nseq // => i his.
 by rewrite hi nth_nseq his.
 Qed.
 
-Lemma ands_set1 s i b : ands s (setls '0_(size s) i b) = setls '0_(size s) i b.
+Lemma gets_defE s i : s`_i = (ands s (setls '0_(size s) i true))`_i.
 Proof.
-apply: (@eq_from_nth _ false).
-  by rewrite size_liftz size_setls size_nseq maxnn.
-Admitted.
+have [hsz|h] := ltnP i (size s); last first.
+  by rewrite !nth_default // ?size_liftz size_setls size_nseq maxnn.
+rewrite /setls nth_liftz ?size_setls ?size_nseq ?hsz //.
+by rewrite nth_set_nth /= eqxx andbT.
+Qed.
 
 (* Definition of get/test bit in terms of shifts *)
 Lemma gets_def s i : let B n := bitn (size s) n in
   s`_i = (ands s (shls (B 1) i) != B 0).
 Proof.
-rewrite /= shl_one bitn_zero.
+rewrite /= shl_one bitn_zero  gets_defE.
 Admitted.
 
 (* Be a bit stringent as to be commutative *)
