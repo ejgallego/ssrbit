@@ -205,7 +205,7 @@ Proof.
     last by apply (can_inj (@enum_valK _)).
   rewrite /get /one_op /one_B /zero_op /zero_B /shl_op /shl_B
           /eq_op /eq_B /and_op/and_B.
-  rewrite gets_def Hbs1k bitnK ?ltn_2ord //.
+  rewrite gets_def Hbs1k bitnK ?inE ?ltn_2ord //.
   by rewrite -val_eqE !size_tuple -bitn_zero.
 Qed.
 
@@ -217,7 +217,7 @@ apply/setP=> x.
 rewrite /Rfin /fun_hrel /finB 
         /singleton_op /singleton_B /singleton_fin /singleton
         /shl_op /shl_B /one_op /one_B.
-rewrite Htk !inE can_enum inE mem_setb Hbsk bitnK ?ltn_2ord //.
+rewrite Htk !inE can_enum inE mem_setb Hbsk bitnK ?inE ?ltn_2ord //.
 have ->: val (shlB [bits of bitn #|T| 1] k) = sets '0_#| T | k true
   by rewrite -[shlB _ _]or0B
              -[orB _ _]/[bits of ors _ (shls (bitn _ _) _) ] /=
@@ -238,11 +238,12 @@ Proof.
 rewrite refinesE.
 rewrite /full_op/full_B/full_fin/create/Rfin/fun_hrel
         /finB/zero_op/zero_B/sub_op/sub_B/one_op/one_B.
-(* XXX: Emilio *)
-Admitted.
-(* apply/setP=> t. *)
-(* by rewrite can_enum inE mem_setb nth_nseq ltn_ord inE. *)
-(* Qed. *)
+Proof.
+apply/setP=> t.
+by rewrite can_enum inE mem_setb
+           -[subB _ _]/(decB _) -one_def
+           nth_nseq ltn_ord inE.
+Qed.
 
 Global Instance Rfin_empty: 
   refines Rfin empty_op empty_op.
