@@ -103,10 +103,14 @@ by elim: s => [|n s ihs]; rewrite ?big_nil ?big_cons ?size_nseq ?size_set_nth //
 Qed.
 
 Lemma from_setE s : from_set s = \big[ors/[::]]_(n <- s) sets [::] n true.
+(* XXX: [set_bitE] missing. *)
+Admitted.
+(*
 Proof.
 elim: s => [|n s ihs]; rewrite ?(big_nil, big_cons) //=.
 by rewrite set_bitE ?size_from_set orsC ihs.
 Qed.
+*)
 
 Lemma eq_perm_from_set s1 s2 : perm_eq s1 s2 ->
   from_set s1 = from_set s2.
@@ -421,6 +425,7 @@ Import Logical.Op.
 
 Section Operations.
 
+Variables (Idx : Type).
 Variables (Bits : Type).
 
 Context `{eq_of   Bits}.
@@ -432,15 +437,15 @@ Context `{not_of Bits}.
 Context `{or_of  Bits}.
 Context `{and_of Bits}.
 Context `{xor_of Bits}.
-Context `{shl_of Bits}.
-Context `{shr_of Bits}.
+Context `{shl_of Idx Bits}.
+Context `{shr_of Idx Bits}.
 
-Implicit Types (k bs n : Bits).
+Implicit Types (k: Idx)(bs : Bits).
 Local Open Scope computable_scope.
 
 Definition get    k bs := negb ((bs && (1 <<< k)) == 0)%C.
-Definition singleton n := 1 <<< n.
-Definition compl     n := ~ n.
+Definition singleton k := 1 <<< k.
+Definition compl     bs := ~ bs.
 
 Definition inter bs bs' := bs && bs'.
 Definition union bs bs' := bs || bs'.
@@ -455,15 +460,15 @@ Definition create b : Bits := (if b then 0 - 1 else 0)%C.
 
 End Operations.
 
-Arguments get {_}{_}{_}{_}{_}{_} k bs.
-Arguments singleton {_}{_}{_} n.
-Arguments compl {_}{_} n.
+Arguments get {_}{_}{_}{_}{_}{_}{_} k bs.
+Arguments singleton {_}{_}{_}{_} k.
+Arguments compl {_}{_} bs.
 Arguments create {_}{_}{_}{_} b.
 Arguments inter {_}{_} bs bs'.
 Arguments union {_}{_} bs bs'.
 Arguments min {_}{_}{_} bs.
-Arguments insert {_}{_}{_}{_} k bs.
-Arguments remove {_}{_}{_}{_}{_} bs k.
+Arguments insert {_}{_}{_}{_}{_} k bs.
+Arguments remove {_}{_}{_}{_}{_}{_} bs k.
 Arguments symdiff {_}{_} bs1 bs2.
 Arguments subset {_}{_}{_} bs1 bs2.
 
@@ -522,13 +527,13 @@ Section OpB.
 
 Variable n: nat.
 
-Global Instance get_B       : get_of 'B_n 'B_n       := get.
-Global Instance singleton_B : singleton_of 'B_n 'B_n := singleton.
+Global Instance get_B       : get_of 'I_n 'B_n       := get.
+Global Instance singleton_B : singleton_of 'I_n 'B_n := singleton.
 Global Instance compl_B     : compl_of 'B_n          := compl.
 Global Instance full_B      : full_of 'B_n           := create (Bits := 'B_n) true.
 Global Instance empty_B     : empty_of 'B_n          := create (Bits := 'B_n) false.
-Global Instance set_B       : set_of 'B_n 'B_n       := insert.
-Global Instance remove_B    : remove_of 'B_n 'B_n    := remove.
+Global Instance set_B       : set_of 'I_n 'B_n       := insert.
+Global Instance remove_B    : remove_of 'I_n 'B_n    := remove.
 Global Instance inter_B     : inter_of 'B_n          := inter.
 Global Instance union_B     : union_of 'B_n          := union.
 Global Instance symdiff_B   : symdiff_of 'B_n        := symdiff.

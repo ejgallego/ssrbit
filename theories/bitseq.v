@@ -1066,10 +1066,10 @@ Global Instance not_B {n} : not_of 'B_n := @negB _.
 Global Instance or_B  {n} : or_of  'B_n := @orB _.
 Global Instance and_B {n} : and_of 'B_n := @andB _.
 Global Instance xor_B {n} : xor_of 'B_n := @xorB _.
-Global Instance shr_B {n} : shr_of 'B_n := (fun x y => @shrB _ x (nats y)).
-Global Instance shl_B {n} : shl_of 'B_n := (fun x y => @shlB _ x (nats y)).
+Global Instance shr_B {n} : shr_of 'I_n 'B_n := (fun x y => @shrB _ x y).
+Global Instance shl_B {n} : shl_of 'I_n 'B_n := (fun x y => @shlB _ x y).
 
 Global Instance zero_B {n} : zero_of 'B_n := [tuple of '0_n].
 Global Instance one_B  {n} : one_of  'B_n := [tuple of bitn n 1].
-Global Instance sub_B  {n} : sub_of 'B_n  := (@subB _).
+Global Instance sub_B  {n} : sub_of  'B_n  := (@subB _).
 

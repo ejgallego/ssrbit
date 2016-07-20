@@ -5,8 +5,8 @@ Class not_of int := not_op : int -> int.
 Class or_of int := or_op : int -> int -> int.
 Class and_of int := and_op : int -> int -> int.
 Class xor_of int := xor_op : int -> int -> int.
-Class shl_of int := shl_op : int -> int -> int.
-Class shr_of int := shr_op : int -> int -> int.
+Class shl_of idx int := shl_op : int -> idx -> int.
+Class shr_of idx int := shr_op : int -> idx -> int.
 (* Class size_of int := sizeof_op : int -> nat. *)
 
 End Op.
