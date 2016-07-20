@@ -430,7 +430,11 @@ Definition lsl_test: bool
   := forallInt (fun i =>
        forallInt (fun i' =>
           let n := nats (bitsFromInt w i') in 
-          (n <= w) ==>
+
+          (* XXX: in fact, we need [n <= 64] (as opposed to [n <= w])
+             since Ocaml's [lsl] is unspecified beyond 64 *)
+
+          (n <= w) ==> 
            Tnative (lsl i i')
                    (shls (bitsFromInt w i) n))).
 
