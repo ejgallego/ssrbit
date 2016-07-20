@@ -357,6 +357,12 @@ Proof. exact: (lift0z andTb). Qed.
 Lemma ands1 : right_id [::] ands.
 Proof. exact: (liftz0 andbT). Qed.
 
+Lemma and1s' : {in [pred s | k <= size s], left_id '1_k ands}.
+Proof. exact: (lift0z' andTb). Qed.
+
+Lemma ands1' : {in [pred s | k <= size s], right_id '1_k ands}.
+Proof. exact: (liftz0' andbT). Qed.
+
 Section OpsTup.
 
 Variable k' : nat.
@@ -875,15 +881,44 @@ rewrite nth_liftz ?size_set_nth ?size_nseq ?(maxn_idPr hn) //.
 by rewrite !nth_set_nth (fun_if (orb bs`_i)) orbT nth_nseq hi' orbF.
 Qed.
 
+Lemma negs0 k : negs '0_k = '1_k.
+Proof. by rewrite /negs map_nseq. Qed.
+
+Lemma negs_setls bs n b :
+  negs (setls bs n b) = setls (negs bs) n (~~b).
+Proof.
+apply: (@eq_from_nth _ false).
+  by rewrite !size_setls !size_map size_setls.
+move=> i; rewrite size_map size_setls => hi.
+rewrite (nth_map false) ?size_setls // /setls ?size_map; case: ifP => hn /=.
+  rewrite !nth_set_nth /= fun_if (nth_map false) //.
+  by case: ifP => ->.
+by rewrite (nth_map false).
+Qed.
+
+(* XXx: Similar to setlsE, there's a missing general principle here.
+ *
+ *)
+Lemma unsetlsE bs n :
+  setls bs n false = ands bs (setls '1_(size bs) n false).
+Proof.
+apply: (@eq_from_nth _ false).
+  by rewrite size_liftz !size_setls size_nseq maxnn.
+move=> i hi; have hi': i < size bs by rewrite size_setls in hi.
+rewrite /setls size_nseq; case: ifP => hn; last by rewrite ands1' ?inE.
+rewrite nth_liftz ?size_set_nth ?size_nseq ?(maxn_idPr hn) //.
+by rewrite !nth_set_nth (fun_if (andb bs`_i)) andbF nth_nseq hi' andbT.
+Qed.
+
 Lemma sets_def s i b : let B n := bitn (size s) n in
   setls s i b = if b then
                   ors  s (      shls (B 1) i)
                 else
                   ands s (negs (shls (B 1) i)).
 Proof.
-rewrite /= shl_one; case: b; first by rewrite setlsE.
-(* Use neg/ands theory *)
-Admitted.
+rewrite /= shl_one negs_setls negs0.
+by case: b; [rewrite setlsE | rewrite unsetlsE].
+Qed.
 
 Section Examples.
 
