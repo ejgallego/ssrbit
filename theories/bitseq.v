@@ -812,20 +812,34 @@ apply: (@eq_from_nth _ false); rewrite ?size_nseq // => i his.
 by rewrite hi nth_nseq his.
 Qed.
 
-Lemma gets_defE s i : s`_i = (ands s (setls '0_(size s) i true))`_i.
+Lemma nth_ands_bit s i j :
+  (ands s (setls '0_(size s) j true))`_i =
+  if i == j then s`_i else false.
 Proof.
 have [hsz|h] := ltnP i (size s); last first.
-  by rewrite !nth_default // ?size_liftz size_setls size_nseq maxnn.
+  by rewrite !nth_default ?if_same // size_liftz size_setls size_nseq maxnn.
 rewrite /setls nth_liftz ?size_setls ?size_nseq ?hsz //.
-by rewrite nth_set_nth /= eqxx andbT.
+case: eqP => [|/(introF eqP)] H.
+  by rewrite -H hsz nth_set_nth  /= eqxx andbT.
+case: ifP => _; last by rewrite nth_nseq if_same andbF.
+by rewrite nth_set_nth /= H nth_nseq if_same andbF.
 Qed.
+
+Lemma getsE s i : s`_i = (ands s (setls '0_(size s) i true))`_i.
+Proof. by rewrite nth_ands_bit eqxx. Qed.
 
 (* Definition of get/test bit in terms of shifts *)
 Lemma gets_def s i : let B n := bitn (size s) n in
   s`_i = (ands s (shls (B 1) i) != B 0).
 Proof.
-rewrite /= shl_one bitn_zero  gets_defE.
-Admitted.
+rewrite /= shl_one bitn_zero getsE.
+set ge := ands _ _; have -> : size s = size ge.
+  by rewrite size_liftz size_setls size_nseq maxnn.
+apply/esym; case E: ge`_i; apply/idP.
+  by apply/eq_b0=> /(_ i); congruence.
+apply/negP; rewrite negbK; apply/eq_b0 => i0.
+by have := nth_ands_bit s i0 i; case: eqP; try congruence.
+Qed.
 
 (* Be a bit stringent as to be commutative *)
 Lemma set_bitE bs n : sets bs n true = ors bs (sets [::] n true).
