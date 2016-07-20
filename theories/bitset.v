@@ -272,9 +272,6 @@ Qed.
 (* Cardinality *)
 Definition cardb k (s : k.-tuple bool) := count id s.
 
-(* ss is a partition of S then *)
-(*  "cardb S = \sum(s <- ss) cardb s" *)
-
 Arguments seqb_uniq [k s].
 
 (* This follows directly from the library *)
@@ -283,64 +280,18 @@ Proof.
 by rewrite cardsE (card_uniqP seqb_uniq) size_mask // size_tuple size_enum_ord.
 Qed.
 
-(* Optimized cardinality *)
-Definition bit_tmp k o := [tuple of bitn k o]. (* XXX: Emilio? *)
 
-(* XXX: Factor out k of the recursion *)
-Definition pop_table {n} (k: nat) : seq 'B_n :=
-  mkseq (fun i => bit_tmp n (count_mem true (bitn k i))) (2^k).
+(* XXX: Minimum: Implement with index *)
 
-Eval compute in (map val (@pop_table 4 2)).
 
-Definition pop_elem {n}(k: nat)(bs: 'B_n)(i: nat): 'B_n
-  := let x :=
-         andB (shrB bs (i * k))
-              (decB (shlB [bits of bitn n 1] k)) in
-     nth '0 (pop_table k) (nats x).
-
-Eval compute in (val (@pop_elem 3 1 [tuple true; false; true] 0)).
-
-Fixpoint popAux {n}(k: nat) (bs: 'B_n) (i: nat): 'B_n :=
-  match i with
-  | 0     => '0
-  | i'.+1 => addB (pop_elem k bs i') (popAux k bs i')
-  end.
-
-Definition cardinal {n} (k: nat)(bs: 'B_n): 'B_n
-  := popAux k bs (n %/ k).
-
-Eval compute in (map val (@pop_table 4 2)).
-
-Eval compute in (val (cardinal 1 [tuple true; false])).
-
-(* cardbP might be used in the proof here *)
-Lemma cardinalP k (s : 'B_k) i (div_i: i %| k) (ltz_i: i > 0): #| setB s | = nats (cardinal k s).
-Proof.
-Admitted.
-
-(* Set containing only the minimum *)
-Definition keep_min {n} (bs: 'B_n): 'B_n
-  := andB bs (oppB bs).
-
-Lemma keep_min_repr:
-  forall n (bs: 'B_n) x y, x \in setB bs ->
-    setB (keep_min bs) = [set [arg min_(k < y in setB bs) k]].
-(* XXX: maybe ripple_repr could be useful here, as neg is (inv + 1) *)
-Admitted.
-
-(* Value of the minimum (ie number of trailing zeroes) *)
-Definition ntz n (k: nat) (bs: 'B_n) : 'B_n := subB (bit_tmp n n) (cardinal k (orB bs (oppB bs))).
-
-Lemma ntz_repr k (bs : 'B_k) i (div_i : i %| k) (ltz_i : i > 0) x y : x \in setB bs ->
-    ntz i bs = bit_tmp k [arg min_(k < y in setB bs) k].
-Admitted.
-
+(* Not sure how useful this is *)
 (* Create an empty / full set *)
-Definition createB {n} (b: bool): 'B_n := if b then decB B0 else B0.
+Definition createB {n} (b: bool) : 'B_n := if b then '1 else '0.
 
-Lemma create_repr n (b : bool) (n_gt0 : 0 < n) :
-    setB (createB b) = if b then [set : 'I_n] else set0.
-Admitted.
+Lemma create_repr n b : setB (@createB n b) = if b then setT else set0.
+Proof.
+by case: b; apply/setP=> x; rewrite /= mem_setb nth_nseq !inE ltn_ord.
+Qed.
 
 (* XXX: Emilio: move? *)
 Definition ord_iota k m n : seq 'I_k := pmap insub (iota m n).
@@ -361,7 +312,8 @@ Definition set_isNext_g {n} (S: {set 'I_n.+1}) y x := (y \notin S) && (y >= x).
 Definition set_next_g {n} (S: {set 'I_n.+1}) x := [arg min_(y < ord0 | set_isNext_g S y x) y].
 
 Lemma ripple_repr_1 k (bs: 'B_k.+1) (x: 'I_k.+1) f (isNext_f: set_isNext_g (setB bs) f x) :
-  setB (addB (setn [set x]) bs) = (set_next_g (setB bs) x) |: [set y in (setB bs) | y < x] :|: [set y in (setB bs) | y > set_next_g (setB bs) x].
+  setB (addB (setn [set x]) bs) =
+  (set_next_g (setB bs) x) |: [set y in (setB bs) | y < x] :|: [set y in (setB bs) | y > set_next_g (setB bs) x].
 (* XXX: Arthur *)
 Admitted.
 
@@ -427,16 +379,16 @@ Proof. by rewrite /finB -imsetU union_morphL. Qed.
 
 Lemma Finter_morphL (b1 b2 : 'B_#|T|) :
   finB (andB b1 b2) = (finB b1 :&: finB b2).
-Proof. 
+Proof.
 rewrite /finB inter_morphL imsetI //.
-move=> x y _ _; apply: enum_val_inj.
+by move=> x y _ _; apply: enum_val_inj.
 Qed.
 
 Lemma Fsymdiff_morphL (b1 b2 : 'B_#|T|) :
   finB (xorB b1 b2) = (finB b1 :\: finB b2 :|: finB b2 :\: finB b1).
 Proof.
-rewrite !setDE /finB symdiff_morphL imsetU !setDE !imsetI;
-  first by rewrite !setDB.
+rewrite !setDE /finB symdiff_morphL imsetU !setDE !imsetI.
+  by rewrite !setDB.
 - move=> x y _ _; apply: enum_val_inj.
 - move=> x y _ _; apply: enum_val_inj.
 Qed.
@@ -480,49 +432,35 @@ Section Operations.
 
 Variables (Bits : Type).
 
-Context `{eq_of Bits}.
-Context `{sub_of Bits}.
+Context `{eq_of   Bits}.
+Context `{sub_of  Bits}.
 Context `{zero_of Bits}.
-Context `{one_of Bits}.
+Context `{one_of  Bits}.
 
 Context `{not_of Bits}.
-Context `{or_of Bits}.
+Context `{or_of  Bits}.
 Context `{and_of Bits}.
 Context `{xor_of Bits}.
 Context `{shl_of Bits}.
 Context `{shr_of Bits}.
 
-Definition get (k: Bits)(bs: Bits): bool
-  := negb (bs && (1 <<< k) == 0)%C.
+Implicit Types (k bs n : Bits).
+Local Open Scope computable_scope.
 
-Definition singleton (n: Bits): Bits 
-  := (1 <<< n)%C.
+Definition get    k bs := negb ((bs && (1 <<< k)) == 0)%C.
+Definition singleton n := 1 <<< n.
+Definition compl     n := ~ n.
 
-Definition compl (n: Bits): Bits 
-  := (~ n)%C.
+Definition inter bs bs' := bs && bs'.
+Definition union bs bs' := bs || bs'.
+Definition min   bs     := bs && ~ bs.
+(* XXX: Order of arguments *)
+Definition insert  k bs    := bs || (1 <<< k).
+Definition remove  bs k    := bs && (~ (1 <<< k)).
+Definition symdiff bs1 bs2 := bs1 ^^ bs2.
+Definition subset  bs1 bs2 := (bs1 && bs2) == bs1.
 
-Definition create (b: bool): Bits := (if b then 0 - 1 else 0)%C.
-
-Definition inter (bs bs': Bits): Bits 
-  := (bs && bs')%C.
-
-Definition union (bs bs': Bits): Bits
-  := (bs || bs')%C.
-
-Definition min (bs: Bits): Bits
-  := (bs && ~ bs)%C.
-
-Definition insert (k bs: Bits): Bits
-  := (bs || (1 <<< k))%C.
-
-Definition remove (bs k: Bits): Bits
-  := (bs && (~ (1 <<< k)))%C.
-
-Definition symdiff (bs1 bs2: Bits): Bits
-  := (bs1 ^^ bs2)%C.
-
-Definition subset (bs1 bs2: Bits): bool
-  := ((bs1 && bs2) == bs1)%C.
+Definition create b : Bits := (if b then 0 - 1 else 0)%C.
 
 End Operations.
 
@@ -568,29 +506,22 @@ Section OpFin.
 
 Variable T: finType.
 
-Global Instance eq_fin: eq_of {set T} 
-  := fun x y => x == y.
+Global Instance eq_fin:        eq_of {set T}    := fun x y => x == y.
 
-Global Instance get_fin: get_of T {set T} 
-  := fun k E => k \in E.
-Global Instance singleton_fin: singleton_of T {set T}
-  := fun k => [set k].
-Global Instance compl_fin: compl_of {set T} 
-  := @setC _.
-Global Instance full_fin: full_of {set T}    := [set : T ].
-Global Instance empty_fin: empty_of {set T}  := set0.
-Global Instance set_fin: set_of T {set T} 
-  := fun k E => k |: E.
-Global Instance remove_fin: remove_of T {set T}
-  := fun A a => A :\ a.
-Global Instance inter_fin: inter_of {set T} 
-  := @setI _.
-Global Instance union_fin: union_of {set T} 
-  := @setU _.
-Global Instance symdiff_fin: symdiff_of {set T} 
-  := fun E E' =>  ((E :\: E') :|: (E' :\: E)).
-Global Instance subset_fin: subset_of {set T} 
-  := fun E E' => E \subset E'.
+Global Instance get_fin:       get_of T       {set T} := fun k E => k \in E.
+Global Instance singleton_fin: singleton_of T {set T} := fun k => [set k].
+
+Global Instance compl_fin:     compl_of {set T} := @setC _.
+Global Instance full_fin:      full_of  {set T} := [set : T ].
+Global Instance empty_fin:     empty_of {set T} := set0.
+
+Global Instance set_fin:       set_of    T {set T} := fun k E => k |: E.
+Global Instance remove_fin:    remove_of T {set T} := fun A a => A :\ a.
+
+Global Instance inter_fin: inter_of {set T} := @setI _.
+Global Instance union_fin: union_of {set T} := @setU _.
+Global Instance symdiff_fin: symdiff_of {set T} := fun E E' => ((E :\: E') :|: (E' :\: E)).
+Global Instance subset_fin:  subset_of {set T}  := fun E E' => E \subset E'.
 
 End OpFin.
 

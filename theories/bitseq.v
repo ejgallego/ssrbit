@@ -296,6 +296,7 @@ Lemma sets_tupleP bv j b :
   size (sets bv j b) == k.
 Proof. by rewrite size_set_nth size_tuple; apply/eqP/maxn_idPr. Qed.
 
+(* XXX: Clash with bitset:setB *)
 Canonical setB bv j b := Tuple (sets_tupleP bv j b).
 
 (* Size-preserving version *)

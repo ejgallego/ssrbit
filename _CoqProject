@@ -3,6 +3,7 @@
 -R refinement ssrbit
 
 theories/bitseq.v
+theories/bitocaml.v
 theories/bitword.v
 theories/bitset.v
 theories/notation.v
