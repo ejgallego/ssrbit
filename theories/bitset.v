@@ -97,15 +97,6 @@ Definition to_set   m := mask m (iota 0 (size m)).
 (* Definition from_set k s := foldr (fun idx bs => setb bs idx true) (nseq k false) s. *)
 Definition from_set s := foldr (fun idx bs => sets bs idx true) [::] s.
 
-(* Be a bit stringent as to be commutative *)
-Lemma set_bitE bs n : sets bs n true = ors bs (sets [::] n true).
-Proof.
-(* XXX: clean up *)
-elim: bs n => [|b bs ihb] [|n] //=; first by rewrite or0s.
-  by rewrite ors_cons ors0 orbT.
-by rewrite ors_cons orbF ihb /sets set_nth_nil.
-Qed.
-
 Lemma size_from_set s : size (from_set s) = \max_(n <- s) n.+1.
 Proof.
 by elim: s => [|n s ihs]; rewrite ?big_nil ?big_cons ?size_nseq ?size_set_nth // ihs.

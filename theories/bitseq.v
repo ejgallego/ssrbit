@@ -406,6 +406,9 @@ Proof. by rewrite size_cat size_nseq size_takel ?minnE ?subnK ?leq_subr. Qed.
 Lemma size_shrs n s : size (shrs s n) = size s.
 Proof. by rewrite size_cat size_nseq size_drop minnE subnKC ?leq_subr. Qed.
 
+Lemma shls0 s : shls s 0 = s.
+Proof. by rewrite /shls minn0 subn0 take_oversize. Qed.
+
 (* Lemma take_nseq T n m (x : T) : take n (nseq m x) = nseq (minn n m) x. *)
 (* Proof. by elim: n m => [|n ihn] [|m]; rewrite ?minnSS //= ihn. Qed. *)
 
@@ -775,11 +778,45 @@ End Unsigned.
 Arguments B0 [_].
 (* Arguments B1 [_]. *)
 
+(* Lemma shlsS_bitn n i k : i < k -> shls (bitn k n) i.+1 = shls (bitn k n.*2) i. *)
+
+Lemma take_belast T x (s : seq T) k (k_size : k <= size s) :
+  take k (x :: s) = take k (belast x s).
+Proof.
+by elim: s x k k_size => [|y s ihs] x [|k] //= k_size; rewrite -take_cons ihs.
+Qed.
+
+Lemma bitn_one_def k : bitn k 1 = belast true '0_k.
+Proof.
+case: k => // k; rewrite bitn_cons /=; congr cons.
+by elim: k => // k ihk; rewrite bitn_cons ihk.
+Qed.
+
+Lemma shlsS x s i : shls [:: x & s] i.+1 = [:: false & shls (belast x s) i].
+Proof. by rewrite /shls minnSS size_belast subSS take_belast ?leq_subr. Qed.
+
+Lemma shl_one k i : i < k -> shls (bitn k 1) i = sets '0_k i true.
+Proof.
+elim: i k => [|i ihi] [|k] // i_lt; first by rewrite shls0 bitn_cons bitn_zero.
+by rewrite bitn_cons shlsS /= -bitn_zero -ihi ?bitn_one_def.
+Qed.
+
 (* Definition of get/test bit in terms of shifts *)
 Lemma gets_def s i : let B n := bitn (size s) n in
   s`_i = (ands s (shls (B 1) i) != B 0).
 Proof.
+elim: s i => [|x s ihs] i //=.
+  by rewrite nth_nil and1s /bitn /= /shls min0n.
 Admitted.
+
+(* Be a bit stringent as to be commutative *)
+Lemma set_bitE bs n : sets bs n true = ors bs (sets [::] n true).
+Proof.
+(* XXX: clean up *)
+elim: bs n => [|b bs ihb] [|n] //=; first by rewrite or0s.
+  by rewrite ors_cons ors0 orbT.
+by rewrite ors_cons orbF ihb /sets set_nth_nil.
+Qed.
 
 Lemma sets_def s i b : let B n := bitn (size s) n in
   sets s i b = if b then
@@ -787,6 +824,9 @@ Lemma sets_def s i b : let B n := bitn (size s) n in
                else
                  ands s (negs (shls (B 1) i)).
 Proof.
+case: b => //=.
+  rewrite set_bitE; congr ors.
+Search ors.
 Admitted.
 
 Section Examples.
