@@ -461,11 +461,11 @@ Global Instance Rtuple_lxor:
 Proof. by rewrite !refinesE => bs1 w1 <- bs2 w2 <-. Qed.
 
 Global Instance Rtuple_lsr: 
-  refines (Rtuple ==> RidxI ==> Rtuple) >>>%C >>>%C.
+  refines (Rtuple ==> RidxI ==> Rtuple) :>>:%C :>>:%C.
 Proof. by rewrite !refinesE => bs1 w1 <- bs2 w2 <-. Qed.
 
 Global Instance Rtuple_lsl: 
-  refines (Rtuple ==> RidxI ==> Rtuple) <<<%C <<<%C.
+  refines (Rtuple ==> RidxI ==> Rtuple) :<<:%C :<<:%C.
 Proof. by rewrite !refinesE => bs1 w1 <- bs2 w2 <-. Qed.
 
 Global Instance Rtuple_sub: 

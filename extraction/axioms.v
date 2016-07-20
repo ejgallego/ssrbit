@@ -206,15 +206,15 @@ Implicit Types (s : bitseq) (b : 'B_n).
 Fixpoint bitsToInt s : NativeInt.Int :=
   (match s with
     | [::]           => 0
-    | [:: false & s] =>      bitsToInt s <<< 1
-    | [:: true  & s] => 1 || (bitsToInt s <<< 1)
+    | [:: false & s] =>      bitsToInt s :<<: 1
+    | [:: true  & s] => 1 || (bitsToInt s :<<: 1)
   end)%C.
 
 Fixpoint bitsFromInt (k: nat) (n: NativeInt.Int) : bitseq :=
   (match k with
     | 0 => [::]
     | k.+1 =>
-      let p := bitsFromInt k (n >>> 1) in
+      let p := bitsFromInt k (n :>>: 1) in
       (n && 1 == 1) :: p
   end)%C.
 
@@ -274,7 +274,7 @@ Definition lxor := NativeInt.lxor.
 
 Definition wordsize := bitsToInt (bitn 63 WS.wordsize).
 
-Definition bitmask := ((1 <<< wordsize) - 1: Int)%C.
+Definition bitmask := ((1 :<<: wordsize) - 1: Int)%C.
 
 Definition mask_unop  (f : Int -> Int) x := (bitmask && f x)%C.
 Definition mask_binop (f : Int -> Int -> Int) x y := (bitmask && f x y)%C.

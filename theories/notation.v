@@ -25,11 +25,11 @@ Notation "x && y" := (and_op x y)   : computable_scope.
 Notation "^^%C"    := xor_op.
 Notation "x ^^ y"  := (xor_op x y)
  (at level 30, right associativity) : computable_scope.
-Notation ">>>%C"    := shr_op.
-Notation "x >>> y"  := (shr_op x y) 
+Notation ":>>:%C"    := shr_op.
+Notation "x :>>: y"  := (shr_op x y) 
  (at level 30, right associativity) : computable_scope.
-Notation "<<<%C"    := shl_op.
-Notation "x <<< y"  := (shl_op x y) 
+Notation ":<<:%C"    := shl_op.
+Notation "x :<<: y"  := (shl_op x y) 
  (at level 30, right associativity) : computable_scope.
 
 
