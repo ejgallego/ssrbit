@@ -1058,22 +1058,6 @@ Require Import notation.
 Import Refinements.Op.
 Import Logical.Op.
 
-(* For bit sequences: *)
-
-Global Instance eq_s   : eq_of bitseq   := fun x y => x == y.
-
-Global Instance not_s  : not_of bitseq  := negs.
-Global Instance or_s   : or_of bitseq   := ors.
-Global Instance and_s  : and_of bitseq  := ands.
-Global Instance xxor_s : xor_of bitseq  := xors.
-Global Instance shr_s  : shr_of bitseq  := (fun x y => shrs x (nats y)).
-Global Instance shl_s  : shl_of bitseq  := (fun x y => shls x (nats y)).
-
-(* XXX: don't know the size of the words *)
-Global Instance zero_s : zero_of bitseq . Admitted.
-Global Instance one_s  : one_of bitseq  . Admitted.
-Global Instance sub_s  : sub_of bitseq  . Admitted.
-
 (* For bit vectors: *)
 
 Global Instance eq_B  {n} : eq_of 'B_n := fun x y => x == y.
