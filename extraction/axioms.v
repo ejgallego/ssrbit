@@ -77,19 +77,18 @@ Extract Inlined Constant mul  => "( * )".
 
 End NativeInt.
 
-Global Instance   eq_NativeInt : eq_of   NativeInt.Int := NativeInt.eq.
-Global Instance zero_NativeInt : zero_of NativeInt.Int := NativeInt.zero.
-Global Instance  one_NativeInt : one_of  NativeInt.Int := NativeInt.one.
-Global Instance   or_NativeInt : or_of   NativeInt.Int := NativeInt.lor.
-Global Instance  shl_NativeInt : shl_of  NativeInt.Int := NativeInt.lsl.
-Global Instance  and_NativeInt : and_of  NativeInt.Int := NativeInt.land.
-Global Instance  shr_NativeInt : shr_of  NativeInt.Int := NativeInt.lsr.
-Global Instance  opp_NativeInt : opp_of  NativeInt.Int := NativeInt.neg.
-Global Instance  not_NativeInt : not_of  NativeInt.Int := NativeInt.lnot.
-Global Instance  xor_NativeInt : xor_of  NativeInt.Int := NativeInt.lxor.
-Global Instance  add_NativeInt : add_of  NativeInt.Int := NativeInt.add.
-Global Instance  sub_NativeInt : sub_of  NativeInt.Int := NativeInt.sub.
-Global Instance  mul_NativeInt : mul_of  NativeInt.Int := NativeInt.mul.
+Local Instance   eq_NativeInt : eq_of   NativeInt.Int := NativeInt.eq.
+Local Instance zero_NativeInt : zero_of NativeInt.Int := NativeInt.zero.
+Local Instance  one_NativeInt : one_of  NativeInt.Int := NativeInt.one.
+Local Instance   or_NativeInt : or_of   NativeInt.Int := NativeInt.lor.
+Local Instance  shl_NativeInt : shl_of  NativeInt.Int NativeInt.Int := NativeInt.lsl.
+Local Instance  and_NativeInt : and_of  NativeInt.Int := NativeInt.land.
+Local Instance  shr_NativeInt : shr_of  NativeInt.Int NativeInt.Int := NativeInt.lsr.
+Local Instance  not_NativeInt : not_of  NativeInt.Int := NativeInt.lnot.
+Local Instance  xor_NativeInt : xor_of  NativeInt.Int := NativeInt.lxor.
+Local Instance  add_NativeInt : add_of  NativeInt.Int := NativeInt.add.
+Local Instance  sub_NativeInt : sub_of  NativeInt.Int := NativeInt.sub.
+Local Instance  mul_NativeInt : mul_of  NativeInt.Int := NativeInt.mul.
 
 (** * Conversion between machine integers and bit sequences *)
 
@@ -275,7 +274,7 @@ Definition lxor := NativeInt.lxor.
 
 Definition wordsize := bitsToInt (bitn 63 WS.wordsize).
 
-Definition bitmask := ((1 <<< wordsize) - 1)%C.
+Definition bitmask := ((1 <<< wordsize) - 1: Int)%C.
 
 Definition mask_unop  (f : Int -> Int) x := (bitmask && f x)%C.
 Definition mask_binop (f : Int -> Int -> Int) x y := (bitmask && f x y)%C.
