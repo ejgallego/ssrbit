@@ -727,9 +727,17 @@ Definition adds bs1 bs2 : bitseq :=
   let t := lift_top bs1 bs2 in
   val (t.1 + t.2)%R.
 
+Lemma adds_tupleP k (b1 b2 : 'B_k) : size (adds b1 b2) == k.
+Proof. by rewrite !size_tuple minnn. Qed.
+Canonical adds_tuple k (b1 b2 : 'B_k) := Tuple (adds_tupleP b1 b2).
+
 Definition subs bs1 bs2 : bitseq :=
   let t := lift_top bs1 bs2 in
   val (t.1 - t.2)%R.
+
+Lemma subs_tupleP k (b1 b2 : 'B_k) : size (subs b1 b2) == k.
+Proof. by rewrite !size_tuple minnn. Qed.
+Canonical subs_tuple k (b1 b2 : 'B_k) := Tuple (subs_tupleP b1 b2).
 
 (* Example of refinement *)
 Definition R_seqtup k bs (bt : 'B_k) : Prop := bs = bt.
@@ -797,6 +805,7 @@ End BitRing.
 End Unsigned.
 
 Arguments B0 [_].
+
 (* Arguments B1 [_]. *)
 
 (* Lemma shlsS_bitn n i k : i < k -> shls (bitn k n) i.+1 = shls (bitn k n.*2) i. *)
