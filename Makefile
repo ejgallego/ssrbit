@@ -12,6 +12,8 @@ Makefile.coq: _CoqProject
 
 extraction: extraction/STAMP
 
+# XXX: This will force the recompilation of refinement/bits.vo
+# as it depends on extraction/axioms.vo
 extraction/STAMP: build extraction/axioms.v
 	rm -f test_*.ml test_*.mli extraction/axioms.vo
 	$(MAKE) -f Makefile.coq extraction/axioms.vo
