@@ -473,8 +473,51 @@ Axiom add_valid: add_test.
 
 (** All the tests should return true! *)
 
-(* TODO: implement optimized test loop (done by Arthur in some branch) *)
+Definition allb s := foldr (andb) true s.
 
+Definition binop_tests x bitsX y bitsY :=
+  allb
+    [:: (bitsX == bitsY) ==> (eq x y) 
+    ;   Tnative (land x y) (ands bitsX bitsY) 
+    ;   Tnative (lor x y) (ors bitsX bitsY) 
+    ;   Tnative (lxor x y) (xors bitsX bitsY) 
+    ;   Tnative (add x y) (adds bitsX bitsY)
+    ;   Tnative (sub x y) (subs bitsX bitsY)].
+
+Definition shift_tests x toNatX y bitsY :=
+  allb
+    [:: Tnative (lsr y x) (shrs bitsY toNatX) 
+    ;   Tnative (lsl y x) (shls bitsY toNatX)].
+
+Definition unop_tests x :=
+  let bitsX := bitsFromInt w x in
+  let toNatX := nats bitsX in
+  allb
+    [:: Tnative (lnot x) (negs bitsX) 
+    ;   Tnative (opp x) (opps bitsX) 
+    ;   if (toNatX <= w) then
+          forallInt (fun y =>
+            let bitsY := bitsFromInt w y in
+            allb
+              [:: binop_tests x bitsX y bitsY
+              ;   shift_tests x toNatX y bitsY ])
+        else
+          forallInt (fun y => 
+             binop_tests x bitsX y (bitsFromInt w y))].
+
+
+Definition tests
+  := assertion 
+       (allb
+          [:: bitsToIntK_test 
+          ;   zero_test 
+          ;   one_test 
+          ;   forallInt (fun x => unop_tests x)]).
+
+
+(* XXX: show that [tests_valid] implies each individual "axiom" *)
+
+(*
 Definition tests
   := assertion (all id
        [:: bitsToIntK_test
@@ -491,6 +534,7 @@ Definition tests
         ; sub_test
         ; add_test
        ]).
+*)
 
 End Make.
 
