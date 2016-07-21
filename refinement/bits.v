@@ -91,6 +91,7 @@ Global Instance  not_N : not_of  Native.Int := Native.lnot.
 Global Instance  xor_N : xor_of  Native.Int := Native.lxor.
 Global Instance  add_N : add_of  Native.Int := Native.add.
 Global Instance  sub_N : sub_of  Native.Int := Native.sub.
+Global Instance  opp_N : opp_of  Native.Int := Native.opp.
 
 Global Instance get_N       : get_of Native.Int Native.Int       := get.
 Global Instance singleton_N : singleton_of Native.Int Native.Int := singleton.
@@ -429,6 +430,15 @@ have /forallIntP /(_ w1)
 by rewrite /Rnative/fun_hrel Native.bitsToIntK.
 Qed.
 
+Global Instance Rnative_opp:
+  refines (Rnative ==> Rnative) opps Native.opp.
+Proof.
+rewrite !refinesE => bs w <- .
+have /forallIntP /(_ w) 
+     /eqIntP ->  := Native.opp_valid.
+by rewrite /Rnative/fun_hrel Native.bitsToIntK.
+Qed.
+
 (************************************************************************)
 (** * From bit vectors to bit sequences                                 *)
 (************************************************************************)
@@ -476,6 +486,13 @@ Global Instance Rtuple_sub:
 Proof.
 by rewrite !refinesE => bs1 w1 <- bs2 w2 <-;
    rewrite (subs_relE (k := #| T |)(bv1 := bs1)(bv2 := bs2)).
+Qed.
+
+Global Instance Rtuple_opp: 
+  refines (Rtuple ==> Rtuple) (@oppB _) opps.
+Proof.
+rewrite !refinesE => bs w <- .
+by rewrite (opps_relE (k := #| T |)(bv := bs)).
 Qed.
 
 

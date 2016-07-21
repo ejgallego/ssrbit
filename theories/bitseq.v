@@ -715,6 +715,13 @@ End BitZModule.
 
 Section SeqZModule.
 
+Definition opps bs : bitseq :=
+  val (- in_tuple bs)%R.
+
+Lemma opps_tupleP k (b: 'B_k) : size (opps b) == k.
+Proof. by rewrite !size_tuple. Qed.
+Canonical opps_tuple k (b: 'B_k) := Tuple (opps_tupleP b).
+
 Lemma size_zip_proof bs1 bs2 :
   size (zip bs1 bs2) == minn (size bs1) (size bs2).
 Proof. by rewrite size_zip. Qed.
@@ -742,6 +749,13 @@ Canonical subs_tuple k (b1 b2 : 'B_k) := Tuple (subs_tupleP b1 b2).
 (* Example of refinement *)
 Definition R_seqtup k bs (bt : 'B_k) : Prop := bs = bt.
 Local Notation "b ≈ f" := (R_seqtup b f) (at level 42).
+
+Lemma opps_relE k bs (bv : 'B_k) :
+  bs ≈ bv -> opps bs ≈ (- bv)%R.
+Proof.
+move=> ->.
+by rewrite /opps /lift_top /= !size_tuple ?size_tuple.
+Qed.
 
 Lemma adds_relE k bs1 bs2 (bv1 bv2 : 'B_k) :
   bs1 ≈ bv1 -> bs2 ≈ bv2 -> adds bs1 bs2 ≈ (bv1 + bv2)%R.

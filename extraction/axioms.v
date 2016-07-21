@@ -46,8 +46,9 @@ Axiom eq  : Int -> Int -> bool.
 
 Axiom zero : Int.
 Axiom one  : Int.
-Axiom add  : Int -> Int -> Int.
+Axiom opp  : Int -> Int.
 Axiom sub  : Int -> Int -> Int.
+Axiom add  : Int -> Int -> Int.
 Axiom mul  : Int -> Int -> Int.
 
 Axiom lnot : Int -> Int.
@@ -72,23 +73,27 @@ using them at smaller wordsize: *)
 Extract Inlined Constant lsl  => "(lsl)".
 Extract Inlined Constant lnot => "lnot".
 Extract Inlined Constant add  => "(+)".
+Extract         Constant opp  => "(fun x -> -x)".
 Extract Inlined Constant sub  => "(-)".
 Extract Inlined Constant mul  => "( * )".
 
 End NativeInt.
 
 Local Instance   eq_NativeInt : eq_of   NativeInt.Int := NativeInt.eq.
+
 Local Instance zero_NativeInt : zero_of NativeInt.Int := NativeInt.zero.
 Local Instance  one_NativeInt : one_of  NativeInt.Int := NativeInt.one.
-Local Instance   or_NativeInt : or_of   NativeInt.Int := NativeInt.lor.
-Local Instance  shl_NativeInt : shl_of  NativeInt.Int NativeInt.Int := NativeInt.lsl.
-Local Instance  and_NativeInt : and_of  NativeInt.Int := NativeInt.land.
-Local Instance  shr_NativeInt : shr_of  NativeInt.Int NativeInt.Int := NativeInt.lsr.
-Local Instance  not_NativeInt : not_of  NativeInt.Int := NativeInt.lnot.
-Local Instance  xor_NativeInt : xor_of  NativeInt.Int := NativeInt.lxor.
-Local Instance  add_NativeInt : add_of  NativeInt.Int := NativeInt.add.
+Local Instance  opp_NativeInt : opp_of  NativeInt.Int := NativeInt.opp.
 Local Instance  sub_NativeInt : sub_of  NativeInt.Int := NativeInt.sub.
+Local Instance  add_NativeInt : add_of  NativeInt.Int := NativeInt.add.
 Local Instance  mul_NativeInt : mul_of  NativeInt.Int := NativeInt.mul.
+
+Local Instance  not_NativeInt : not_of  NativeInt.Int := NativeInt.lnot.
+Local Instance   or_NativeInt : or_of   NativeInt.Int := NativeInt.lor.
+Local Instance  and_NativeInt : and_of  NativeInt.Int := NativeInt.land.
+Local Instance  xor_NativeInt : xor_of  NativeInt.Int := NativeInt.lxor.
+Local Instance  shl_NativeInt : shl_of  NativeInt.Int NativeInt.Int := NativeInt.lsl.
+Local Instance  shr_NativeInt : shr_of  NativeInt.Int NativeInt.Int := NativeInt.lsr.
 
 (** * Conversion between machine integers and bit sequences *)
 
@@ -280,6 +285,7 @@ Definition mask_unop  (f : Int -> Int) x := (bitmask && f x)%C.
 Definition mask_binop (f : Int -> Int -> Int) x y := (bitmask && f x y)%C.
 
 Definition lnot := mask_unop NativeInt.lnot.
+Definition opp  := mask_unop NativeInt.opp.
 
 Definition lsl := mask_binop NativeInt.lsl.
 Definition add := mask_binop NativeInt.add.
@@ -443,6 +449,13 @@ Axiom lsl_valid: lsl_test.
 
 (** ** Arithmetic *)
 
+Definition opp_test: bool
+  := forallInt (fun i =>
+         Tnative (opp i) 
+                 (opps (bitsFromInt w i))).
+
+Axiom opp_valid: opp_test.
+
 Definition sub_test: bool
   := forallInt (fun i =>
        forallInt (fun j =>
@@ -495,26 +508,6 @@ Proof.
   move=> i1; apply idP.
 Qed.
 
-Definition sub_test: bool
-  := forallInt32 (fun i =>
-       forallInt32 (fun j =>
-         test_native (sub i j) (subB (bitsFromInt32 i) (bitsFromInt32 j)))).
-
-Axiom sub_valid: sub_test.
-
-Global Instance sub_Rnative: 
-  refines (Rnative ==> Rnative ==> Rnative) sub_op sub_op.
-Proof.
-  rewrite /sub_op/sub_Int32/sub_Bits.
-  rewrite refinesE=> i1 bs1 Ribs1 i2 bs2 Ribs2.
-  move: Ribs1 Ribs2.
-  repeat (rewrite /Rnative/test_native eq_adj; move/eqP=> <-).
-  apply/eqInt32P.
-  move: i2; apply: forallInt32P.
-  move=> i2; apply/eqInt32P.
-  move: i1; apply/forallInt32P; last by apply sub_valid.
-  move=> i1; apply idP.
-Qed.
 
 Definition mul_test: bool
   := forallInt32 (fun i =>
@@ -582,6 +575,7 @@ Definition tests
         ; lxor_test
         ; lsr_test
         ; lsl_test
+        ; opp_test
         ; sub_test
        ]).
 
