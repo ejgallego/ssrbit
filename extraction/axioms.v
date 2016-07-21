@@ -465,54 +465,20 @@ Definition sub_test: bool
 Axiom sub_valid: sub_test.
 
  
-(* Pierre: we need an [opps] operator *)
-(*
-Definition neg_test: bool
-  := forallInt (fun i =>
-       Tnative (neg i) (opps (bitsFromInt w i))).
-
-(* Validation condition:
-    [negB "m"] corresponds to machine [- m] *)
-Axiom neg_valid: neg_test.
-*)
-(*
-Global Instance neg_repr: 
-  refines (Rnative ==> Rnative) -%C negB.
-Proof.
-  rewrite refinesE=> i bs.
-  rewrite /Rnative/test_native eq_adj.
-  move/eqP=> <-.
-  apply/eqInt32P.
-  move: i; apply/forallInt32P; last by apply neg_valid.
-  move=> i; apply: eqInt32P.
-Qed.
-
 Definition add_test: bool
-  := forallInt32 (fun i =>
-       forallInt32 (fun i' =>
-         test_native (add i i') (addB (bitsFromInt32 i) (bitsFromInt32 i')))).
+  := forallInt (fun i =>
+       forallInt (fun j =>
+         Tnative (add i j)
+                 (adds (bitsFromInt w i) (bitsFromInt w j)))).
 
-(* Validation condition:
-    [decB "m"] corresponds to machine [dec m] *)
 Axiom add_valid: add_test.
 
-Global Instance add_Rnative:
-  refines (Rnative ==> Rnative ==> Rnative) +%C (fun x y => addB x y).
-Proof.
-  rewrite refinesE=> i1 bs1 Ribs1 i2 bs2 Ribs2. move: Ribs1 Ribs2.
-  repeat (rewrite /Rnative/test_native eq_adj; move/eqP=> <-).
-  apply/eqInt32P.
-  move: i2; apply: forallInt32P.
-  move=> i2; apply/eqInt32P.
-  move: i1; apply/forallInt32P; last by apply add_valid.
-  move=> i1; apply idP.
-Qed.
-
-
+(*
 Definition mul_test: bool
-  := forallInt32 (fun i =>
-       forallInt32 (fun i' =>
-         test_native (mul i i') (mulB (bitsFromInt32 i) (bitsFromInt32 i')))).
+  := forallInt (fun i =>
+       forallInt (fun j =>
+         Tnative (mul i j)
+                     (muls (bitsFromInt w i) (bitsFromInt w j)))).
 
 Axiom mul_valid: mul_test.
 
@@ -577,6 +543,7 @@ Definition tests
         ; lsl_test
         ; opp_test
         ; sub_test
+        ; add_test
        ]).
 
 End Make.

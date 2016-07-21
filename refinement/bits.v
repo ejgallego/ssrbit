@@ -420,6 +420,16 @@ have /forallIntP /(_ w1)
 by rewrite /Rnative/fun_hrel Native.bitsToIntK Hw2n bitnK ?inE ?H2bnd.
 Qed.
 
+Global Instance Rnative_add:
+  refines (Rnative ==> Rnative ==> Rnative) adds Native.add.
+Proof.
+rewrite !refinesE => bs1 w1 <- bs2 w2 <-.
+have /forallIntP /(_ w1) 
+     /forallIntP /(_ w2) 
+     /eqIntP ->  := Native.add_valid.
+by rewrite /Rnative/fun_hrel Native.bitsToIntK.
+Qed.
+
 Global Instance Rnative_sub:
   refines (Rnative ==> Rnative ==> Rnative) subs Native.sub.
 Proof.
@@ -481,11 +491,18 @@ Global Instance Rtuple_lsl:
   refines (Rtuple ==> RidxI ==> Rtuple) :<<:%C :<<:%C.
 Proof. by rewrite !refinesE => bs1 w1 <- bs2 w2 <-. Qed.
 
+Global Instance Rtuple_add: 
+  refines (Rtuple ==> Rtuple ==> Rtuple) (@addB _) adds.
+Proof.
+rewrite !refinesE => bs1 w1 <- bs2 w2 <-.
+by rewrite (adds_relE (k := #| T |)(bv1 := bs1)(bv2 := bs2)).
+Qed.
+
 Global Instance Rtuple_sub: 
   refines (Rtuple ==> Rtuple ==> Rtuple) (@subB _) subs.
 Proof.
-by rewrite !refinesE => bs1 w1 <- bs2 w2 <-;
-   rewrite (subs_relE (k := #| T |)(bv1 := bs1)(bv2 := bs2)).
+rewrite !refinesE => bs1 w1 <- bs2 w2 <-.
+by rewrite (subs_relE (k := #| T |)(bv1 := bs1)(bv2 := bs2)).
 Qed.
 
 Global Instance Rtuple_opp: 
