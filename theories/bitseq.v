@@ -718,6 +718,10 @@ Section SeqZModule.
 Definition opps bs : bitseq :=
   val (- in_tuple bs)%R.
 
+Definition opps_eff k bs : bitseq :=
+  let d := 2^k in
+  bitn k ((d - nats bs) %% d).
+
 Lemma opps_tupleP k (b: 'B_k) : size (opps b) == k.
 Proof. by rewrite !size_tuple. Qed.
 Canonical opps_tuple k (b: 'B_k) := Tuple (opps_tupleP b).
@@ -742,6 +746,11 @@ Definition subs bs1 bs2 : bitseq :=
   let t := lift_top bs1 bs2 in
   val (t.1 - t.2)%R.
 
+Definition subs_eff k bs1 bs2 : bitseq :=
+  let d     := 2^k    in
+  let inZ u := nats u in
+  bitn k ((inZ bs1 + (d - inZ bs2)) %% d).
+
 Lemma subs_tupleP k (b1 b2 : 'B_k) : size (subs b1 b2) == k.
 Proof. by rewrite !size_tuple minnn. Qed.
 Canonical subs_tuple k (b1 b2 : 'B_k) := Tuple (subs_tupleP b1 b2).
@@ -757,6 +766,10 @@ move=> ->.
 by rewrite /opps /lift_top /= !size_tuple ?size_tuple.
 Qed.
 
+Lemma opps_eff_relE k bs (bv : 'B_k) :
+  bs ≈ bv -> opps_eff k bs ≈ (- bv)%R.
+Proof. by move->; congr bitn; rewrite /= prednK ?expn_gt0. Qed.
+
 Lemma adds_relE k bs1 bs2 (bv1 bv2 : 'B_k) :
   bs1 ≈ bv1 -> bs2 ≈ bv2 -> adds bs1 bs2 ≈ (bv1 + bv2)%R.
 Proof.
@@ -769,6 +782,13 @@ Lemma subs_relE k bs1 bs2 (bv1 bv2 : 'B_k) :
 Proof.
 move=> ->->.
 by rewrite /subs /lift_top /= !size_tuple !minnn unzip1_zip ?unzip2_zip ?size_tuple.
+Qed.
+
+Lemma subs_eff_relE k bs1 bs2 (bv1 bv2 : 'B_k) :
+  bs1 ≈ bv1 -> bs2 ≈ bv2 -> subs_eff k bs1 bs2 ≈ (bv1 - bv2)%R.
+Proof.
+move=> -> ->; congr bitn; rewrite /= prednK ?expn_gt0 //.
+by rewrite bitnK ?inE ?ltn_pmod ?expn_gt0 // modnDmr.
 Qed.
 
 End SeqZModule.
