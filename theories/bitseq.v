@@ -136,12 +136,14 @@ Section ZipD.
 Variables S T : Type.
 Variables (sd : S) (td : T).
 
+(* =zipd= *)
 Fixpoint zipd (s : seq S) (t : seq T) {struct t} :=
   match s, t with
   | x :: s', y :: t' => (x, y)  :: zipd s' t'
   | s, [::]          => zip s (nseq (size s) td)
   | [::], t          => zip (nseq (size t) sd) t
   end.
+(* =end= *)
 
 Lemma size_zipd s t : size (zipd s t) = maxn (size s) (size t).
 Proof.
@@ -175,11 +177,14 @@ End ZipD.
 (******************************************************************************)
 Section LiftZ.
 
+(* =liftz_vars= *)
 Variable (T : Type) (d : T) (op : T -> T -> T).
+(* =end= *)
 Implicit Types (s t : seq T).
 
-Definition liftz s t :=
-  [seq op x.1 x.2 | x <- zipd d d s t].
+(* =liftz= *)
+Definition liftz s t := [seq op x.1 x.2 | x <- zipd d d s t].
+(* =end= *)
 
 Lemma liftz_cons x y s t :
   liftz (x :: s) (y :: t) = (op x y) :: liftz s t.
@@ -211,8 +216,10 @@ elim: s t => [|x s ihs] [|y t] //=; last by rewrite ihs maxnSS.
 by rewrite maxn0 size_map size_zip size_nseq minnn.
 Qed.
 
+(* =nth_liftz= *)
 Lemma nth_liftz d0 s t i (i_le_s : i < size s) (i_le_t : i < size t) :
   nth d0 (liftz s t) i = op (nth d0 s i) (nth d0 t i).
+(* =end= *)
 Proof.
 rewrite (nth_map (d0,d0)) ?size_zipd ?leq_max ?i_le_s //.
 rewrite (set_nth_default (d,d) (d0,d0)) ?nth_zipd //.
@@ -652,10 +659,14 @@ Proof. by have := nats_ltn bv; rewrite size_tuple. Qed.
 
 Definition ordB bv : 'I_(2^k).-1.+1 := cast_ord_P (Ordinal (nats_ltn_exp bv)).
 
+(* =ordBK= *)
 Lemma ordBK : cancel ordB bito.
+(* =end= *)
 Proof. by move=> b; apply/val_inj; rewrite /= -{1}(size_tuple b) natsK. Qed.
 
+(* =bitoK= *)
 Lemma bitoK : cancel bito ordB.
+(* =end= *)
 Proof.
 by move=> b; apply/val_inj; rewrite /= bitnK // inE {2}cast_ord_P_proof.
 Qed.

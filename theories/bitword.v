@@ -86,7 +86,9 @@ Local Open Scope bits_scope.
 
 Variable n : nat.
 
+(* =word= *)
 Definition word := {ffun 'I_n -> bool}.
+(* =end= *)
 
 Implicit Type (s : bitseq) (b : 'B_n) (w : word).
 

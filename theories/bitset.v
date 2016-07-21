@@ -78,8 +78,10 @@ by case: m => // -[] m; rewrite mem_mask_cons ihk ?(ltn_eqF hij) ?ltnS // ltnW.
 Qed.
 
 (* Main lemma relating bitmasks with their enumerations *)
+(* =mem_mask_iota= *)
 Lemma mem_mask_iota k i j m : j <= i < k -> size m <= k ->
    i \in mask m (iota j k) = m`_(i - j).
+(* =end= *)
 Proof.
 elim: k i j m => [|k ihk] i j [|b m] /andP [hji hik] hs //.
   by rewrite nth_nil.
@@ -93,9 +95,13 @@ Qed.
 End MemIota.
 
 (* Untyped operations, useful for computing and avoid {set _} *)
+(* =to_set= *)
 Definition to_set   m := mask m (iota 0 (size m)).
+(* =end= *)
 (* Definition from_set k s := foldr (fun idx bs => setb bs idx true) (nseq k false) s. *)
+(* =from_set= *)
 Definition from_set s := foldr (fun idx bs => sets bs idx true) [::] s.
+(* =end= *)
 
 Lemma size_from_set s : size (from_set s) = \max_(n <- s) n.+1.
 Proof.
@@ -219,8 +225,10 @@ Lemma union_morphR k (s1 s2 : {set 'I_k}) :
 Proof. by apply: (can_inj setbK); rewrite union_morphL !setnK. Qed.
 
 (* Basically the same proof. *)
+(* =inter_morphL= *)
 Lemma inter_morphL k (b1 b2 : k.-tuple bool) :
   setB (andB b1 b2) = (setB b1 :&: setB b2).
+(* =end= *)
 Proof.
 by apply/setP=> i; rewrite !mem_setb inE !mem_setb nth_liftz ?size_tuple.
 Qed.
