@@ -49,7 +49,6 @@ Axiom one  : Int.
 Axiom opp  : Int -> Int.
 Axiom sub  : Int -> Int -> Int.
 Axiom add  : Int -> Int -> Int.
-Axiom mul  : Int -> Int -> Int.
 
 Axiom lnot : Int -> Int.
 Axiom lor  : Int -> Int -> Int.
@@ -75,7 +74,6 @@ Extract Inlined Constant lnot => "lnot".
 Extract Inlined Constant add  => "(+)".
 Extract         Constant opp  => "(fun x -> -x)".
 Extract Inlined Constant sub  => "(-)".
-Extract Inlined Constant mul  => "( * )".
 
 End NativeInt.
 
@@ -86,7 +84,6 @@ Local Instance  one_NativeInt : one_of  NativeInt.Int := NativeInt.one.
 Local Instance  opp_NativeInt : opp_of  NativeInt.Int := NativeInt.opp.
 Local Instance  sub_NativeInt : sub_of  NativeInt.Int := NativeInt.sub.
 Local Instance  add_NativeInt : add_of  NativeInt.Int := NativeInt.add.
-Local Instance  mul_NativeInt : mul_of  NativeInt.Int := NativeInt.mul.
 
 Local Instance  not_NativeInt : not_of  NativeInt.Int := NativeInt.lnot.
 Local Instance   or_NativeInt : or_of   NativeInt.Int := NativeInt.lor.
@@ -290,7 +287,6 @@ Definition opp  := mask_unop NativeInt.opp.
 Definition lsl := mask_binop NativeInt.lsl.
 Definition add := mask_binop NativeInt.add.
 Definition sub := mask_binop NativeInt.sub.
-Definition mul := mask_binop NativeInt.mul.
 
 Definition forallInt := forallIntG wordsize.
 Definition forallSeq (p : pred bitseq) := all p (all_seqs [:: true; false] w).
@@ -473,59 +469,9 @@ Definition add_test: bool
 
 Axiom add_valid: add_test.
 
-(*
-Definition mul_test: bool
-  := forallInt (fun i =>
-       forallInt (fun j =>
-         Tnative (mul i j)
-                     (muls (bitsFromInt w i) (bitsFromInt w j)))).
-
-Axiom mul_valid: mul_test.
-
-Global Instance mul_Rnative:
-  refines (Rnative ==> Rnative ==> Rnative) *%C (fun x y => mulB x y).
-Proof.
-  rewrite refinesE=> i1 bs1 Ribs1 i2 bs2 Ribs2. move: Ribs1 Ribs2.
-  repeat (rewrite /Rnative/test_native eq_adj; move/eqP=> <-).
-  apply/eqInt32P.
-  move: i2; apply: forallInt32P.
-  move=> i2; apply/eqInt32P.
-  move: i1; apply/forallInt32P; last by apply mul_valid.
-  move=> i1; apply idP.
-Qed.
-
-*)
-
 (** * Tests extraction *)
 
 (** All the tests should return true! *)
-
-(* Tests we need:
-
-## Binary ops.
-
-Definition binop_tests x bitsX y :=
-  let bitsY := bitsFromInt32 y in
-  allb [:: implb (bitsX == bitsY) (eq x y)
-        ;  test_native (land x y) (andB bitsX bitsY)
-        ;  test_native (lor  x y) (orB  bitsX bitsY)
-        ;  test_native (lxor x y) (xorB bitsX bitsY)
-        ;  implb (toNat bitsY <= wordsize)%nat (test_native (lsr x y) (shrBn bitsX (toNat bitsY)))
-        ;  implb (toNat bitsY <= wordsize)%nat (test_native (lsl x y) (shlBn bitsX (toNat bitsY)))
-        ;  test_native (add x y) (addB bitsX bitsY)
-       ].
-
-## Unary ops.
-
- Definition unop_tests x :=
-  let bitsX := bitsFromInt32 x in
-  allb [:: (*Rnative (succ x) (incB bitsX) ;*)
-         ; test_native (lnot x) (invB bitsX)
-         ; test_native (neg x)  (negB bitsX)
-         ; Rnative (dec x) (decB bitsX)
-         ; forallInt (fun y => binop_tests x bitsX y)
-         ].
-*)
 
 (* TODO: implement optimized test loop (done by Arthur in some branch) *)
 
