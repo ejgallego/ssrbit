@@ -296,7 +296,7 @@ Definition forallSeq (p : pred bitseq) := all p (all_seqs [:: true; false] w).
 
 (* Validation condition:
    Experimentally, [bitsToInt] must be cancelled by [bitsFromInt] *)
-Definition test_bitsToIntK :=
+Definition bitsToIntK_test :=
   forallSeq (fun s => eqseqb (bitsFromInt w (bitsToInt s)) s).
 
 (* This was the previous condition: *)
@@ -305,7 +305,7 @@ Definition test_bitsToIntK :=
   forallInt (fun s => (bitsToInt (bitsFromInt n s) == s)%C).
 *)
 
-Axiom bitsToIntK_valid : test_bitsToIntK.
+Axiom bitsToIntK_valid : bitsToIntK_test.
 
 Lemma bitsToIntK (b: 'B_w) : bitsFromInt w (bitsToInt b) = b.
 Proof.
@@ -477,7 +477,7 @@ Axiom add_valid: add_test.
 
 Definition tests
   := assertion (all id
-       [:: test_bitsToIntK 
+       [:: bitsToIntK_test
         ; bitsFromInt_inj_test
         ; zero_test
         ; one_test 
