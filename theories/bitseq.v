@@ -609,7 +609,7 @@ apply: (@nats_inj j); rewrite ?inE ?size_nseq ?size_bitn ?eqxx //.
 by rewrite nats_zero bitnK // inE expn_gt0.
 Qed.
 
-Lemma nats_one k : nats '1_k = 2^k - 1.
+Lemma nats_full k : nats '1_k = 2^k - 1.
 Proof.
 elim: k => //= k ihk; rewrite nats_cons ihk.
 by rewrite expnS -addnn !mulSn mul0n addn0 addnA subnKC ?addnBA ?expn_gt0.
@@ -706,7 +706,7 @@ Definition decB b := (b - [bits of bitn k 1])%R.
 Lemma one_def: '1 = decB '0.
 Proof.
 apply: (can_inj ordBK); apply: val_inj => /=.
-rewrite prednK ?expn_gt0 // nats_zero nats_one add0n.
+rewrite prednK ?expn_gt0 // nats_zero nats_full add0n.
 case: k => // j; rewrite !bitnK ?inE ?expnS_ge2 ?ltn_pmod ?expn_gt0 //.
 by rewrite modn_mod modn_small // -addn1 subnK ?expn_gt0.
 Qed.
@@ -859,7 +859,7 @@ Qed.
 Lemma shlsS x s i : shls [:: x & s] i.+1 = [:: false & shls (belast x s) i].
 Proof. by rewrite /shls minnSS size_belast subSS take_belast ?leq_subr. Qed.
 
-Lemma shl_one k i : shls (bitn k 1) i = setls '0_k i true.
+Lemma shls_one k i : shls (bitn k 1) i = setls '0_k i true.
 Proof.
 elim: i k => [|i ihi] [|k] //; first by rewrite shls0 bitn_cons bitn_zero.
 by rewrite bitn_cons shlsS /= bitn_zero setls_cons -ihi bitn_one_def.
@@ -892,7 +892,7 @@ Proof. by rewrite nth_ands_bit eqxx. Qed.
 Lemma gets_def s i : let B n := bitn (size s) n in
   s`_i = (ands s (shls (B 1) i) != B 0).
 Proof.
-rewrite /= shl_one bitn_zero getsE.
+rewrite /= shls_one bitn_zero getsE.
 set ge := ands _ _; have -> : size s = size ge.
   by rewrite size_liftz size_setls size_nseq maxnn.
 apply/esym; case E: ge`_i; apply/idP.
@@ -956,7 +956,7 @@ Lemma sets_def s i b : let B n := bitn (size s) n in
                 else
                   ands s (negs (shls (B 1) i)).
 Proof.
-rewrite /= shl_one negs_setls negs0.
+rewrite /= shls_one negs_setls negs0.
 by case: b; [rewrite setlsE | rewrite unsetlsE].
 Qed.
 
