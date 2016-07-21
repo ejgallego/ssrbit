@@ -409,11 +409,15 @@ Axiom one_valid: one_test.
 
 (** ** Logical operators *)
 
+(* =lnot_test= *)
 Definition lnot_test: bool
   := forallInt (fun i =>
        Tnative (lnot i) (negs (bitsFromInt w i))).
+(* =end= *)
 
+(* =lnot_valid= *)
 Axiom lnot_valid: lnot_test.
+(* =end= *)
 
 Definition land_test: bool
   := forallInt (fun i =>

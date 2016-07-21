@@ -58,9 +58,15 @@ Module Native := Make(Wordsize).
 Definition Rfin: {set T} -> 'B_#| T | -> Type  := fun_hrel (@finB T). 
 (* =end= *)
 Definition Rtuple: 'B_#| T | -> bitseq -> Type :=  fun a b => val a = b.
-Definition Rnative: bitseq -> Native.Int -> Type := fun_hrel (bitsFromInt Native.w).
+(* =Rnative= *)
+Definition Rnative: bitseq -> Native.Int -> Type
+  := fun_hrel (bitsFromInt Native.w).
+(* =end= *)
 
-Definition Rbitset: {set T} -> Native.Int -> Type := Rfin \o (Rtuple \o Rnative).
+(* =Rbitset= *)
+Definition Rbitset: {set T} -> Native.Int -> Type
+  := Rfin \o (Rtuple \o Rnative).
+(* =end= *)
 
 (** ** From finite type to machine words: *)
 
@@ -359,8 +365,10 @@ Proof.
   by rewrite /Rnative/fun_hrel Native.bitsToIntK. 
 Qed.
 
+(* =Rnative_lnot= *)
 Global Instance Rnative_lnot:
   refines (Rnative ==> Rnative) negs ~%C.
+(* =end= *)
 Proof.
   rewrite refinesE=> bs w <- . rewrite /not_op /not_N.
   have /forallIntP /(_ w) /eqIntP -> := Native.lnot_valid.
@@ -589,8 +597,10 @@ eapply refines_trans; tc.
 - param (remove_R (Idx_R := RidxN)(Bits_R := Rnative)).
 Qed.
 
+(* =Rbitset_compl= *)
 Global Instance Rbitset_compl: 
   refines (Rbitset ==> Rbitset) compl_op compl_op.
+(* =end= *)
 Proof. by eapply refines_trans; tc. Qed.
 
 Global Instance Rbitset_union:
