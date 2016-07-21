@@ -423,13 +423,11 @@ Global Instance Rnative_sub:
   refines (Rnative ==> Rnative ==> Rnative) subs Native.sub.
 Proof.
 rewrite !refinesE => bs1 w1 <- bs2 w2 <-.
-rewrite /Rnative /fun_hrel.
-have -> : Native.sub w1 w2 = bitsToInt
-          (subs (bitsFromInt Native.w w1)
-                (bitsFromInt Native.w w2)).
-  admit.
-by rewrite Native.bitsToIntK .
-Admitted.
+have /forallIntP /(_ w1) 
+     /forallIntP /(_ w2) 
+     /eqIntP ->  := Native.sub_valid.
+by rewrite /Rnative/fun_hrel Native.bitsToIntK.
+Qed.
 
 (************************************************************************)
 (** * From bit vectors to bit sequences                                 *)
@@ -475,10 +473,11 @@ Proof. by rewrite !refinesE => bs1 w1 <- bs2 w2 <-. Qed.
 
 Global Instance Rtuple_sub: 
   refines (Rtuple ==> Rtuple ==> Rtuple) (@subB _) subs.
-Admitted.
-(*
-Proof. by rewrite !refinesE => bs1 w1 <- bs2 w2 <-. Qed.
-*)
+Proof.
+by rewrite !refinesE => bs1 w1 <- bs2 w2 <-;
+   rewrite (subs_relE (k := #| T |)(bv1 := bs1)(bv2 := bs2)).
+Qed.
+
 
 (************************************************************************)
 (** * Compositions                                                      *)
@@ -511,9 +510,9 @@ Proof.
 eapply refines_trans; tc.
 eapply refines_trans; tc.
 - param (create_R (Bits_R := Rtuple)).
-  rewrite refinesE. (* apply: bool_Rxx. *) admit.
-(* - param (create_R (Bits_R := Rnative)). *)
-Admitted.
+  rewrite refinesE. apply: bool_Rxx.
+- param (create_R (Bits_R := Rnative)).
+Qed.
 
 
 Global Instance Rbitset_empty: 

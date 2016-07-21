@@ -442,6 +442,15 @@ Axiom lsl_valid: lsl_test.
 
 
 (** ** Arithmetic *)
+
+Definition sub_test: bool
+  := forallInt (fun i =>
+       forallInt (fun j =>
+         Tnative (sub i j) 
+                 (subs (bitsFromInt w i) (bitsFromInt w j)))).
+
+Axiom sub_valid: sub_test.
+
  
 (* Pierre: we need an [opps] operator *)
 (*
@@ -573,6 +582,7 @@ Definition tests
         ; lxor_test
         ; lsr_test
         ; lsl_test
+        ; sub_test
        ]).
 
 End Make.
