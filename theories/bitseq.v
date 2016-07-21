@@ -842,6 +842,31 @@ Arguments B0 [_].
 
 (* Arguments B1 [_]. *)
 
+(* Mask theory: The original development of the library went to great lengths
+ * to support the view of bitmask as \big[ors/[::]]. This means operationally
+ * we don't care about the order bits are set.
+ *
+ * We still don't provide a good general theory for such masks but here is a
+ * start.
+ *)
+Lemma nth_ors i : {morph [fun x => nth false x i] : x y / ors x y >-> orb x y}.
+Proof. by move=> x y; rewrite /= (nth_liftz_idem _ _ _ _ orbb). Qed.
+
+Definition bmask k i j :=
+  \big[ors/[::]]_(i <= n < j) setls '0_k n true.
+
+Lemma bmaskP k i j n (hk : n < k) : (bmask k i j)`_n = (i <= n < j).
+Proof.
+rewrite /bmask.
+have /= -> := (big_morph _ (nth_ors _) (nth_nil _ _) _ _ ((setls '0_k)^~true)).
+rewrite big_has; apply/hasP/andP.
+  case=> x; rewrite mem_index_iota => /andP[h1 h2].
+  rewrite /setls; case: ifP => _; rewrite ?nth_set_nth ?nth_nseq ?if_same //=.
+  by case: eqP => [->|]; rewrite ?nth_nseq ?if_same.
+case=> [hl hu]; exists n; rewrite ?mem_index_iota ?hl ?hu //.
+by rewrite /setls ?size_nseq hk nth_set_nth /= eqxx.
+Qed.
+
 (* Lemma shlsS_bitn n i k : i < k -> shls (bitn k n) i.+1 = shls (bitn k n.*2) i. *)
 
 Lemma take_belast T x (s : seq T) k (k_size : k <= size s) :
