@@ -544,7 +544,6 @@ Proof.
 eapply refines_trans; tc.
 eapply refines_trans; tc.
 - param (create_R (Bits_R := Rtuple)).
-  rewrite refinesE. apply: bool_Rxx.
 - param (create_R (Bits_R := Rnative)).
 Qed.
 
