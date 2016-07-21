@@ -853,11 +853,19 @@ Lemma nth_ors i : {morph [fun x => nth false x i] : x y / ors x y >-> orb x y}.
 Proof. by move=> x y; rewrite /= (nth_liftz_idem _ _ _ _ orbb). Qed.
 
 Definition bmask k i j :=
-  \big[ors/[::]]_(i <= n < j) setls '0_k n true.
+  ors '0_k (\big[ors/[::]]_(i <= n < j) setls '0_k n true).
+
+Lemma size_bmask k i j : size (bmask k i j) = k.
+Proof.
+rewrite /bmask; elim/big_rec: _ => [|idx x _].
+  by rewrite size_liftz size_nseq maxn0.
+rewrite !size_liftz size_setls size_nseq.
+by rewrite maxnA maxnn.
+Qed.
 
 Lemma bmaskP k i j n (hk : n < k) : (bmask k i j)`_n = (i <= n < j).
 Proof.
-rewrite /bmask.
+rewrite /bmask (nth_liftz_idem _ _ _ _ orbb) nth_nseq if_same /=.
 have /= -> := (big_morph _ (nth_ors _) (nth_nil _ _) _ _ ((setls '0_k)^~true)).
 rewrite big_has; apply/hasP/andP.
   case=> x; rewrite mem_index_iota => /andP[h1 h2].
@@ -865,6 +873,50 @@ rewrite big_has; apply/hasP/andP.
   by case: eqP => [->|]; rewrite ?nth_nseq ?if_same.
 case=> [hl hu]; exists n; rewrite ?mem_index_iota ?hl ?hu //.
 by rewrite /setls ?size_nseq hk nth_set_nth /= eqxx.
+Qed.
+
+Lemma negs_ors bs1 bs2 : negs (ors bs1 bs2) = ands (negs bs1) (negs bs2).
+Proof.
+elim: bs1 bs2 => [|x xs IHs] [|y ys] //.
++ by rewrite and1s or0s.
++ by rewrite ors0 ands1.
++ by rewrite /= IHs negb_or.
+Qed.
+
+Lemma negs_setls bs i b : negs (setls bs i b) = setls (negs bs) i (~~ b).
+Proof.
+rewrite /setls size_map; case: ifP => // hs.
+apply: (@eq_from_nth _ false).
+  by rewrite size_map !size_set_nth size_map.
+move=> j; rewrite size_map size_set_nth (maxn_idPr hs) => hj.
+rewrite (nth_map false) ?size_set_nth ?(maxn_idPr hs) //.
+by rewrite !nth_set_nth /=; case: ifP; rewrite // (nth_map false).
+Qed.
+
+Lemma negs_zero k : negs '0_k = '1_k.
+Proof. by rewrite /negs map_nseq. Qed.
+
+Definition bumask k i j :=
+  ands '1_k (\big[ands/[::]]_(i <= n < j) setls '1_k n false).
+
+Lemma size_bumask k i j : size (bumask k i j) = k.
+Proof.
+rewrite /bumask; elim/big_rec: _ => [|idx x _].
+  by rewrite size_liftz size_nseq maxn0.
+by rewrite !size_liftz size_setls size_nseq maxnA maxnn.
+Qed.
+
+Lemma negs_bmask k i j : negs (bmask k i j) = bumask k i j.
+Proof.
+rewrite /bmask /bumask.
+elim/big_rec2: _ => [|x y1 y2 _].
+  by rewrite ors0 ands1 negs_zero.
+rewrite !negs_ors !negs_zero negs_setls negs_zero.
+Admitted.
+
+Lemma bumaskP k i j n (hk : n < k) : (bumask k i j)`_n = ~~ (i <= n < j).
+Proof.
+by rewrite -negs_bmask (nth_map false) ?size_bmask // bmaskP.
 Qed.
 
 (* Lemma shlsS_bitn n i k : i < k -> shls (bitn k n) i.+1 = shls (bitn k n.*2) i. *)
@@ -948,18 +1000,6 @@ Qed.
 
 Lemma negs0 k : negs '0_k = '1_k.
 Proof. by rewrite /negs map_nseq. Qed.
-
-Lemma negs_setls bs n b :
-  negs (setls bs n b) = setls (negs bs) n (~~b).
-Proof.
-apply: (@eq_from_nth _ false).
-  by rewrite !size_setls !size_map size_setls.
-move=> i; rewrite size_map size_setls => hi.
-rewrite (nth_map false) ?size_setls // /setls ?size_map; case: ifP => hn /=.
-  rewrite !nth_set_nth /= fun_if (nth_map false) //.
-  by case: ifP => ->.
-by rewrite (nth_map false).
-Qed.
 
 (* XXx: Similar to setlsE, there's a missing general principle here.
  *
