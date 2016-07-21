@@ -41,8 +41,14 @@ Unset Printing Implicit Defensive.
 Module NativeInt.
 
 (** We assume that we are running on a 64 bit machine. *)
+(* =int_axiom= *)
 Axiom Int : Type.
+Extract Inlined Constant Int  => "int".
+(* =end= *)
+(* =eq_axiom= *)
 Axiom eq  : Int -> Int -> bool.
+Extract Inlined Constant eq   => "(=)".
+(* =end= *)
 
 Axiom zero : Int.
 Axiom one  : Int.
@@ -57,8 +63,6 @@ Axiom lxor : Int -> Int -> Int.
 Axiom lsr  : Int -> Int -> Int.
 Axiom lsl  : Int -> Int -> Int.
 
-Extract Inlined Constant Int  => "int".
-Extract Inlined Constant eq   => "(=)".
 Extract Inlined Constant zero => "0".
 Extract Inlined Constant one  => "1".
 Extract Inlined Constant lor  => "(lor)".
@@ -205,6 +209,7 @@ Section BitExtract.
 Variable n : nat.
 Implicit Types (s : bitseq) (b : 'B_n).
 
+(* =bitsToInt= *)
 Fixpoint bitsToInt s : NativeInt.Int :=
   (match s with
     | [::]           => 0
@@ -219,6 +224,7 @@ Fixpoint bitsFromInt (k: nat) (n: NativeInt.Int) : bitseq :=
       let p := bitsFromInt k (n :>>: 1) in
       (n && 1 == 1) :: p
   end)%C.
+(* =end= *)
 
 Lemma bitsFromIntP {k} (i: NativeInt.Int): size (bitsFromInt k i) == k.
 Proof.
@@ -243,18 +249,24 @@ End WORDSIZE.
  - a trusted efficient checker operator.
  *)
 
+(* =forallint_ax= *)
 Axiom forallIntG : NativeInt.Int -> (NativeInt.Int -> bool) -> bool.
 Extract Inlined Constant forallIntG => "Forall.forall_int".
+(* =end= *)
 
 Section Trust.
 
 (* Axiom 1: Equality of integer is embedded within Coq's propositional equality: *)
+(* =eqintp= *)
 Axiom eqIntP : Equality.axiom NativeInt.eq.
+(* =end= *)
 
 (* Axiom 2: If a property is true for all integers, then it is
    propositionally true. We restrict to boolean properties *)
+(* =forallintp= *)
 Axiom forallIntP : forall w (P : pred _),
     reflect (forall x, P x) (forallIntG w P).
+(* =end= *)
 
 End Trust.
 
@@ -296,8 +308,10 @@ Definition forallSeq (p : pred bitseq) := all p (all_seqs [:: true; false] w).
 
 (* Validation condition:
    Experimentally, [bitsToInt] must be cancelled by [bitsFromInt] *)
+(* =tointk_test= *)
 Definition bitsToIntK_test :=
   forallSeq (fun s => eqseqb (bitsFromInt w (bitsToInt s)) s).
+(* =end= *)
 
 (* This was the previous condition: *)
 (*
@@ -305,12 +319,17 @@ Definition test_bitsToIntK :=
   forallInt (fun s => (bitsToInt (bitsFromInt n s) == s)%C).
 *)
 
+(* =tointk_valid= *)
 Axiom bitsToIntK_valid : bitsToIntK_test.
+(* =end= *)
 
-Lemma bitsToIntK (b: 'B_w) : bitsFromInt w (bitsToInt b) = b.
+(* =tointk_lemma= *)
+Lemma bitsToIntK (b: 'B_w) :
+  bitsFromInt w (bitsToInt b) = b.
 Proof.
 by have/forall_bitP/(_ b) := bitsToIntK_valid; rewrite -eqseqR => /eqP.
 Qed.
+(* =end= *)
 
 (*
 Lemma bitsToIntK: cancel (@bitsToIntB _) (bitsFromIntB w).
@@ -329,10 +348,12 @@ Qed.
 (* Emilio: this seems more expensive than just doing the test. *)
 (* Pierre: which test? *)
 
+(* =fromint_inj= *)
 Definition bitsFromInt_inj_test: bool :=
   forallInt (fun x =>
     forallInt (fun y =>
       (eqseqb (bitsFromInt w x) (bitsFromInt w y)) ==> eq x y)).
+(* =end= *)
 
 Axiom bitsFromInt_inj_valid: bitsFromInt_inj_test.
 

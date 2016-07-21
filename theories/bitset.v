@@ -447,7 +447,10 @@ Context `{shr_of Idx Bits}.
 Implicit Types (k: Idx)(bs : Bits).
 Local Open Scope computable_scope.
 
-Definition get    k bs := negb ((bs && (1 :<<: k)) == 0)%C.
+(* =get= *)
+Definition get    k bs
+  := negb ((bs && (1 :<<: k)) == 0)%C.
+(* =end= *)
 Definition singleton k := 1 :<<: k.
 Definition compl     bs := ~ bs.
 
@@ -455,8 +458,14 @@ Definition inter bs bs' := bs && bs'.
 Definition union bs bs' := bs || bs'.
 Definition min   bs     := bs && ~ bs.
 (* XXX: Order of arguments *)
-Definition insert  k bs    := bs || (1 :<<: k).
-Definition remove  bs k    := bs && (~ (1 :<<: k)).
+(* =insert= *)
+Definition insert  k bs
+  := bs || (1 :<<: k).
+(* =end= *)
+(* =remove= *)
+Definition remove  bs k
+  := bs && (~ (1 :<<: k)).
+(* =end= *)
 Definition symdiff bs1 bs2 := bs1 ^^ bs2.
 Definition subset  bs1 bs2 := (bs1 && bs2) == bs1.
 

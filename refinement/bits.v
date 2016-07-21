@@ -54,7 +54,9 @@ Module Native := Make(Wordsize).
 
 (** ** From sets over a finite type to machine words: *)
 
+(* =Rfin= *)
 Definition Rfin: {set T} -> 'B_#| T | -> Type  := fun_hrel (@finB T). 
+(* =end= *)
 Definition Rtuple: 'B_#| T | -> bitseq -> Type :=  fun a b => val a = b.
 Definition Rnative: bitseq -> Native.Int -> Type := fun_hrel (bitsFromInt Native.w).
 
@@ -172,8 +174,10 @@ apply: leq_ltn_trans; last by apply: ltn_expl.
 apply ltnW, ltn_ord.
 Qed.
 
+(* =Rfin_get= *)
 Global Instance Rfin_get: 
   refines (Rord ==> Rfin ==> param.bool_R) get_op get_op.
+(* =end= *)
 Proof.
   rewrite refinesE => t _ <- E2 bs2 <- .
   apply eq_bool_R.
@@ -225,8 +229,10 @@ apply/setP=> t.
 by rewrite can_enum inE mem_setb nth_nseq ltn_ord inE.
 Qed.
 
+(* =Rfin_insert= *)
 Global Instance Rfin_insert:
   refines (Rord ==> Rfin ==> Rfin) set_op set_op.
+(* =end= *)
 Proof.
 rewrite refinesE => t _ <- E bs2 <- .
 rewrite /Rfin /fun_hrel /set_op /set_B /set_fin.
@@ -254,9 +260,10 @@ case: ifP.
   by rewrite can_enum inE mem_setb.
 Qed.
 
-
+(* =Rfin_remove= *)
 Global Instance Rfin_remove:
   refines (Rfin ==> Rord ==> Rfin) remove_op remove_op.
+(* =end= *)
 Proof.
 (* XXX: proof duplication with [Rfin_insert] *)
 rewrite refinesE => E bs2 <- t _ <-  .

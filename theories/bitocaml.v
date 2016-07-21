@@ -54,8 +54,10 @@ Definition ctableP (t : ctable) :=
 (** [pop_table] returns a k-list of words of size [n]
   * counting the numbers of bits.
   *)
+(* =pop_table= *)
 Definition pop_table : seq 'B_n :=
   mkseq (fun i => tobit n (count id (bitn k i))) (2^k).
+(* =end= *)
 
 Lemma pop_table_size : size pop_table = 2^k.
 Proof. by rewrite size_mkseq. Qed.
@@ -77,22 +79,24 @@ Proof. by rewrite ffunE. Qed.
 (** [pop_elem bs i] return the cardinality of the [i]-th part of
   * of [bs].
   *)
+(* =pop_elem= *)
 Definition pop_elem (bs: 'B_n) i : 'B_n :=
   let x := andB (shrB bs (i * k))
                 (decB (shlB [bits of bitn n 1] k))
   in nth '0 pop_table (nats x).
+(* =end= *)
 
 (* Don't we want to shift here maybe ? *)
+(* =card= *)
 Definition card_rec (bs: 'B_n) := fix cr i : 'B_n :=
     match i with
     | 0     => '0
     | i'.+1 => addB (pop_elem bs i') (cr i')
     end.
 
-(** [cardinal k bs] returns the number of bits set in [bs] to one using a
-  * table of size [k]
-  *)
-Definition cardinal (bs: 'B_n) : 'B_n := card_rec bs (n %/ k).
+Definition cardinal (bs: 'B_n) : 'B_n
+  := card_rec bs (n %/ k).
+(* =end= *)
 
 End CardDef.
 
@@ -132,7 +136,9 @@ End Card.
 Section BitMin.
 
 (* Set containing only the minimum *)
+(* =keep_min= *)
 Definition keep_min n (bs: 'B_n) : 'B_n := andB bs (oppB bs).
+(* =end= *)
 
 (* Lemma keep_min_repr n (bs: 'B_n) x y : x \in setB bs -> *)
 (*   setB (keep_min bs) = [set [arg min_(k < y in setB bs) k]]. *)
@@ -146,8 +152,10 @@ Admitted.
 Definition bit_tmp n: nat -> 'B_n. Admitted.
 
 (* Value of the minimum (ie number of trailing zeroes) *)
+(* =ntz= *)
 Definition ntz n (k: nat) (bs: 'B_n) : 'B_n :=
   subB (bit_tmp n n) (cardinal k (orB bs (oppB bs))).
+(* =end= *)
 
 (* Lemma ntz_repr k (bs : 'B_k) i (div_i : i %| k) (ltz_i : i > 0) x y : x \in setB bs -> *)
 (*     ntz i bs = bit_tmp k [arg min_(k < y in setB bs) k]. *)
