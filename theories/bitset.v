@@ -26,7 +26,7 @@ Require Import choice fintype finset tuple path bigop.
 (* from_set s == bitseq correponding to (s : seq nat)                         *)
 (*                                                                            *)
 (*     seqn s == k.-bit tuple for (s : seq 'I_k)                              *)
-(*     setn S == k.-bit_tuple for (S : {set 'I_k})                            *)
+(*     setn S == k.-bit tuple for (S : {set 'I_k})                            *)
 (*                                                                            *)
 (*     seqB B ==  seq 'I_k  corresponding to (B : k.-bit_tuple)               *)
 (*     setB B == {set 'I_k} corresponding to (B : k.-bit_tuple)               *)
@@ -127,18 +127,18 @@ Qed.
 Definition seqn k (s : seq 'I_k)   := Tuple (from_set_tupleP s).
 Definition setn k (s : {set 'I_k}) := seqn (enum s).
 
-Definition seqB k (m : k.-tuple bool) := mask m (enum 'I_k).
-Definition setB k (m : k.-tuple bool) := [set x in seqB m].
+Definition seqB k (m : 'B_k) := mask m (enum 'I_k).
+Definition setB k (m : 'B_k) := [set x in seqB m].
 
 (* Alternative *)
-Definition setb' k (m : k.-tuple bool) := [set i in 'I_k | m`_i].
+Definition setb' k (m : 'B_k) := [set i in 'I_k | m`_i].
 
 Lemma val_mem_seq (T : eqType) (P : pred T) (sT : subType P)
       (i : sT) (s : seq sT) : (i \in s) = (val i \in [seq val x | x <- s]).
 Proof. by elim: s => //= x s ihs; rewrite !inE val_eqE ihs. Qed.
 
 (* This is interesting (and true) but a bit cumbersome to prove *)
-Lemma setb_def k (m : k.-tuple bool) : setB m = [set i in 'I_k | m`_i].
+Lemma setb_def k (m : 'B_k) : setB m = [set i in 'I_k | m`_i].
 Proof.
 apply/setP=> i; rewrite !inE val_mem_seq map_mask val_enum_ord.
 by rewrite mem_mask_iota ?subn0 ?ltn_ord ?size_tuple.
@@ -152,17 +152,17 @@ apply/eq_from_set; rewrite ?(map_inj_uniq val_inj) //.
 by move=> u; apply/mapP/mapP=> -[v v1 ->]; exists v; rewrite ?hi // -hi.
 Qed.
 
-Lemma seqb_uniq k (s : k.-tuple bool) : uniq (seqB s).
+Lemma seqb_uniq k (s : 'B_k) : uniq (seqB s).
 Proof. by rewrite mask_uniq ?enum_uniq. Qed.
 
-Lemma mem_setb k (b : k.-tuple bool) (i : 'I_k) :
+Lemma mem_setb k (b : 'B_k) (i : 'I_k) :
   (i \in setB b) = b`_i.
 Proof.
 rewrite inE val_mem_seq !map_mask val_enum_ord.
 by rewrite mem_mask_iota ?subn0 ?ltn_ord ?size_tuple.
 Qed.
 
-Lemma mem_setB k (b : k.-tuple bool) (i : 'I_k) :
+Lemma mem_setB k (b : 'B_k) (i : 'I_k) :
   (i \in setB b) = tnth b i.
 Proof. by rewrite mem_setb (tnth_nth false). Qed.
 
@@ -211,7 +211,7 @@ Prenex Implicits setnK setbK.
 
 (* Example property: union *)
 (* XXX: move to use {morph ...} notation *)
-Lemma union_morphL k (b1 b2 : k.-tuple bool) :
+Lemma union_morphL k (b1 b2 : 'B_k) :
   setB (orB b1 b2) = (setB b1 :|: setB b2).
 Proof.
 by apply/setP=> i; rewrite !mem_setb inE !mem_setb nth_liftz ?size_tuple.
@@ -223,19 +223,19 @@ Lemma union_morphR k (s1 s2 : {set 'I_k}) :
 Proof. by apply: (can_inj setbK); rewrite union_morphL !setnK. Qed.
 
 (* Basically the same proof. *)
-Lemma inter_morphL k (b1 b2 : k.-tuple bool) :
+Lemma inter_morphL k (b1 b2 : 'B_k) :
   setB (andB b1 b2) = (setB b1 :&: setB b2).
 Proof.
 by apply/setP=> i; rewrite !mem_setb inE !mem_setb nth_liftz ?size_tuple.
 Qed.
 
-Lemma neg_morphL k (b : k.-tuple bool) :
+Lemma neg_morphL k (b : 'B_k) :
   setB (negB b) = ~: (setB b).
 Proof.
 by apply/setP=> i; rewrite !mem_setb inE !mem_setb (nth_map false) ?size_tuple.
 Qed.
 
-Lemma symdiff_morphL k (b1 b2 : k.-tuple bool) :
+Lemma symdiff_morphL k (b1 b2 : 'B_k) :
   setB (xorB b1 b2) = (setB b1 :\: setB b2 :|: setB b2 :\: setB b1).
 Proof.
 apply/setP=> i.
@@ -265,12 +265,12 @@ Qed.
 (* get. *)
 
 (* Cardinality *)
-Definition cardb k (s : k.-tuple bool) := count id s.
+Definition cardb k (s : 'B_k) := count id s.
 
 Arguments seqb_uniq [k s].
 
 (* This follows directly from the library *)
-Lemma cardbP k (s : k.-tuple bool) : #| setB s | = cardb s.
+Lemma cardbP k (s : 'B_k) : #| setB s | = cardb s.
 Proof.
 by rewrite cardsE (card_uniqP seqb_uniq) size_mask // size_tuple size_enum_ord.
 Qed.
@@ -319,7 +319,7 @@ Section FinSet.
 
 Variable T : finType.
 Implicit Types (A B : {set T}).
-Implicit Types (b : #|T|.-tuple bool).
+Implicit Types (b : 'B_#|T|).
 
 (* From a finite set to tuple *)
 Definition bitF A := setn [set enum_rank x | x in A].
@@ -396,13 +396,13 @@ End FinSet.
 (******************************************************************************)
 
 Section ReprUniq.
-Definition s_repr k (bs : k.-tuple bool) E :=
+Definition s_repr k (bs : 'B_k) E :=
   E = [set x : 'I_k | bs`_x].
 
-Lemma s_repr_uniq k (bs : k.-tuple bool) E : s_repr bs E -> E = setB bs.
+Lemma s_repr_uniq k (bs : 'B_k) E : s_repr bs E -> E = setB bs.
 Proof. by move ->; rewrite setb_def. Qed.
 
-Lemma count_repr k (bs : k.-tuple bool) E : s_repr bs E -> count_mem true bs = #|E|.
+Lemma count_repr k (bs : 'B_k) E : s_repr bs E -> count_mem true bs = #|E|.
 Proof. by move -> ; rewrite -setb_def cardbP; apply: eq_count; case. Qed.
 End ReprUniq.
 
