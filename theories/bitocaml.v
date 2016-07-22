@@ -153,8 +153,9 @@ Definition keep_min n (bs: 'B_n) : 'B_n
 
 (* =keep_minP= *)
 Lemma keep_minP n (bs: 'B_n) :
-  keep_min bs = setls '0_n (index true bs) true :> bitseq.
+  keep_min bs = setls '0_n (index true bs) true
 (* =end= *)
+ :> bitseq.
 Admitted.
 
 (* XXX: maybe ripple_repr could be useful here, as neg is (inv + 1) *)
