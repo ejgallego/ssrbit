@@ -89,12 +89,23 @@ Definition card_rec (bs: 'B_n) := fix cr i : 'B_n :=
     | i'.+1 => addB (pop_elem bs i') (cr i')
     end.
 
-(** [cardinal k bs] returns the number of bits set in [bs] to one using a
+(** [cardinal k bs] returns the number of bits set in [bs] using a
   * table of size [k]
   *)
-Definition cardinal (bs: 'B_n) : 'B_n := card_rec bs (n %/ k).
+Definition cardinal (bs: 'B_n) : 'B_n :=
+  card_rec bs (n %/ k).+1.
 
 End CardDef.
+
+(* Poor man's square root *)
+Definition pm_sqrt n :=
+  let sq := fix sq m := if m*m <= n then m else
+                        if m is m.+1 then sq m else 0
+  in sq n.
+
+(* This version uses an heuristic *)
+Definition cardinal_smart n (bs: 'B_n) : 'B_n :=
+  cardinal (pm_sqrt n) bs.
 
 Eval compute in (map val (@pop_table 4 2)).
 Eval compute in (val (@pop_elem 3 1 [tuple true; false; true] 0)).
@@ -115,8 +126,8 @@ Lemma cardinalE n k (bv : 'B_n) :
 Proof.
 rewrite /cardinal.
 elim: (n %/ k) {1 2 3 6}n bv => [|nk ihnk] nv bv.
-  by rewrite nats_zero big_nil.
-rewrite card_rec_cons [reshape _ _]/= big_cons -ihnk.
+(*   by rewrite nats_zero big_nil. *)
+(* rewrite card_rec_cons [reshape _ _]/= big_cons -ihnk. *)
 Admitted.
 
 (* Lemma cardinalE : \sum_(l reshape  *)
@@ -141,18 +152,39 @@ Definition keep_min n (bs: 'B_n) : 'B_n := andB bs (oppB bs).
 
 (* Emilio: we relate this to index instead *)
 Lemma keep_minP n (bs: 'B_n) :
-  keep_min bs = sets '0_n (index true bs) true :> bitseq.
+  nats (keep_min bs) = index true bs.
 (* XXX: maybe ripple_repr could be useful here, as neg is (inv + 1) *)
 Admitted.
 
-Definition bit_tmp n: nat -> 'B_n. Admitted.
-
 (* Value of the minimum (ie number of trailing zeroes) *)
-Definition ntz n (k: nat) (bs: 'B_n) : 'B_n :=
-  subB (bit_tmp n n) (cardinal k (orB bs (oppB bs))).
+Definition ntz n (bs: 'B_n) : 'B_n :=
+  subB ([bits of bitn n n]) (cardinal_smart (orB bs (oppB bs))).
 
-(* Lemma ntz_repr k (bs : 'B_k) i (div_i : i %| k) (ltz_i : i > 0) x y : x \in setB bs -> *)
-(*     ntz i bs = bit_tmp k [arg min_(k < y in setB bs) k]. *)
-(* Admitted. *)
+Definition ntz' n b := n - count id (ors b (opps b)).
+
+(*
+
+Definition input := [tuple true;  false; false; true;  false].
+Compute nats (oppB input).
+Compute nats (opps input).
+
+Compute nats (orB input (oppB input)).
+Compute nats (ors input (opps input)).
+Compute nats (cardinal 2 (orB input (oppB input))).
+Compute       count id (ors input (opps input)).
+
+Compute nats (cardinal_smart input).
+Compute      (count id input).
+
+Compute nats (ntz input).
+Compute ntz' 5    input.
+
+Compute nats (subB [bits of bitn 5 5] [bits of bitn 5 5]).
+
+*)
+
+Lemma ntzP n (bs : 'B_n) : true \in bs ->
+    ntz bs = [bits of bitn n [arg min_(k < ord0 in tnth bs k) k]].
+Admitted.
 
 End BitMin.
