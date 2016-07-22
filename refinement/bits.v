@@ -617,14 +617,12 @@ Section Nand.
   Variables (B: Type)
             (and: B -> B -> B)
             (neg: B -> B).
-
   Definition nand (b1 b2: B): B := neg (and b1 b2).
 End Nand.
 (* =end= *)
 
 (* =Rword_nand= *)
 Parametricity nand.
-
 Instance Rword_nand:
   refines (Rword ==> Rword ==> Rword) 
           (nand (@andw n) (@negw n)) 
