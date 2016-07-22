@@ -125,8 +125,10 @@ Admitted.
 
 (* Lemma cardinalE : \sum_(l reshape  *)
 
-Lemma cardinalP k (s : 'B_k) i (div_i: i %| k) (ltz_i: i > 0) :
+(* Lemma cardinalP k (s : 'B_k) i (* (div_i: i %| k) (ltz_i: i > 0) *) : *)
+Lemma cardinalP k (s : 'B_k) i :
   nats (cardinal i s) = count id s.
+
 Proof.
 Admitted.
 
