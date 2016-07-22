@@ -50,7 +50,40 @@ Class union_of fset := union_op : fset -> fset -> fset.
 Class singleton_of e fset := singleton_op : e -> fset.
 Class subset_of fset := subset_op : fset -> fset -> bool.
 
+Typeclasses Transparent cardinal_of compl_of empty_of full_of
+  get_of set_of inter_of min_of remove_of symdiff_of union_of
+  singleton_of subset_of.
+
+From mathcomp
+Require Import fintype finset.
+
+(*
+Notation "#| T |"        := (cardinal_op T)  : computable_scope.
+Notation "~:%C"          := (compl_op)       : computable_scope.
+Notation "'~:' T"        := (compl_op T)     : computable_scope.
+*)
+Notation "'SET0'"        := (empty_op)       : computable_scope.
+(*
+Notation "'setT'"        := (full_op)        : computable_scope.
+Notation "|:%C"          := (set_op)         : computable_scope.
+Notation "x '|:' T"      := (set_op x T)     : computable_scope.
+Notation ":&:%C"         := and_op           : computable_scope.
+*)
+Notation "A :&: B"       := (inter_op A B)     : computable_scope.
+(*
+Notation ":\%C"          := (remove_op)      : computable_scope.
+Notation "A :\ x"        := (remove_op A x)  : computable_scope.
+Notation ":|:%C"         := union_op            : computable_scope.
+*)
+Notation "A ':|:' B"       := (union_op A B)      : computable_scope.
+(*
+Notation "[set]%C"       := (singleton_op)   : computable_scope.
+*)
+Notation "[ 'SET' x ]"  := (singleton_op x) : computable_scope.
+(*
+Notation "\subset%C"     := (subset_op)      : computable_scope.
+Notation "A '\subset' B" := (subset_op A B)  : computable_scope.
+*)
+
 End Op.
 End Sets.
-
-(* XXX: add notations *)
