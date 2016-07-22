@@ -90,8 +90,10 @@ CoInductive RidxN: nat -> Native.Int -> Type :=
   & b = bitn #| T | k : RidxN k i.
 (* =end= *)
 
+(* =Rbits= *)
 Definition Rbits: T -> Native.Int -> Type :=
   Rord \o (RidxI \o RidxN).
+(* =end= *)
 
 
 (************************************************************************)
@@ -194,7 +196,7 @@ Qed.
 
 (* =Rfin_get= *)
 Global Instance Rfin_get: 
-  refines (Rord ==> Rfin ==> param.bool_R) get_op get_op.
+  refines (Rord ==> Rfin ==> param.bool_R) (fun k E => k \in E) get.
 (* =end= *)
 Proof.
   rewrite refinesE => t _ <- E2 bs2 <- .
@@ -249,7 +251,7 @@ Qed.
 
 (* =Rfin_insert= *)
 Global Instance Rfin_insert:
-  refines (Rord ==> Rfin ==> Rfin) set_op set_op.
+  refines (Rord ==> Rfin ==> Rfin) (fun k E => k |: E) insert.
 (* =end= *)
 Proof.
 rewrite refinesE => t _ <- E bs2 <- .
@@ -280,7 +282,7 @@ Qed.
 
 (* =Rfin_remove= *)
 Global Instance Rfin_remove:
-  refines (Rfin ==> Rord ==> Rfin) remove_op remove_op.
+  refines (Rfin ==> Rord ==> Rfin) (fun A a => A :\ a) remove.
 (* =end= *)
 Proof.
 (* XXX: proof duplication with [Rfin_insert] *)
@@ -500,7 +502,7 @@ Proof. by rewrite refinesE=> bs w <-. Qed.
 
 (* =Rtuple_land= *)
 Global Instance Rtuple_land:
-  refines (Rtuple ==> Rtuple ==> Rtuple) &&%C &&%C.
+  refines (Rtuple ==> Rtuple ==> Rtuple) (@andB _) ands.
 Proof. by rewrite !refinesE => bs1 w1 <- bs2 w2 <-. Qed.
 (* =end= *)
 
@@ -613,7 +615,7 @@ Qed.
 
 (* =Rbitset_compl= *)
 Global Instance Rbitset_compl: 
-  refines (Rbitset ==> Rbitset) compl_op compl_op.
+  refines (Rbitset ==> Rbitset) (@setC _) compl.
 (* =end= *)
 Proof. by eapply refines_trans; tc. Qed.
 
