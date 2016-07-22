@@ -312,18 +312,6 @@ Proof.
 by have/forall_bitP/(_ b) := bitsToIntK_valid; rewrite -eqseqR => /eqP.
 Qed.
 
-(*
-Lemma bitsToIntK: cancel (@bitsToIntB _) (bitsFromIntB w).
-Proof.
-  move=> b.
-  apply val_inj; apply /eqP.
-  rewrite eqseqR -[eqseqb _ _]/([fun b => eqseqb (bitsFromInt w (bitsToInt b)) b] b).
-  move: b.
-  apply/forall_bitP. 
-  by apply bitsToIntK_valid.
-Qed.
-*)
-
 (** * Injectivity of [bitsFromInt] *)
 
 (* Emilio: this seems more expensive than just doing the test. *)
@@ -348,17 +336,6 @@ Proof.
   move: x; apply/forallIntP.
   by apply bitsFromInt_inj_valid.
 Qed. 
-
-(*
-Lemma bitsFromInt_inj: injective (bitsFromIntB w).
-*)
-
-(*
-Lemma bitsFromIntK: cancel (bitsFromIntB w) (@bitsToIntsB _).
-Proof.
-  apply: inj_can_sym; auto using bitsToIntK, bitsFromInt_inj.
-Qed.
-*)
 
 Lemma bitsFromIntK: cancel (bitsFromInt w) bitsToInt.
 Proof.
