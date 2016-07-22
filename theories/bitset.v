@@ -448,7 +448,7 @@ Implicit Types (k: Idx)(bs : Bits).
 Local Open Scope computable_scope.
 
 (* =get= *)
-Definition get    k bs
+Definition get k bs
   := negb ((bs && (1 :<<: k)) == 0)%C.
 (* =end= *)
 Definition singleton k := 1 :<<: k.
