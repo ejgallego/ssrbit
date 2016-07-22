@@ -59,6 +59,7 @@ Module Wordsize.
 End Wordsize.
 Module Native := axioms.Make(Wordsize).
 
+Definition n := #| T |.
 
 (** ** From sets over a finite type to machine words: *)
 
@@ -67,7 +68,7 @@ Definition Rfin: {set T} -> 'B_#| T | -> Type
   := fun_hrel (@finB T).
 (* =end= *)
 (* =Rtuple= *)
-Definition Rtuple: 'B_#| T | -> bitseq -> Type
+Definition Rtuple: 'B_n -> bitseq -> Type
   :=  fun a b => val a = b.
 (* =end= *)
 (* =Rnative= *)
@@ -87,7 +88,7 @@ Definition Rord: T -> 'I_#| T | -> Type
   := fun t n => enum_rank t = n.
 (* =end= *)
 (* =RidxI= *)
-Definition RidxI: 'I_#| T | -> nat -> Type
+Definition RidxI {n} : 'I_n -> nat -> Type
   := fun k n => val k = n.
 (* =end= *)
 (* =RidxN= *)
@@ -596,6 +597,8 @@ Proof.
 rewrite !refinesE => w1 b1 <-.
 by rewrite /Rword /fun_hrel; apply/ffunP=> i; rewrite !ffunE tnth_map.
 Qed.
+
+Definition Rvector : 'W_n -> bitseq -> Type := Rword \o Rtuple.
 
 (************************************************************************)
 (** * Compositions                                                      *)
