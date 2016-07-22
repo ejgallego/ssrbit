@@ -569,6 +569,10 @@ Qed.
 (** * Compositions                                                      *)
 (************************************************************************)
 
+Global Instance Rbitset_eq: 
+  refines (Rbitset ==> Rbitset ==> param.bool_R) eq_op eq_op.
+Proof. by do 2 (eapply refines_trans; tc). Qed.
+
 Global Instance Rbitset_get: 
   refines (Rbits ==> Rbitset ==> param.bool_R) get_op get_op.
 Proof.
