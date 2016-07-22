@@ -517,8 +517,12 @@ Qed.
 (** * From bit words to bit tuples 'W_n -> 'B_n                         *)
 (************************************************************************)
 
+(* =Rword= *)
 Definition Rword : 'W_n -> 'B_n -> Type := fun_hrel (@wrdB n).
+(* =end= *)
+(* =Rvector= *)
 Definition Rvector : 'W_n -> bitseq -> Type := Rword \o Rtuple.
+(* =end= *)
 
 Instance Rword_and:
   refines (Rword ==> Rword ==> Rword) (@andw n) (@andB n).
