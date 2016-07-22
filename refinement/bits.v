@@ -351,10 +351,10 @@ Global Instance Rfin_ntz x (h_in : x \in T) :
           (fun x => nats (ntz x)).
 Proof.
 rewrite !refinesE => A1 b1 <-.
-rewrite ntzP /=.
-rewrite /finB.
-have -> : x = enum_val (enum_rank x) by rewrite enum_rankK.
-rewrite arg_min_enum_rank.
+(* rewrite ntzP /=. *)
+(* rewrite /finB. *)
+(* have -> : x = enum_val (enum_rank x) by rewrite enum_rankK. *)
+(* rewrite arg_min_enum_rank. *)
 Admitted.
 
 (************************************************************************)

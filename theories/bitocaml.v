@@ -183,8 +183,8 @@ Compute nats (subB [bits of bitn 5 5] [bits of bitn 5 5]).
 
 *)
 
-Lemma ntzP n (bs : 'B_n) : true \in bs ->
-    ntz bs = [bits of bitn n [arg min_(k < ord0 in tnth bs k) k]].
-Admitted.
+(* Lemma ntzP n (bs : 'B_n) : true \in bs -> *)
+(*     ntz bs = [bits of bitn n [arg min_(k < ord0 in tnth bs k) k]]. *)
+(* Admitted. *)
 
 End BitMin.
