@@ -171,7 +171,7 @@ Definition ntz n (bs: 'B_n) : 'B_n :=
 (* =ntzP= *)
 Lemma ntzP n (bs : 'B_n) : ntz bs = inB (index true bs).
 (* =end= *)
-(* Admitted. *)
+Admitted.
 Definition ntz' n b := n - count id (ors b (opps b)).
 
 End BitMin.
