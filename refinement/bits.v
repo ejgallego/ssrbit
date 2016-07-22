@@ -582,19 +582,28 @@ Qed.
 (** * From bit words to bit tuples 'W_n -> 'B_n                         *)
 (************************************************************************)
 
+(* =Rword= *)
 Definition Rword : 'W_n -> 'B_n -> Type := fun_hrel (@wrdB n).
-Definition Rvector : 'W_n -> bitseq -> Type := Rword \o Rtuple.
+(* =end= *)
 
+(* =Rvector= *)
+Definition Rvector : 'W_n -> bitseq -> Type := Rword \o Rtuple.
+(* =end= *)
+
+(* =Rword_and= *)
 Instance Rword_and:
   refines (Rword ==> Rword ==> Rword) (@andw n) (@andB n).
+(* =end= *)
 Proof.
 rewrite !refinesE => w1 b1 <- w2 b2 <-.
 by rewrite /Rword /fun_hrel; apply/ffunP=> i; rewrite !ffunE tnth_liftz.
 Qed.
 
+(* =Rvector_and= *)
 Instance Rvector_and :
   refines (Rvector ==> Rvector ==> Rvector) (@andw n) ands.
 Proof. by eapply refines_trans; tc. Qed.
+(* =end= *)
 
 Instance Rword_neg :
   refines (Rword ==> Rword) (@negw n) (@negB n).
@@ -603,15 +612,17 @@ rewrite !refinesE => w1 b1 <-.
 by rewrite /Rword /fun_hrel; apply/ffunP=> i; rewrite !ffunE tnth_map.
 Qed.
 
+(* =def_nand= *)
 Section Nand.
   Variables (B: Type)
             (and: B -> B -> B)
             (neg: B -> B).
 
   Definition nand (b1 b2: B): B := neg (and b1 b2).
-
 End Nand.
+(* =end= *)
 
+(* =Rword_nand= *)
 Parametricity nand.
 
 Instance Rword_nand:
@@ -619,7 +630,7 @@ Instance Rword_nand:
           (nand (@andw n) (@negw n)) 
           (nand (@andB n) (@negB n)).
 Proof. param nand_R. Qed.
-
+(* =end= *)
 
 (************************************************************************)
 (** * Compositions                                                      *)
