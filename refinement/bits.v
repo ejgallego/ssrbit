@@ -59,11 +59,12 @@ Module Wordsize.
 End Wordsize.
 Module Native := axioms.Make(Wordsize).
 
+Definition n := #| T |.
 
 (** ** From sets over a finite type to machine words: *)
 
 Definition Rfin: {set T} -> 'B_#| T | -> Type  := fun_hrel (@finB T).
-Definition Rtuple: 'B_#| T | -> bitseq -> Type :=  fun a b => val a = b.
+Definition Rtuple : 'B_n -> bitseq -> Type :=  fun a b => val a = b.
 Definition Rnative: bitseq -> Native.Int -> Type := fun_hrel (bitsFromInt Native.w).
 
 Definition Rbitset: {set T} -> Native.Int -> Type := Rfin \o (Rtuple \o Rnative).
@@ -71,7 +72,7 @@ Definition Rbitset: {set T} -> Native.Int -> Type := Rfin \o (Rtuple \o Rnative)
 (** ** From finite type to machine words: *)
 
 Definition Rord: T -> 'I_#| T | -> Type := fun t n => enum_rank t = n.
-Definition RidxI: 'I_#| T | -> nat -> Type := fun k n => val k = n.
+Definition RidxI {n} : 'I_n -> nat -> Type := fun k n => val k = n.
 CoInductive RidxN: nat -> Native.Int -> Type :=
   Ridx_spec (k: nat)(i: Native.Int)(b: bitseq) of
     Rnative b i
@@ -564,6 +565,8 @@ Proof.
 rewrite !refinesE => w1 b1 <-.
 by rewrite /Rword /fun_hrel; apply/ffunP=> i; rewrite !ffunE tnth_map.
 Qed.
+
+Definition Rvector : 'W_n -> bitseq -> Type := Rword \o Rtuple.
 
 (************************************************************************)
 (** * Compositions                                                      *)
