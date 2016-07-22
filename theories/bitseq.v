@@ -312,7 +312,7 @@ Proof. by rewrite fun_if size_set_nth; case: ifP => // /maxn_idPr ->. Qed.
 Lemma setls_tupleP bv i b : size (setls bv i b) == k.
 Proof. by rewrite size_setls size_tuple. Qed.
 
-Canonical setlB bv j b := Tuple (setls_tupleP bv j b).
+Canonical setlB bv i b := Tuple (setls_tupleP bv i b).
 
 (* Properties of bget bset wrt to bit operations *)
 (* Bigops? *)
