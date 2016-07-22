@@ -161,14 +161,6 @@ Admitted.
 
 (* Value of the minimum (ie number of trailing zeroes) *)
 (* =ntz= *)
-Definition ntz n (k: nat) (bs: 'B_n) : 'B_n :=
-  subB [bits of bitn n n] (cardinal (orB bs (oppB bs))).
-(* =end= *)
-
-Definition ntz' n b := n - count id (ors b (opps b)).
-
-
-(* =ntz= *)
 Definition ntz n (bs: 'B_n) : 'B_n :=
   subB (inB n) (cardinal_smart (orB bs (oppB bs))).
 (* =end= *)
@@ -178,6 +170,7 @@ Definition ntz n (bs: 'B_n) : 'B_n :=
 (*     ntz bs = inB [arg min_(k < ord0 in tnth bs i) k]. *)
 (* =end= *)
 (* Admitted. *)
+
 Definition ntz' n b := n - count id (ors b (opps b)).
 
 End BitMin.
