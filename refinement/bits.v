@@ -45,12 +45,19 @@ Unset Printing Implicit Defensive.
 (* Sets and efficient bit operators *)
 Require Import bitocaml bitset.
 
-Parameter T: finType.
+Module Type FINTYPE.
+  Parameter T: finType.
+End FINTYPE.
+
+
+Module Make (FT: FINTYPE).
+
+Definition T := FT.T.
 
 Module Wordsize.
   Definition wordsize := #| T |.
 End Wordsize.
-Module Native := Make(Wordsize).
+Module Native := axioms.Make(Wordsize).
 
 
 (** ** From sets over a finite type to machine words: *)
@@ -632,3 +639,5 @@ eapply refines_trans; tc.
 - param (subset_R (Bits_R := Rtuple)).
 - param (subset_R (Bits_R := Rnative)).
 Qed.
+
+End Make.
