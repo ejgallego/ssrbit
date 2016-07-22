@@ -162,6 +162,10 @@ rewrite inE val_mem_seq !map_mask val_enum_ord.
 by rewrite mem_mask_iota ?subn0 ?ltn_ord ?size_tuple.
 Qed.
 
+Lemma mem_setB k (b : k.-tuple bool) (i : 'I_k) :
+  (i \in setB b) = tnth b i.
+Proof. by rewrite mem_setb (tnth_nth false). Qed.
+
 (* XXX: Needs fixing *)
 (* Lemma seqn_cons k n (s : seq 'I_k) : *)
 (*   seqn (n :: s) = [tuple of setb (seqn s) n true]. *)
