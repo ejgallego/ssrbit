@@ -100,9 +100,10 @@ CoInductive RidxN: nat -> Native.Int -> Type :=
 (* =end= *)
 
 (* =Rbits= *)
-Definition Rbits: T -> Native.Int -> Type :=
-  Rord \o (RidxI \o RidxN).
+Definition Rbits: T -> Native.Int -> Type 
 (* =end= *)
+   := Rord \o (RidxI \o RidxN).
+
 
 (************************************************************************)
 (** * Notations                                                         *)
