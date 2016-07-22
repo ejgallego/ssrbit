@@ -546,6 +546,26 @@ Qed.
 
 
 (************************************************************************)
+(** * From bit words to bit tuples 'W_n -> 'B_n                         *)
+(************************************************************************)
+
+Definition Rword {n} : 'W_n -> 'B_n -> Type := fun_hrel (@wrdB n).
+
+Global Instance Rword_and {n} :
+  refines (Rword ==> Rword ==> Rword) (@andw n) (@andB n).
+Proof.
+rewrite !refinesE => w1 b1 <- w2 b2 <-.
+by rewrite /Rword /fun_hrel; apply/ffunP=> i; rewrite !ffunE tnth_liftz.
+Qed.
+
+Global Instance Rword_neg {n} :
+  refines (Rword ==> Rword) (@negw n) (@negB n).
+Proof.
+rewrite !refinesE => w1 b1 <-.
+by rewrite /Rword /fun_hrel; apply/ffunP=> i; rewrite !ffunE tnth_map.
+Qed.
+
+(************************************************************************)
 (** * Compositions                                                      *)
 (************************************************************************)
 

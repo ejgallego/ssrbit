@@ -79,14 +79,19 @@ rewrite /shls nth_cat size_nseq nth_nseq.
 set k := size s.
 Admitted.
 
+
+Definition word n := {ffun 'I_n -> bool}.
+
+Notation "''W_' n" := (word n)
+  (at level 8, n at level 2, format "''W_' n").
+
 (* We thank Cyril Cohen for the suggestion *)
 Section BitWord.
 
 Local Open Scope bits_scope.
 
 Variable n : nat.
-
-Definition word := {ffun 'I_n -> bool}.
+Notation word := (word n).
 
 Implicit Type (s : bitseq) (b : 'B_n) (w : word).
 
@@ -135,6 +140,7 @@ Implicit Type (s : bitseq) (b : 'B_k) (w : word).
 
 Definition orw  w1 w2 := [ffun i => w1 i || w2 i].
 Definition andw w1 w2 := [ffun i => w1 i && w2 i].
+Definition negw w     := [ffun i => ~~ w i].
 
 End WordLifted.
 
