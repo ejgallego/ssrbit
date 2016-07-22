@@ -38,8 +38,6 @@ Unset Printing Implicit Defensive.
 Open Scope bits_scope.
 
 (* Optimized cardinality *)
-Definition tobit k o := [bits of bitn k o].
-
 Section Card.
 
 Section CardDef.
@@ -49,14 +47,14 @@ Variable (n k : nat).
 (* Cardinality table *)
 Definition ctable  := seq 'B_n.
 Definition ctableP (t : ctable) :=
-  forall (bk : 'B_k), nth '0 t (nats bk) = tobit n (count id bk).
+  forall (bk : 'B_k), nth '0 t (nats bk) = inB (count id bk).
 
 (** [pop_table] returns a k-list of words of size [n]
   * counting the numbers of bits.
   *)
 (* =pop_table= *)
 Definition pop_table : seq 'B_n :=
-  mkseq (fun i => tobit n (count id (bitn k i))) (2^k).
+  mkseq (fun i => inB (count id (bitn k i))) (2^k).
 (* =end= *)
 
 Lemma pop_table_size : size pop_table = 2^k.
@@ -70,10 +68,10 @@ Qed.
 
 (* An alternative way is to define pop_table as a map: *)
 Definition pop_table_fun {n} k : {ffun 'B_k -> 'B_n} :=
-  [ffun bk => [bits of bitn n (count id (val bk))]].
+  [ffun bk => inB (count id (val bk))].
 
 Lemma pop_table_funP (bk : 'B_k) :
-  pop_table_fun k bk = tobit n (count id bk).
+  pop_table_fun k bk = @inB n (count id bk).
 Proof. by rewrite ffunE. Qed.
 
 (** [pop_elem bs i] return the cardinality of the [i]-th part of
@@ -82,7 +80,7 @@ Proof. by rewrite ffunE. Qed.
 (* =pop_elem= *)
 Definition pop_elem (bs: 'B_n) i : 'B_n :=
   let x := andB (shrB bs (i * k))
-                (decB (shlB [bits of bitn n 1] k))
+                (decB (shlB (inB 1) k))
   in nth '0 pop_table (nats x).
 (* =end= *)
 
@@ -148,20 +146,18 @@ End Card.
 Section BitMin.
 
 (* Set containing only the minimum *)
-Fail
 (* =keep_min= *)
-Definition keep_min n (bs: 'B_n) : 'B_n := bs && (~ bs).
+Definition keep_min n (bs: 'B_n) : 'B_n
+  := bs && (~ bs).
 (* =end= *)
-(*
-(* Lemma keep_min_repr n (bs: 'B_n) x y : x \in setB bs -> *)
-(*   setB (keep_min bs) = [set [arg min_(k < y in setB bs) k]]. *)
 
-(* Emilio: we relate this to index instead *)
+(* =keep_minP= *)
 Lemma keep_minP n (bs: 'B_n) :
-  nats (keep_min bs) = index true bs.
-(* XXX: maybe ripple_repr could be useful here, as neg is (inv + 1) *)
+  keep_min bs = setls '0_n (index true bs) true :> bitseq.
+(* =end= *)
 Admitted.
-*)
+
+(* XXX: maybe ripple_repr could be useful here, as neg is (inv + 1) *)
 
 (* Value of the minimum (ie number of trailing zeroes) *)
 (* =ntz= *)
@@ -171,30 +167,17 @@ Definition ntz n (k: nat) (bs: 'B_n) : 'B_n :=
 
 Definition ntz' n b := n - count id (ors b (opps b)).
 
-(*
 
-Definition input := [tuple true;  false; false; true;  false].
-Compute nats (oppB input).
-Compute nats (opps input).
+(* =ntz= *)
+Definition ntz n (bs: 'B_n) : 'B_n :=
+  subB (inB n) (cardinal_smart (orB bs (oppB bs))).
+(* =end= *)
 
-Compute nats (orB input (oppB input)).
-Compute nats (ors input (opps input)).
-Compute nats (cardinal 2 (orB input (oppB input))).
-Compute       count id (ors input (opps input)).
-
-Compute nats (cardinal_smart input).
-Compute      (count id input).
-
-Compute nats (ntz input).
-Compute ntz' 5    input.
-
-Compute nats (subB [bits of bitn 5 5] [bits of bitn 5 5]).
-
-*)
->>>>>>> master
-
-(* Lemma ntzP n (bs : 'B_n) : true \in bs -> *)
-(*     ntz bs = [bits of bitn n [arg min_(k < ord0 in tnth bs k) k]]. *)
+(* =ntzP= *)
+(* Lemma ntzP n (bs : 'B_n) i : i \in bs -> *)
+(*     ntz bs = inB [arg min_(k < ord0 in tnth bs i) k]. *)
+(* =ntzP= *)
 (* Admitted. *)
+Definition ntz' n b := n - count id (ors b (opps b)).
 
 End BitMin.
