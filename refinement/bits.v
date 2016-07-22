@@ -55,9 +55,13 @@ Module Native := Make(Wordsize).
 (** ** From sets over a finite type to machine words: *)
 
 (* =Rfin= *)
-Definition Rfin: {set T} -> 'B_#| T | -> Type  := fun_hrel (@finB T). 
+Definition Rfin: {set T} -> 'B_#| T | -> Type
+  := fun_hrel (@finB T). 
 (* =end= *)
-Definition Rtuple: 'B_#| T | -> bitseq -> Type :=  fun a b => val a = b.
+(* =Rtuple= *)
+Definition Rtuple: 'B_#| T | -> bitseq -> Type
+  :=  fun a b => val a = b.
+(* =end= *)
 (* =Rnative= *)
 Definition Rnative: bitseq -> Native.Int -> Type
   := fun_hrel (bitsFromInt Native.w).
@@ -70,13 +74,21 @@ Definition Rbitset: {set T} -> Native.Int -> Type
 
 (** ** From finite type to machine words: *)
 
-Definition Rord: T -> 'I_#| T | -> Type := fun t n => enum_rank t = n.
-Definition RidxI: 'I_#| T | -> nat -> Type := fun k n => val k = n.
+(* =Rord= *)
+Definition Rord: T -> 'I_#| T | -> Type
+  := fun t n => enum_rank t = n.
+(* =end= *)
+(* =RidxI= *)
+Definition RidxI: 'I_#| T | -> nat -> Type
+  := fun k n => val k = n.
+(* =end= *)
+(* =RidxN= *)
 CoInductive RidxN: nat -> Native.Int -> Type := 
   Ridx_spec (k: nat)(i: Native.Int)(b: bitseq) of 
     Rnative b i
   & (k <= #| T |)%N
   & b = bitn #| T | k : RidxN k i.
+(* =end= *)
 
 Definition Rbits: T -> Native.Int -> Type :=
   Rord \o (RidxI \o RidxN).
@@ -486,9 +498,11 @@ Global Instance Rtuple_lnot:
   refines (Rtuple ==> Rtuple) ~%C ~%C.
 Proof. by rewrite refinesE=> bs w <-. Qed.
 
+(* =Rtuple_land= *)
 Global Instance Rtuple_land:
   refines (Rtuple ==> Rtuple ==> Rtuple) &&%C &&%C.
 Proof. by rewrite !refinesE => bs1 w1 <- bs2 w2 <-. Qed.
+(* =end= *)
 
 Global Instance Rtuple_lor: 
   refines (Rtuple ==> Rtuple ==> Rtuple) ||%C ||%C.

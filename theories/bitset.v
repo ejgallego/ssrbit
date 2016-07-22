@@ -100,7 +100,8 @@ Definition to_set   m := mask m (iota 0 (size m)).
 (* =end= *)
 (* Definition from_set k s := foldr (fun idx bs => setb bs idx true) (nseq k false) s. *)
 (* =from_set= *)
-Definition from_set s := foldr (fun idx bs => sets bs idx true) [::] s.
+Definition from_set s :=
+  foldr (fun idx bs => sets bs idx true) [::] s.
 (* =end= *)
 
 Lemma size_from_set s : size (from_set s) = \max_(n <- s) n.+1.
