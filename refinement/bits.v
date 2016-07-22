@@ -233,7 +233,7 @@ rewrite /finB.
 apply/setP=> x.
 rewrite can_enum inE mem_setb.
 
-have ->: val (orB bs2 (shlB [bits of bitn #|T| 1] (enum_rank t))) = setls bs2 (enum_rank t) true
+have ->: val (orB bs2 (shlB (inB 1) (enum_rank t))) = setls bs2 (enum_rank t) true
     by rewrite sets_def /= size_tuple.
 
 rewrite /setls size_tuple ltn_ord nth_set_nth /= !inE.
@@ -264,7 +264,7 @@ rewrite /finB.
 apply/setP=> x.
 rewrite can_enum inE mem_setb.
 
-have ->: val (andB bs2 (negB (shlB [bits of bitn #| T | 1] (enum_rank t)))) = setls bs2 (enum_rank t) false
+have ->: val (andB bs2 (negB (shlB (inB 1) (enum_rank t)))) = setls bs2 (enum_rank t) false
     by rewrite sets_def /= size_tuple.
 
 rewrite /setls size_tuple ltn_ord nth_set_nth /= !inE.

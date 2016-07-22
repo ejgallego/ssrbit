@@ -555,8 +555,8 @@ Fixpoint bitn_rec n k : bitseq :=
 Definition bitn := nosimpl bitn_rec.
 
 Eval compute in bitn 10 00.
-Eval compute in nats [:: false; true; false; false; false; false; false;
-           false; false; false].
+Eval compute in nats
+                [:: false; true; false; false; false; false; false; false; false; false].
 
 Lemma bitn_cons n k : bitn n.+1 k = [:: odd k & bitn n k./2].
 Proof. by []. Qed.
@@ -569,6 +569,9 @@ Lemma size_bitnP n k : size (bitn n k) == n.
 Proof. exact/eqP/size_bitn. Qed.
 
 Canonical bitn_tuple n k := Tuple (size_bitnP n k).
+
+Definition inB n k := [bits of bitn n k].
+Arguments inB [n] k.
 
 Lemma natsK : forall m, bitn (size m) (nats m) = m.
 Proof.
@@ -621,10 +624,10 @@ elim: k => //= k ihk; rewrite nats_cons ihk.
 by rewrite expnS -addnn !mulSn mul0n addn0 addnA subnKC ?addnBA ?expn_gt0.
 Qed.
 
-Lemma tnth_one k (i : 'I_k) : tnth [bits of bitn k 1] i = (val i == 0).
+Lemma tnth_one k (i : 'I_k) : tnth (inB 1) i = (val i == 0).
 Admitted.
 
-Lemma tnth_shlB_one k (n i : 'I_k) : tnth (shlB [bits of bitn k 1] n) i = (n == i).
+Lemma tnth_shlB_one k (n i : 'I_k) : tnth (shlB (inB 1) n) i = (n == i).
 Proof.
 rewrite tnth_shlB tnth_one val_insubd; case: ltnP; first by move/gtn_eqF.
 rewrite (leq_ltn_trans (leq_subr n _)) ?ltn_ord // => hle.
@@ -714,8 +717,8 @@ Canonical B_finGroupType := Eval hnf in [finGroupType of 'B_k for +%R].
 Implicit Types (b : 'B_k).
 
 Definition subB b1 b2 := (b1 - b2)%R.
-Definition incB b := (b + [bits of bitn k 1])%R.
-Definition decB b := (b - [bits of bitn k 1])%R.
+Definition incB b := (b + inB 1)%R.
+Definition decB b := (b - inB 1)%R.
 
 (* XXX: Improve Vs *)
 (* Lemma nats_one  k : nats '1_k = 2^k - 1. *)
@@ -809,6 +812,7 @@ Qed.
 
 End SeqZModule.
 
+Arguments inB [n] k.
 Arguments B0 [k].
 
 (*
@@ -855,6 +859,7 @@ End BitRing.
 End Unsigned.
 
 Arguments B0 [_].
+Arguments inB [n] k.
 
 (* Arguments B1 [_]. *)
 
