@@ -136,10 +136,11 @@ End Card.
 Section BitMin.
 
 (* Set containing only the minimum *)
+Fail
 (* =keep_min= *)
-Definition keep_min n (bs: 'B_n) : 'B_n := andB bs (oppB bs).
+Definition keep_min n (bs: 'B_n) : 'B_n := bs && (~ bs).
 (* =end= *)
-
+(*
 (* Lemma keep_min_repr n (bs: 'B_n) x y : x \in setB bs -> *)
 (*   setB (keep_min bs) = [set [arg min_(k < y in setB bs) k]]. *)
 
@@ -148,6 +149,7 @@ Lemma keep_minP n (bs: 'B_n) :
   keep_min bs = sets '0_n (index true bs) true :> bitseq.
 (* XXX: maybe ripple_repr could be useful here, as neg is (inv + 1) *)
 Admitted.
+*)
 
 Definition bit_tmp n: nat -> 'B_n. Admitted.
 
