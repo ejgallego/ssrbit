@@ -544,7 +544,8 @@ Global Instance Rbitset_full:
 Proof.
 eapply refines_trans; tc.
 eapply refines_trans; tc.
-- param (create_R (Bits_R := Rtuple)).
+- by param (create_R (Bits_R := Rtuple));
+    do ?(rewrite refinesE; apply eq_bool_R).
 - param (create_R (Bits_R := Rnative)).
 Qed.
 
