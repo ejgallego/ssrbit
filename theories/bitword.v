@@ -79,6 +79,14 @@ rewrite /shls nth_cat size_nseq nth_nseq.
 set k := size s.
 Admitted.
 
+
+(* =word= *)
+Definition word n := {ffun 'I_n -> bool}.
+(* =end= *)
+
+Notation "''W_' n" := (word n)
+  (at level 8, n at level 2, format "''W_' n").
+
 (* We thank Cyril Cohen for the suggestion *)
 Section BitWord.
 
@@ -86,9 +94,7 @@ Local Open Scope bits_scope.
 
 Variable n : nat.
 
-(* =word= *)
-Definition word := {ffun 'I_n -> bool}.
-(* =end= *)
+Notation word := (word n).
 
 Implicit Type (s : bitseq) (b : 'B_n) (w : word).
 
@@ -130,7 +136,15 @@ End BitWord.
 
 (* Properties for lifted operators: *)
 Section WordLifted.
-(* Rot/Shift: *)
+
+Variable k : nat.
+Notation word := (word k).
+Implicit Type (s : bitseq) (b : 'B_k) (w : word).
+
+Definition orw  w1 w2 := [ffun i => w1 i || w2 i].
+Definition andw w1 w2 := [ffun i => w1 i && w2 i].
+Definition negw w     := [ffun i => ~~ w i].
+
 End WordLifted.
 
 Section WordIdx.
@@ -160,6 +174,10 @@ Admitted.
 
 Definition shlw (n : 'I_k.+1) w : word :=
   [ffun i : 'I_k.+1 => if (n <= i)%N then w (i - n)%R else false].
+
+Lemma shlwP' n w i : (shlw n w) i =
+                     if (n <= i)%N then w (i - n)%R else false.
+Proof. by rewrite ffunE. Qed.
 
 Lemma shlwP n w : bitw (shlw n w) = shlB (bitw w) n.
 Proof.

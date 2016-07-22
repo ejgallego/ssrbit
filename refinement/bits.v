@@ -45,19 +45,26 @@ Unset Printing Implicit Defensive.
 (* Sets and efficient bit operators *)
 Require Import bitocaml bitset.
 
-Parameter T: finType.
+Module Type FINTYPE.
+  Parameter T: finType.
+End FINTYPE.
+
+
+Module Make (FT: FINTYPE).
+
+Definition T := FT.T.
 
 Module Wordsize.
   Definition wordsize := #| T |.
 End Wordsize.
-Module Native := Make(Wordsize).
+Module Native := axioms.Make(Wordsize).
 
 
 (** ** From sets over a finite type to machine words: *)
 
 (* =Rfin= *)
 Definition Rfin: {set T} -> 'B_#| T | -> Type
-  := fun_hrel (@finB T). 
+  := fun_hrel (@finB T).
 (* =end= *)
 (* =Rtuple= *)
 Definition Rtuple: 'B_#| T | -> bitseq -> Type
@@ -95,7 +102,6 @@ CoInductive RidxN: nat -> Native.Int -> Type :=
 Definition Rbits: T -> Native.Int -> Type :=
   Rord \o (RidxI \o RidxN).
 (* =end= *)
-
 
 (************************************************************************)
 (** * Notations                                                         *)
@@ -345,14 +351,39 @@ apply/setIidPl/idP.
 - rewrite -Finter_morphL=> /eqP {2}<- //. 
 Qed.
 
-(* Locate "f \o g" = f (g x) *)
 Definition cardTT (A : {set T}) := #|A|.
 Global Instance Rfin_cardinal:
-  refines (Rfin ==> eq) (cardTT) (fun x => nats (cardinal 4 x)).
+  refines (Rfin ==> eq) (cardTT) (fun x => nats (cardinal_smart x)).
 Proof.
 rewrite !refinesE => A1 y1 <-.
 by rewrite /cardTT cardinalP (card_imset _ enum_val_inj) cardbP.
 Qed.
+
+(* XXX: To be moved *)
+Lemma arg_min_enum_rank (aT : finType) (A : {set 'I_#|aT| }) x (h_x : x \in A) :
+  enum_rank [arg min_(k < (enum_val x) in [set enum_val x0 | x0 in A]) enum_rank k] =
+  [arg min_(k < x in A) k].
+Proof.
+case: arg_minP; first by apply/imsetP; exists x.
+move=> i /imsetP[xr xrin ->]; rewrite enum_valK => hmin.
+case: arg_minP => // yr yrin umin.
+have Ux: enum_val yr \in [set enum_val x0 | x0 in A].
+  by apply/imsetP; exists yr.
+have P1 := hmin _ Ux; rewrite enum_valK in P1.
+have P2 := umin _ xrin.
+by have/andP := conj P1 P2; rewrite -eqn_leq => /eqP /val_inj.
+Qed.
+
+Global Instance Rfin_ntz x (h_in : x \in T) :
+  refines (Rfin ==> eq) (fun E => val (enum_rank [arg min_(k < x in E) enum_rank k]))
+          (fun x => nats (ntz x)).
+Proof.
+rewrite !refinesE => A1 b1 <-.
+(* rewrite ntzP /=. *)
+(* rewrite /finB. *)
+(* have -> : x = enum_val (enum_rank x) by rewrite enum_rankK. *)
+(* rewrite arg_min_enum_rank. *)
+Admitted.
 
 (************************************************************************)
 (** * From machine words to bit sequences                               *)
@@ -547,6 +578,26 @@ Qed.
 
 
 (************************************************************************)
+(** * From bit words to bit tuples 'W_n -> 'B_n                         *)
+(************************************************************************)
+
+Definition Rword {n} : 'W_n -> 'B_n -> Type := fun_hrel (@wrdB n).
+
+Global Instance Rword_and {n} :
+  refines (Rword ==> Rword ==> Rword) (@andw n) (@andB n).
+Proof.
+rewrite !refinesE => w1 b1 <- w2 b2 <-.
+by rewrite /Rword /fun_hrel; apply/ffunP=> i; rewrite !ffunE tnth_liftz.
+Qed.
+
+Global Instance Rword_neg {n} :
+  refines (Rword ==> Rword) (@negw n) (@negB n).
+Proof.
+rewrite !refinesE => w1 b1 <-.
+by rewrite /Rword /fun_hrel; apply/ffunP=> i; rewrite !ffunE tnth_map.
+Qed.
+
+(************************************************************************)
 (** * Compositions                                                      *)
 (************************************************************************)
 
@@ -642,3 +693,5 @@ eapply refines_trans; tc.
 - param (subset_R (Bits_R := Rtuple)).
 - param (subset_R (Bits_R := Rnative)).
 Qed.
+
+End Make.
