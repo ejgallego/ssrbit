@@ -170,8 +170,8 @@ Definition ntz n (bs: 'B_n) : 'B_n :=
 (* =end= *)
 
 (* =ntzP= *)
-(* Lemma ntzP n (bs : 'B_n) i : i \in bs -> *)
-(*     ntz bs = inB [arg min_(k < ord0 in tnth bs i) k]. *)
+Lemma ntzP n (bs : 'B_n) i : i \in bs ->
+    ntz bs = inB (index true bs).
 (* =end= *)
 (* Admitted. *)
 Definition ntz' n b := n - count id (ors b (opps b)).
