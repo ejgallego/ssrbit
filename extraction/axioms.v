@@ -327,7 +327,8 @@ Axiom bitsToIntK_valid : bitsToIntK_test.
 Lemma bitsToIntK (b: 'B_w) :
   bitsFromInt w (bitsToInt b) = b.
 Proof.
-by have/forall_bitP/(_ b) := bitsToIntK_valid; rewrite -eqseqR => /eqP.
+by have/forall_bitP/(_ b) := bitsToIntK_valid;
+rewrite -eqseqR => /eqP.
 Qed.
 (* =end= *)
 
@@ -348,7 +349,7 @@ Qed.
 (* Emilio: this seems more expensive than just doing the test. *)
 (* Pierre: which test? *)
 
-(* =fromint_inj= *)
+(* =fromint_inj_test= *)
 Definition bitsFromInt_inj_test: bool :=
   forallInt (fun x =>
     forallInt (fun y =>
@@ -357,7 +358,9 @@ Definition bitsFromInt_inj_test: bool :=
 
 Axiom bitsFromInt_inj_valid: bitsFromInt_inj_test.
 
+(* =fromint_inj_lemma= *)
 Lemma bitsFromInt_inj: injective (bitsFromInt w).
+(* =end= *)
 Proof.
   move=> x y /eqP H.
   have Hseq: eqseqb (bitsFromInt w x) (bitsFromInt w y)
@@ -395,7 +398,10 @@ Qed.
     [bs : bitseq] if they satisfy the axiom [Rnative]. Morally, it
     means that both represent the same number. *)
 
-Definition Tnative (i: Int) (bs: bitseq) : bool := (i == bitsToInt bs)%C.
+(* =Tnative= *)
+Definition Tnative (i: Int) (bs: bitseq) : bool
+  := (i == bitsToInt bs)%C.
+(* =end= *)
 
 (** ** Individuals *)
 

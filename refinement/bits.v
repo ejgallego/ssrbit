@@ -382,7 +382,7 @@ Qed.
 
 (* =Rnative_lnot= *)
 Global Instance Rnative_lnot:
-  refines (Rnative ==> Rnative) negs ~%C.
+  refines (Rnative ==> Rnative) negs Native.lnot.
 (* =end= *)
 Proof.
   rewrite refinesE=> bs w <- . rewrite /not_op /not_N.
