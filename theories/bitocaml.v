@@ -167,7 +167,7 @@ Definition ntz n (bs: 'B_n) : 'B_n :=
 (* =end= *)
 
 (* =ntzP= *)
-Lemma ntzP n (bs : 'B_n) i : i \in bs ->
+Lemma ntzP n (bs : 'B_n) :
     ntz bs = inB (index true bs).
 (* =end= *)
 (* Admitted. *)
