@@ -31,35 +31,37 @@ Module Native := R.Native.
 
 Section Bloom_parametric.
 
-Variables (Finset : Type)
+Variables (S : Type)
           (P: Type)
           (I : Type).
 
-Context `{eq_of Finset}.
-Context `{union_of Finset}.
-Context `{inter_of Finset}.
-Context `{singleton_of I Finset}.
-Context `{empty_of Finset}.
+Context `{eq_of S}.
+Context `{union_of S}.
+Context `{inter_of S}.
+Context `{singleton_of I S}.
+Context `{empty_of S}.
+
+Local Open Scope computable_scope.
 
 (* =bloomsig= *)
-Fixpoint bloomSig_aux (H: seq (P -> I))(e: P)(curFilter: Finset): Finset
+Fixpoint bloomSig_aux (H: seq (P -> I))(e: P)(filter: S): S
  := match H with
-    | [::] => curFilter
-    | h :: H => bloomSig_aux H e (union_op (singleton_op (h e)) curFilter) 
+    | [::] => filter
+    | h :: H => bloomSig_aux H e ([SET (h e) ] :|: filter) 
     end.
 
-Definition bloomSig (H: seq (P -> I))(e: P): Finset
- := bloomSig_aux H e empty_op.
+Definition bloomSig (H: seq (P -> I))(e: P): S
+ := bloomSig_aux H e SET0.
 (* =end= *)
 
 (* =bloomadd= *)
-Definition bloomAdd (H: seq (P -> I))(add_elt: P)(S: Finset): Finset
- := union_op S (bloomSig H add_elt).
+Definition bloomAdd (H: seq (P -> I))(add_elt: P)(filter: S): S
+ := filter :|: bloomSig H add_elt.
 (* =end= *)
 
 (* =bloomcheck= *)
-Definition bloomCheck (H: seq (P -> I))(e: P)(S: Finset) : bool
- := let sig := bloomSig H e in ((inter_op sig S) == sig)%C.
+Definition bloomCheck (H: seq (P -> I))(e: P)(filter: S) : bool
+ := let sig := bloomSig H e in (sig :&: filter == sig)%C.
 (* =end= *)
 
 End Bloom_parametric.
@@ -89,7 +91,7 @@ Local Instance bloomSig_aux_Rbitset:
           (bloomSig_aux (I := T))
           (bloomSig_aux (I := Native.Int)).
 Proof. 
-param (bloomSig_aux_R (P_R := @Logic.eq Q)(Finset_R := R.Rbitset)(I_R := R.Rbits)).
+param (bloomSig_aux_R (P_R := @Logic.eq Q)(S_R := R.Rbitset)(I_R := R.Rbits)).
 Qed.
 
 Local Instance bloomSig_Rbitset:
@@ -97,7 +99,7 @@ Local Instance bloomSig_Rbitset:
           (bloomSig (I := T))
           (bloomSig (I := Native.Int)).
 Proof.
-param (bloomSig_R (P_R := @Logic.eq Q)(Finset_R := R.Rbitset)(I_R := R.Rbits)).
+param (bloomSig_R (P_R := @Logic.eq Q)(S_R := R.Rbitset)(I_R := R.Rbits)).
 Qed.
 
 Local Instance bloomAdd_Rbitset:
@@ -105,7 +107,7 @@ Local Instance bloomAdd_Rbitset:
           (bloomAdd (I := T)) 
           (bloomAdd (I := Native.Int)).
 Proof.
-param (bloomAdd_R (P_R := @Logic.eq Q)(Finset_R := R.Rbitset)(I_R := R.Rbits)).
+param (bloomAdd_R (P_R := @Logic.eq Q)(S_R := R.Rbitset)(I_R := R.Rbits)).
 Qed.
 
 Local Instance bloomCheck_Rbitset:
@@ -113,7 +115,7 @@ Local Instance bloomCheck_Rbitset:
           (bloomCheck (I := T)) 
           (bloomCheck (I := Native.Int)).
 Proof.
-param (bloomCheck_R (P_R := @Logic.eq Q)(Finset_R := R.Rbitset)(I_R := R.Rbits)).
+param (bloomCheck_R (P_R := @Logic.eq Q)(S_R := R.Rbitset)(I_R := R.Rbits)).
 Qed.
 
 End Refinements.
@@ -161,9 +163,9 @@ End Correctness.
 
 
 Definition bloom_add_int
-  := bloomAdd (Finset := Native.Int)(P := Native.Int)(I := Native.Int).
+  := bloomAdd (S := Native.Int)(P := Native.Int)(I := Native.Int).
 Definition bloom_check_int
-  := bloomCheck (Finset := Native.Int)(P := Native.Int)(I := Native.Int).
+  := bloomCheck (S := Native.Int)(P := Native.Int)(I := Native.Int).
 
 
 Cd "extraction".
