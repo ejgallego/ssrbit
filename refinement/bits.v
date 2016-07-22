@@ -126,8 +126,8 @@ Global Instance  opp_N : opp_of  Native.Int := Native.opp.
 Global Instance get_N       : get_of Native.Int Native.Int       := get.
 Global Instance singleton_N : singleton_of Native.Int Native.Int := singleton.
 Global Instance compl_N     : compl_of Native.Int                := compl.
-Global Instance full_N      : full_of Native.Int                 := create (Bits := Native.Int) true.
-Global Instance empty_N     : empty_of Native.Int                := create (Bits := Native.Int) false.
+Global Instance empty_N     : empty_of Native.Int                := empty (Bits := Native.Int).
+Global Instance full_N      : full_of Native.Int                 := full  (Bits := Native.Int).
 Global Instance set_N       : set_of Native.Int Native.Int       := insert.
 Global Instance remove_N    : remove_of Native.Int Native.Int    := remove.
 Global Instance inter_N     : inter_of Native.Int                := inter.
@@ -155,8 +155,8 @@ Global Instance  sub_S : sub_of  bitseq := subs.
 Global Instance get_S       : get_of nat bitseq       := get.
 Global Instance singleton_S : singleton_of nat bitseq := singleton.
 Global Instance compl_S     : compl_of bitseq            := compl.
-Global Instance full_S      : full_of bitseq             := create (Bits := bitseq) true.
-Global Instance empty_S     : empty_of bitseq            := create (Bits := bitseq) false.
+Global Instance full_S      : full_of bitseq             := full (Bits := bitseq).
+Global Instance empty_S     : empty_of bitseq            := empty (Bits := bitseq).
 Global Instance set_S       : set_of nat bitseq       := insert.
 Global Instance remove_S    : remove_of nat bitseq    := remove.
 Global Instance inter_S     : inter_of bitseq            := inter.
@@ -230,23 +230,20 @@ Global Instance Rfin_full:
   refines Rfin full_op full_op.
 Proof.
 rewrite refinesE.
-rewrite /full_op/full_B/full_fin/create/Rfin/fun_hrel
-        /finB/zero_op/zero_B/sub_op/sub_B/one_op/one_B.
-Proof.
-apply/setP=> t.
-by rewrite can_enum inE mem_setb
-           -[subB _ _]/(decB _) -one_def
-           nth_nseq ltn_ord inE.
+rewrite /full_op/full_B/full_fin/full/Rfin/fun_hrel
+        /finB/zero_op/zero_B/not_op/not_B/sub_op/one_op/sub_B/one_B.
+apply/setP=> t; rewrite can_enum inE.
+have := full_def; rewrite /decB /subB /= => <-.
+by rewrite mem_setb nth_nseq ltn_ord inE.
 Qed.
 
 Global Instance Rfin_empty: 
   refines Rfin empty_op empty_op.
 Proof.
 rewrite refinesE.
-rewrite /empty_op/empty_B/empty_fin/create/Rfin/fun_hrel
+rewrite /empty_op/empty_B/empty_fin/empty/Rfin/fun_hrel
         /finB/zero_op/zero_B/sub_op/sub_B/one_op/one_B.
-apply/setP=> t.
-by rewrite can_enum inE mem_setb nth_nseq ltn_ord inE.
+by apply/setP=> t; rewrite can_enum inE mem_setb nth_nseq ltn_ord inE.
 Qed.
 
 (* =Rfin_insert= *)
@@ -256,28 +253,10 @@ Global Instance Rfin_insert:
 Proof.
 rewrite refinesE => t _ <- E bs2 <- .
 rewrite /Rfin /fun_hrel /set_op /set_B /set_fin.
-rewrite /insert/one_op/one_B/or_op/or_B/shl_op/shl_B.
-rewrite /finB.
+rewrite /insert/one_op/one_B/or_op/or_B/shl_op/shl_B/finB.
 apply/setP=> x.
-rewrite can_enum inE mem_setb.
-
-have ->: val (orB bs2 (shlB (inB 1) (enum_rank t))) = setls bs2 (enum_rank t) true
-    by rewrite sets_def /= size_tuple.
-
-rewrite /setls size_tuple ltn_ord nth_set_nth /= !inE.
-(* XXX: this is not pretty. There must be a better way. *)
-case: ifP.
-- move=> H.
-  have -> : x == t
-    by apply/eqP; apply enum_rank_inj;
-       rewrite val_eqE in H;
-       apply/eqP: H.
-  done.
-- move=> H.
-  have -> // : (x == t) = false
-    by apply/eqP=> Hxt;
-       rewrite Hxt  eq_refl // in H.
-  by rewrite can_enum inE mem_setb.
+rewrite !can_enum inE mem_setB !tnth_liftz 3!inE orbC mem_setB tnth_shlB_one.
+by rewrite (inj_eq enum_rank_inj) eq_sym.
 Qed.
 
 (* =Rfin_remove= *)
@@ -288,32 +267,20 @@ Proof.
 (* XXX: proof duplication with [Rfin_insert] *)
 rewrite refinesE => E bs2 <- t _ <-  .
 rewrite /Rfin /fun_hrel /remove_op /remove_B /remove_fin.
-rewrite /remove/one_op/one_B/or_op/or_B/shl_op/shl_B.
-rewrite /finB.
-apply/setP=> x.
-rewrite can_enum inE mem_setb.
-
-have ->: val (andB bs2 (negB (shlB (inB 1) (enum_rank t)))) = setls bs2 (enum_rank t) false
-    by rewrite sets_def /= size_tuple.
-
-rewrite /setls size_tuple ltn_ord nth_set_nth /= !inE.
-case: ifP.
-- move=> H.
-  have -> : x == t
-    by apply/eqP; apply enum_rank_inj;
-       rewrite val_eqE in H;
-       apply/eqP: H.
-  done.
-- move=> H.
-  have -> // : (x == t) = false
-    by apply/eqP=> Hxt;
-       rewrite Hxt eq_refl // in H.
-  by rewrite can_enum inE mem_setb.
+rewrite /remove/one_op/one_B/or_op/or_B/shl_op/shl_B/not_op/not_B.
+rewrite /and_op/and_B/finB.
+apply/setP=> x; rewrite !can_enum inE mem_setB 3!inE mem_setB.
+(* XXX: FIXME *)
+rewrite !(tnth_nth false) /= -{2}[#|T|](size_tuple bs2) -(sets_def _ _ false).
+rewrite /setls size_tuple ltn_ord nth_set_nth /=.
+case: ifP => [/eqP/val_inj/enum_rank_inj->|].
+  by rewrite eqxx.
+by rewrite val_eqE (inj_eq enum_rank_inj) => ->.
 Qed.
 
-Global Instance Rfin_compl: 
+Global Instance Rfin_compl :
   refines (Rfin ==> Rfin) compl_op compl_op.
-Proof. 
+Proof.
 rewrite refinesE => E bs <-.
 by rewrite /Rfin /fun_hrel Fcompl_morphL.
 Qed.
@@ -605,6 +572,10 @@ Instance Rvector_and :
 Proof. by eapply refines_trans; tc. Qed.
 (* =end= *)
 
+Instance Rvector_and :
+  refines (Rvector ==> Rvector ==> Rvector) (@andw n) ands.
+Proof. by eapply refines_trans; tc. Qed.
+
 Instance Rword_neg :
   refines (Rword ==> Rword) (@negw n) (@negB n).
 Proof.
@@ -622,12 +593,15 @@ Section Nand.
 End Nand.
 (* =end= *)
 
-(* =Rword_nand= *)
+
+End Nand.
+
 Parametricity nand.
 
+(* =Rword_nand= *)
 Instance Rword_nand:
-  refines (Rword ==> Rword ==> Rword) 
-          (nand (@andw n) (@negw n)) 
+  refines (Rword ==> Rword ==> Rword)
+          (nand (@andw n) (@negw n))
           (nand (@andB n) (@negB n)).
 Proof. param nand_R. Qed.
 (* =end= *)
@@ -661,25 +635,25 @@ eapply refines_trans; tc.
 - param (singleton_R (Idx_R := RidxN)(Bits_R := Rnative)).
 Qed.
 
+Global Instance Rbitset_empty: 
+  refines Rbitset empty_op empty_op.
+Proof.
+eapply refines_trans; tc.
+eapply refines_trans; tc.
+(* XXX: this is a bit surprising: why did that go through when
+[Rbitset_full] was a problem *)
+Qed.
+
 Global Instance Rbitset_full:
   refines Rbitset full_op full_op.
 Proof.
 eapply refines_trans; tc.
 eapply refines_trans; tc.
-- by param (create_R (Bits_R := Rtuple));
+- by param (full_R (Bits_R := Rtuple)).
     do ?(rewrite refinesE; apply eq_bool_R).
-- param (create_R (Bits_R := Rnative)).
+- param (full_R (Bits_R := Rnative)).
 Qed.
 
-
-Global Instance Rbitset_empty: 
-  refines Rbitset empty_op empty_op.
-Proof.
-eapply refines_trans; tc.
-eapply refines_trans; tc. 
-(* XXX: this is a bit surprising: why did that go through when
-[Rbitset_full] was a problem *)
-Qed.
 
 Global Instance Rbitset_insert:
   refines (Rbits ==> Rbitset ==> Rbitset) set_op set_op.

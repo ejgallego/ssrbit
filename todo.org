@@ -24,13 +24,13 @@
   # We could just rebind the notation..... and share with finset.
 
   # Definable operations that may work more efficiently...
-  Parameter create : bool -> T.
   Parameter insert : T -> 'I_wordsize -> T.
   Parameter remove : T -> 'I_wordsize -> T.
   Parameter keep_min : forall (E: T) x, x \in E -> T.
   Parameter symdiff : T -> T -> T.
 
 - expand theory of arithmetic.
+
 - extraction ...
 
   My first guess is that we'd like to use refinement here à la Cohen, Dénès, Motberg.

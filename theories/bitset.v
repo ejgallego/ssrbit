@@ -273,7 +273,7 @@ Qed.
 (* shift. *)
 (* get. *)
 
-(* Cardinality *)
+(** Cardinality *)
 Definition cardb k (s : 'B_k) := count id s.
 
 Arguments seqb_uniq [k s].
@@ -285,17 +285,12 @@ by rewrite cardsE (card_uniqP seqb_uniq) size_mask // size_tuple size_enum_ord.
 Qed.
 
 
-(* XXX: Minimum: Implement with index *)
+(** Minimum *)
+(* Lemma keep_minP n (bs: 'B_n) : *)
+(*   keep_min bs = setls '0_n (index true bs) true :> bitseq. *)
 
-
-(* Not sure how useful this is *)
-(* Create an empty / full set *)
-Definition createB {n} (b: bool) : 'B_n := if b then '1 else '0.
-
-Lemma create_repr n b : setB (@createB n b) = if b then setT else set0.
-Proof.
-by case: b; apply/setP=> x; rewrite /= mem_setb nth_nseq !inE ltn_ord.
-Qed.
+(** Value of the minimum (ie number of trailing zeroes) *)
+(* Lemma ntzP n (bs : 'B_n) : ntz bs = inB (index true bs). *)
 
 (* XXX: Emilio: move? *)
 Definition ord_iota k m n : seq 'I_k := pmap insub (iota m n).
@@ -459,9 +454,14 @@ Definition get    k bs
 Definition singleton k := 1 :<<: k.
 Definition compl     bs := ~ bs.
 
+Definition empty : Bits := (0)%C.
+Definition full  : Bits := (0-1)%C.
+
 Definition inter bs bs' := bs && bs'.
 Definition union bs bs' := bs || bs'.
 Definition min   bs     := bs && ~ bs.
+
+
 (* XXX: Order of arguments *)
 (* =insert= *)
 Definition insert  k bs
@@ -474,14 +474,13 @@ Definition remove  bs k
 Definition symdiff bs1 bs2 := bs1 ^^ bs2.
 Definition subset  bs1 bs2 := (bs1 && bs2) == bs1.
 
-Definition create b : Bits := (if b then 0 - 1 else 0)%C.
-
 End Operations.
 
 Arguments get {_}{_}{_}{_}{_}{_}{_} k bs.
 Arguments singleton {_}{_}{_}{_} k.
 Arguments compl {_}{_} bs.
-Arguments create {_}{_}{_}{_} b.
+Arguments empty {_}{_}.
+Arguments full {_}{_}{_}{_}.
 Arguments inter {_}{_} bs bs'.
 Arguments union {_}{_} bs bs'.
 Arguments min {_}{_}{_} bs.
@@ -493,7 +492,8 @@ Arguments subset {_}{_}{_} bs1 bs2.
 Parametricity get.
 Parametricity singleton.
 Parametricity compl.
-Parametricity create.
+Parametricity full.
+Parametricity empty.
 Parametricity inter.
 Parametricity union.
 Parametricity min.
@@ -548,8 +548,10 @@ Variable n: nat.
 Global Instance get_B       : get_of 'I_n 'B_n       := get.
 Global Instance singleton_B : singleton_of 'I_n 'B_n := singleton.
 Global Instance compl_B     : compl_of 'B_n          := compl.
-Global Instance full_B      : full_of 'B_n           := create (Bits := 'B_n) true.
-Global Instance empty_B     : empty_of 'B_n          := create (Bits := 'B_n) false.
+Global Instance empty_B     : empty_of 'B_n          := empty (Bits := 'B_n).
+Global Instance full_B      : full_of 'B_n           := full  (Bits := 'B_n).
+(* This creates a problem in typeclass resolution, see Rbitset_full *)
+(* Global Instance full_B      : full_of 'B_n           := '1. (* Optimized *) *)
 Global Instance set_B       : set_of 'I_n 'B_n       := insert.
 Global Instance remove_B    : remove_of 'I_n 'B_n    := remove.
 Global Instance inter_B     : inter_of 'B_n          := inter.
