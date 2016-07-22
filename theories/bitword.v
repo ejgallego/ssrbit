@@ -119,6 +119,11 @@ move=> t; apply: eq_from_tnth => i.
 by rewrite tcastE tnth_fgraph ffunE enum_val_ord cast_ordKV.
 Qed.
 
+Lemma wordP w : tnth (bitw w) =1 w.
+Proof.
+by move=> i; rewrite /bitw tcastE tnth_fgraph enum_val_ord cast_ordKV.
+Qed.
+
 End BitWord.
 
 (* Properties for lifted operators: *)
@@ -150,6 +155,7 @@ by rewrite ltnW.
 Admitted.
 
 (* Shifts *)
+
 Definition shlw (n : 'I_k.+1) w : word :=
   [ffun i : 'I_k.+1 => if (n <= i)%N then w (i - n)%R else false].
 
