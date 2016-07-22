@@ -439,6 +439,12 @@ Proof. by rewrite size_shrs size_tuple. Qed.
 Canonical shlB (t : 'B_k) n := Tuple (shls_tupleP n t).
 Canonical shrB (t : 'B_k) n := Tuple (shrs_tupleP n t).
 
+Lemma tnth_shlB (b : 'B_k) n (i : 'I_k) :
+  tnth (shlB b n) i = if i < n
+                      then false
+                      else tnth b (insubd i (i - n)).
+Admitted.
+
 (* Inversion of bits *)
 Definition negs s := [seq negb b | b <- s].
 Definition negB (t : 'B_k) := [bits of negs t].
@@ -613,6 +619,16 @@ Lemma nats_full k : nats '1_k = 2^k - 1.
 Proof.
 elim: k => //= k ihk; rewrite nats_cons ihk.
 by rewrite expnS -addnn !mulSn mul0n addn0 addnA subnKC ?addnBA ?expn_gt0.
+Qed.
+
+Lemma tnth_one k (i : 'I_k) : tnth [bits of bitn k 1] i = (val i == 0).
+Admitted.
+
+Lemma tnth_shlB_one k (n i : 'I_k) : tnth (shlB [bits of bitn k 1] n) i = (n == i).
+Proof.
+rewrite tnth_shlB tnth_one val_insubd; case: ltnP; first by move/gtn_eqF.
+rewrite (leq_ltn_trans (leq_subr n _)) ?ltn_ord // => hle.
+by rewrite subn_eq0 leq_eqVlt ltnNge hle orbF eq_sym.
 Qed.
 
 (* Development of the bounded operators *)

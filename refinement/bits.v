@@ -42,7 +42,8 @@ Unset Printing Implicit Defensive.
 (** * Refinement Relations                                                 *)
 (************************************************************************)
 
-Require Import bitset.
+(* Sets and efficient bit operators *)
+Require Import bitocaml bitset.
 
 Parameter T: finType.
 
@@ -134,7 +135,6 @@ Global Instance union_S     : union_of bitseq            := union.
 Global Instance symdiff_S   : symdiff_of bitseq          := symdiff.
 Global Instance subset_S    : subset_of bitseq           := subset.
 
-
 (************************************************************************)
 (** * From finset to bit vectors                                        *)
 (************************************************************************)
@@ -188,21 +188,13 @@ Global Instance Rfin_singleton:
 Proof.
 rewrite refinesE => t _ <-.
 apply/setP=> x.
-rewrite /Rfin /fun_hrel /finB 
+rewrite /Rfin /fun_hrel /finB
         /singleton_op /singleton_B /singleton_fin /singleton
         /shl_op /shl_B /one_op /one_B.
-rewrite !inE can_enum inE mem_setb.
-have ->: val (shlB [bits of bitn #|T| 1] (enum_rank t)) = setls '0_#| T | (enum_rank t) true.
-by rewrite -[shlB _ _]or0B
-             -[orB _ _]/[bits of ors _ (shls (bitn _ _) _) ] /=
-             sets_def size_tuple.
-rewrite /setls size_tuple ltn_ord nth_set_nth /= gets0 val_eqE.
-apply/idP/eqP=> [ | ->  ].
-by case: ifP=> /eqP => //= He _; apply: enum_rank_inj.
-by rewrite eq_refl.
+by rewrite !inE can_enum inE mem_setB tnth_shlB_one (inj_eq enum_rank_inj).
 Qed.
 
-Global Instance Rfin_full: 
+Global Instance Rfin_full:
   refines Rfin full_op full_op.
 Proof.
 rewrite refinesE.
@@ -323,6 +315,15 @@ apply/setIidPl/idP.
   apply/eqP. 
   by apply: (can_inj (@bitFK _))=> //.
 - rewrite -Finter_morphL=> /eqP {2}<- //. 
+Qed.
+
+(* Locate "f \o g" = f (g x) *)
+Definition cardTT (A : {set T}) := #|A|.
+Global Instance Rfin_cardinal:
+  refines (Rfin ==> eq) (cardTT) (fun x => nats (cardinal 4 x)).
+Proof.
+rewrite !refinesE => A1 y1 <-.
+by rewrite /cardTT cardinalP (card_imset _ enum_val_inj) cardbP.
 Qed.
 
 (************************************************************************)
