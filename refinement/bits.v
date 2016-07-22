@@ -196,7 +196,8 @@ Qed.
 
 (* =Rfin_get= *)
 Global Instance Rfin_get: 
-  refines (Rord ==> Rfin ==> param.bool_R) (fun k E => k \in E) get.
+  refines (Rord ==> Rfin ==> param.bool_R)
+          (fun k E => k \in E) get.
 (* =end= *)
 Proof.
   rewrite refinesE => t _ <- E2 bs2 <- .
