@@ -133,7 +133,6 @@ Admitted.
 (* Lemma cardinalP k (s : 'B_k) i (* (div_i: i %| k) (ltz_i: i > 0) *) : *)
 Lemma cardinalP k (s : 'B_k) i :
   nats (cardinal i s) = count id s.
-
 Proof.
 Admitted.
 
@@ -170,8 +169,7 @@ Definition ntz n (bs: 'B_n) : 'B_n :=
 (* =end= *)
 
 (* =ntzP= *)
-Lemma ntzP n (bs : 'B_n) i :
-    ntz bs = inB (index true bs).
+Lemma ntzP n (bs : 'B_n) : ntz bs = inB (index true bs).
 (* =end= *)
 (* Admitted. *)
 Definition ntz' n b := n - count id (ors b (opps b)).
