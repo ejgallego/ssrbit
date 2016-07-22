@@ -72,7 +72,7 @@ Definition Rbitset: {set T} -> Native.Int -> Type := Rfin \o (Rtuple \o Rnative)
 (** ** From finite type to machine words: *)
 
 Definition Rord: T -> 'I_#| T | -> Type := fun t n => enum_rank t = n.
-Definition RidxI {n} : 'I_n -> nat -> Type := fun k n => val k = n.
+Definition RidxI: 'I_n -> nat -> Type := fun k n => val k = n.
 CoInductive RidxN: nat -> Native.Int -> Type :=
   Ridx_spec (k: nat)(i: Native.Int)(b: bitseq) of
     Rnative b i
@@ -550,23 +550,44 @@ Qed.
 (** * From bit words to bit tuples 'W_n -> 'B_n                         *)
 (************************************************************************)
 
-Definition Rword {n} : 'W_n -> 'B_n -> Type := fun_hrel (@wrdB n).
+Definition Rword : 'W_n -> 'B_n -> Type := fun_hrel (@wrdB n).
+Definition Rvector : 'W_n -> bitseq -> Type := Rword \o Rtuple.
 
-Global Instance Rword_and {n} :
+Instance Rword_and:
   refines (Rword ==> Rword ==> Rword) (@andw n) (@andB n).
 Proof.
 rewrite !refinesE => w1 b1 <- w2 b2 <-.
 by rewrite /Rword /fun_hrel; apply/ffunP=> i; rewrite !ffunE tnth_liftz.
 Qed.
 
-Global Instance Rword_neg {n} :
+Instance Rvector_and :
+  refines (Rvector ==> Rvector ==> Rvector) (@andw n) ands.
+Proof. by eapply refines_trans; tc. Qed.
+
+Instance Rword_neg :
   refines (Rword ==> Rword) (@negw n) (@negB n).
 Proof.
 rewrite !refinesE => w1 b1 <-.
 by rewrite /Rword /fun_hrel; apply/ffunP=> i; rewrite !ffunE tnth_map.
 Qed.
 
-Definition Rvector : 'W_n -> bitseq -> Type := Rword \o Rtuple.
+Section Nand.
+  Variables (B: Type)
+            (and: B -> B -> B)
+            (neg: B -> B).
+
+  Definition nand (b1 b2: B): B := neg (and b1 b2).
+
+End Nand.
+
+Parametricity nand.
+
+Instance Rword_nand:
+  refines (Rword ==> Rword ==> Rword) 
+          (nand (@andw n) (@negw n)) 
+          (nand (@andB n) (@negB n)).
+Proof. param nand_R. Qed.
+
 
 (************************************************************************)
 (** * Compositions                                                      *)
