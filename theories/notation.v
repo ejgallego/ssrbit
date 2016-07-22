@@ -39,9 +39,9 @@ Module Op.
 Class cardinal_of n fset := cardinal_op : fset -> n.
 Class compl_of fset := compl_op : fset -> fset.
 Class empty_of fset := empty_op : fset.
-Class full_of fset := full_op : fset.
-Class get_of e fset := get_op : e -> fset -> bool.
-Class set_of e fset := set_op : e -> fset -> fset.
+Class full_of  fset := full_op  : fset.
+Class get_of e fset := get_op   : e -> fset -> bool.
+Class set_of e fset := set_op   : e -> fset -> fset.
 Class inter_of fset := inter_op : fset -> fset -> fset.
 Class min_of e fset := min_op : fset -> e.
 Class remove_of e fset := remove_op : fset -> e -> fset.

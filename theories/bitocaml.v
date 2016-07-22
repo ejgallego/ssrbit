@@ -171,7 +171,30 @@ Definition ntz n (bs: 'B_n) : 'B_n :=
 (* =ntzP= *)
 Lemma ntzP n (bs : 'B_n) : ntz bs = inB (index true bs).
 (* =end= *)
-(* Admitted. *)
-Definition ntz' n b := n - count id (ors b (opps b)).
+Admitted.
+
+(*  *)
+Definition U_test n (bs : 'B_n) :=
+  (nats (ntz bs),
+   nats (@inB n (index true bs)),
+   nats (keep_min bs),
+   nats (setls '0_n (index true bs) true)).
+
+Definition U_inputs :=
+[:: [::]
+ ;  [:: false]
+ ;  [:: true ; true]
+ ;  [:: true ; false]
+ ;  [:: false; true]
+ ;  [:: false; false]
+ ;  [:: false; false; false; false; false]
+ ;  [:: true; false;  false; false; false]
+ ;  [:: false; false; true;  false; false]
+ ;  [:: false; false; true;  false; true]
+ ;  [:: false; false; false; false; true]
+].
+
+(* Compute map (fun u => U_test (in_tuple u)) U_inputs. *)
+(* Definition ntz' n b := n - count id (ors b (opps b)). *)
 
 End BitMin.

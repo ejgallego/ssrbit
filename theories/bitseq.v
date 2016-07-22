@@ -664,7 +664,7 @@ Implicit Types (bv : 'B_k).
 Implicit Types (o  : 'I_(2^k).-1.+1).
 
 (* Bits of an unsigned *)
-Definition bito o     := [tuple of bitn k o].
+Definition bito o     := [bits of bitn k o].
 (* Unsigned of bits *)
 Lemma nats_ltn_exp bv : nats bv < 2^k.
 Proof. by have := nats_ltn bv; rewrite size_tuple. Qed.
@@ -722,7 +722,7 @@ Definition decB b := (b - inB 1)%R.
 
 (* XXX: Improve Vs *)
 (* Lemma nats_one  k : nats '1_k = 2^k - 1. *)
-Lemma one_def: '1 = decB '0.
+Lemma full_def: '1 = decB '0.
 Proof.
 apply: (can_inj ordBK); apply: val_inj => /=.
 rewrite prednK ?expn_gt0 // nats_zero nats_full add0n.
@@ -1195,7 +1195,7 @@ Global Instance xor_B {n} : xor_of 'B_n := @xorB _.
 Global Instance shr_B {n} : shr_of 'I_n 'B_n := (fun x y => @shrB _ x y).
 Global Instance shl_B {n} : shl_of 'I_n 'B_n := (fun x y => @shlB _ x y).
 
-Global Instance zero_B {n} : zero_of 'B_n := [tuple of '0_n].
-Global Instance one_B  {n} : one_of  'B_n := [tuple of bitn n 1].
+Global Instance zero_B {n} : zero_of 'B_n := '0.
+Global Instance one_B  {n} : one_of  'B_n := inB 1.
 Global Instance sub_B  {n} : sub_of  'B_n  := (@subB _).
 
