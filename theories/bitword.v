@@ -166,6 +166,10 @@ Admitted.
 Definition shlw (n : 'I_k.+1) w : word :=
   [ffun i : 'I_k.+1 => if (n <= i)%N then w (i - n)%R else false].
 
+Lemma shlwP' n w i : (shlw n w) i =
+                     if (n <= i)%N then w (i - n)%R else false.
+Proof. by rewrite ffunE. Qed.
+
 Lemma shlwP n w : bitw (shlw n w) = shlB (bitw w) n.
 Proof.
 apply/eq_from_tnth=> i.
