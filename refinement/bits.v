@@ -315,17 +315,17 @@ Proof.
 Qed.
 
 Global Instance Rnative_zero: refines Rnative '0_Native.w Native.zero.
-Proof. 
-  rewrite refinesE. 
+Proof.
+  rewrite refinesE.
   have /eqIntP -> := Native.zero_valid.
-  by rewrite /Rnative/fun_hrel Native.bitsToIntK. 
+  by rewrite /Rnative/fun_hrel Native.bitsToIntK.
 Qed.
 
 Global Instance Rnative_one: refines Rnative (bitn Native.w 1) Native.one.
-Proof. 
-  rewrite refinesE. 
+Proof.
+  rewrite refinesE.
   have /eqIntP -> := Native.one_valid.
-  by rewrite /Rnative/fun_hrel Native.bitsToIntK. 
+  by rewrite /Rnative/fun_hrel Native.bitsToIntK.
 Qed.
 
 Global Instance Rnative_lnot:
@@ -340,27 +340,27 @@ Global Instance Rnative_land:
   refines (Rnative ==> Rnative ==> Rnative) ands Native.land.
 Proof.
   rewrite !refinesE => bs1 w1 <- bs2 w2 <-.
-  have /forallIntP /(_ w1) /forallIntP /(_ w2) /eqIntP -> := Native.land_valid.
+  have /forallInt2P /(_ w1 w2) /eqIntP -> := Native.land_valid.
   by rewrite /Rnative/fun_hrel Native.bitsToIntK.
 Qed.
 
-Global Instance Rnative_lor: 
+Global Instance Rnative_lor:
   refines (Rnative ==> Rnative ==> Rnative) ors Native.lor.
 Proof.
   rewrite !refinesE => bs1 w1 <- bs2 w2 <-.
-  have /forallIntP /(_ w1) /forallIntP /(_ w2) /eqIntP -> := Native.lor_valid.
+  have /forallInt2P /(_ w1 w2) /eqIntP -> := Native.lor_valid.
   by rewrite /Rnative/fun_hrel Native.bitsToIntK.
 Qed.
 
-Global Instance Rnative_lxor: 
+Global Instance Rnative_lxor:
   refines (Rnative ==> Rnative ==> Rnative) xors Native.lxor.
 Proof.
   rewrite !refinesE => bs1 w1 <- bs2 w2 <-.
-  have /forallIntP /(_ w1) /forallIntP /(_ w2) /eqIntP -> := Native.lxor_valid.
+  have /forallInt2P /(_ w1 w2) /eqIntP -> := Native.lxor_valid.
   by rewrite /Rnative/fun_hrel Native.bitsToIntK.
 Qed.
 
-Global Instance Rnative_lsr: 
+Global Instance Rnative_lsr:
   refines (Rnative ==> RidxN ==> Rnative) shrs Native.lsr.
 Proof.
 rewrite !refinesE => bs1 w1 <- _ _ [n w2 _ <- Hbnd Hw2n].
@@ -371,15 +371,14 @@ have H2bnd: n < 2 ^ #|T|
 have Hlt: (nats (bitsFromInt Native.w w2) <= Native.w)%N
   by rewrite Hw2n bitnK // ?inE ?H2bnd.
 
-have /forallIntP /(_ w1) 
-     /forallIntP /(_ w2) 
-     /implyP    /(_ Hlt) 
+have /forallInt2P /(_ w1 w2)
+     /implyP    /(_ Hlt)
      /eqIntP -> := Native.lsr_valid.
 by rewrite /Rnative/fun_hrel Native.bitsToIntK Hw2n bitnK ?inE ?H2bnd.
 Qed.
 
 
-Global Instance Rnative_lsl: 
+Global Instance Rnative_lsl:
   refines (Rnative ==> RidxN ==> Rnative) shls Native.lsl.
 rewrite !refinesE => bs1 w1 <- _ _ [n w2 _ <- Hbnd Hw2n].
 
@@ -389,9 +388,8 @@ have H2bnd: n < 2 ^ #|T|
 have Hlt: (nats (bitsFromInt Native.w w2) <= Native.w)%N
   by rewrite Hw2n bitnK // ?inE ?H2bnd.
 
-have /forallIntP /(_ w1) 
-     /forallIntP /(_ w2) 
-     /implyP    /(_ Hlt) 
+have /forallInt2P /(_ w1 w2)
+     /implyP    /(_ Hlt)
      /eqIntP -> := Native.lsl_valid.
 by rewrite /Rnative/fun_hrel Native.bitsToIntK Hw2n bitnK ?inE ?H2bnd.
 Qed.
@@ -400,8 +398,7 @@ Global Instance Rnative_add:
   refines (Rnative ==> Rnative ==> Rnative) adds Native.add.
 Proof.
 rewrite !refinesE => bs1 w1 <- bs2 w2 <-.
-have /forallIntP /(_ w1) 
-     /forallIntP /(_ w2) 
+have /forallInt2P /(_ w1 w2)
      /eqIntP ->  := Native.add_valid.
 by rewrite /Rnative/fun_hrel Native.bitsToIntK -adds_eff_defE.
 Qed.
@@ -410,8 +407,7 @@ Global Instance Rnative_sub:
   refines (Rnative ==> Rnative ==> Rnative) subs Native.sub.
 Proof.
 rewrite !refinesE => bs1 w1 <- bs2 w2 <-.
-have /forallIntP /(_ w1) 
-     /forallIntP /(_ w2) 
+have /forallInt2P /(_ w1 w2)
      /eqIntP ->  := Native.sub_valid.
 by rewrite /Rnative/fun_hrel Native.bitsToIntK -subs_eff_defE.
 Qed.
@@ -420,7 +416,7 @@ Global Instance Rnative_opp:
   refines (Rnative ==> Rnative) opps Native.opp.
 Proof.
 rewrite !refinesE => bs w <- .
-have /forallIntP /(_ w) 
+have /forallIntP /(_ w)
      /eqIntP ->  := Native.opp_valid.
 by rewrite /Rnative/fun_hrel Native.bitsToIntK -opps_eff_defE.
 Qed.
@@ -451,37 +447,37 @@ Global Instance Rtuple_land:
   refines (Rtuple ==> Rtuple ==> Rtuple) &&%C &&%C.
 Proof. by rewrite !refinesE => bs1 w1 <- bs2 w2 <-. Qed.
 
-Global Instance Rtuple_lor: 
+Global Instance Rtuple_lor:
   refines (Rtuple ==> Rtuple ==> Rtuple) ||%C ||%C.
 Proof. by rewrite !refinesE => bs1 w1 <- bs2 w2 <-. Qed.
 
-Global Instance Rtuple_lxor: 
+Global Instance Rtuple_lxor:
   refines (Rtuple ==> Rtuple ==> Rtuple) ^^%C ^^%C.
 Proof. by rewrite !refinesE => bs1 w1 <- bs2 w2 <-. Qed.
 
-Global Instance Rtuple_lsr: 
+Global Instance Rtuple_lsr:
   refines (Rtuple ==> RidxI ==> Rtuple) :>>:%C :>>:%C.
 Proof. by rewrite !refinesE => bs1 w1 <- bs2 w2 <-. Qed.
 
-Global Instance Rtuple_lsl: 
+Global Instance Rtuple_lsl:
   refines (Rtuple ==> RidxI ==> Rtuple) :<<:%C :<<:%C.
 Proof. by rewrite !refinesE => bs1 w1 <- bs2 w2 <-. Qed.
 
-Global Instance Rtuple_add: 
+Global Instance Rtuple_add:
   refines (Rtuple ==> Rtuple ==> Rtuple) (@addB _) adds.
 Proof.
 rewrite !refinesE => bs1 w1 <- bs2 w2 <-.
 by rewrite (adds_relE (k := #| T |)(bv1 := bs1)(bv2 := bs2)).
 Qed.
 
-Global Instance Rtuple_sub: 
+Global Instance Rtuple_sub:
   refines (Rtuple ==> Rtuple ==> Rtuple) (@subB _) subs.
 Proof.
 rewrite !refinesE => bs1 w1 <- bs2 w2 <-.
 by rewrite (subs_relE (k := #| T |)(bv1 := bs1)(bv2 := bs2)).
 Qed.
 
-Global Instance Rtuple_opp: 
+Global Instance Rtuple_opp:
   refines (Rtuple ==> Rtuple) (@oppB _) opps.
 Proof.
 rewrite !refinesE => bs w <- .
@@ -530,8 +526,8 @@ End Nand.
 Parametricity nand.
 
 Instance Rword_nand:
-  refines (Rword ==> Rword ==> Rword) 
-          (nand (@andw n) (@negw n)) 
+  refines (Rword ==> Rword ==> Rword)
+          (nand (@andw n) (@negw n))
           (nand (@andB n) (@negB n)).
 Proof. param nand_R. Qed.
 
@@ -540,20 +536,20 @@ Proof. param nand_R. Qed.
 (** * Compositions                                                      *)
 (************************************************************************)
 
-Global Instance Rbitset_eq: 
+Global Instance Rbitset_eq:
   refines (Rbitset ==> Rbitset ==> param.bool_R) eq_op eq_op.
 Proof. by do 2 (eapply refines_trans; tc). Qed.
 
-Global Instance Rbitset_get: 
+Global Instance Rbitset_get:
   refines (Rbits ==> Rbitset ==> param.bool_R) get_op get_op.
 Proof.
 eapply refines_trans; tc.
-(* XXX: this should follow by composition. 
+(* XXX: this should follow by composition.
    Instead, I've to manually instantiate [Bits_R] *)
 eapply refines_trans; tc.
 - param get_R.
 - Opaque Native.lsl.
-  param (get_R (Idx_R := RidxN)(Bits_R := Rnative)). 
+  param (get_R (Idx_R := RidxN)(Bits_R := Rnative)).
 Qed.
 
 Global Instance Rbitset_singleton:
@@ -565,7 +561,7 @@ eapply refines_trans; tc.
 - param (singleton_R (Idx_R := RidxN)(Bits_R := Rnative)).
 Qed.
 
-Global Instance Rbitset_empty: 
+Global Instance Rbitset_empty:
   refines Rbitset empty_op empty_op.
 Proof.
 eapply refines_trans; tc.
@@ -594,7 +590,7 @@ eapply refines_trans; tc.
 - param (insert_R (Idx_R := RidxN)(Bits_R := Rnative)).
 Qed.
 
-Global Instance Rcomp_not: 
+Global Instance Rcomp_not:
   refines (Rtuple \o Rnative ==> Rtuple \o Rnative) ~%C ~%C.
 Proof.
 eapply refines_trans; tc.
@@ -610,7 +606,7 @@ eapply refines_trans; tc.
 - param (remove_R (Idx_R := RidxN)(Bits_R := Rnative)).
 Qed.
 
-Global Instance Rbitset_compl: 
+Global Instance Rbitset_compl:
   refines (Rbitset ==> Rbitset) compl_op compl_op.
 Proof. by eapply refines_trans; tc. Qed.
 
@@ -628,7 +624,7 @@ Proof. by eapply refines_trans; tc; param_comp symdiff_R. Qed.
 
 Global Instance Rbitset_subset:
   refines (Rbitset ==> Rbitset ==> bool_R) subset_op subset_op.
-Proof. 
+Proof.
 eapply refines_trans; tc.
 eapply refines_trans; tc.
 - param (subset_R (Bits_R := Rtuple)).

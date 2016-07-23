@@ -38,9 +38,12 @@
 
 * Extraction
 
-  - Move to forallInt2
+  - Fine tune terminal display (go back in terminal, etc...)
 
-  - Check why we get a stack overflow on int32 (we should not call enum_all_tuples)
+  - OCAMLRUNPARAM='v=0x400' should print GC stats on 4.03
+
+  - Check why we get a stack overflow on int32 (we should not call
+    enum_all_tuples in the bitsToInt_test)
 
   - Cache conversion on all tests. Now we do:
 
