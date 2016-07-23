@@ -265,7 +265,8 @@ Axiom forallInt2P : forall w (P : _ -> _ -> bool),
 End Trust.
 
 Axiom assertion : bool -> bool.
-Extract Constant assertion => "fun b -> if b then b else failwith ""Test failure""".
+Extract Constant assertion =>
+  "fun b -> if b then (Gc.print_stat stderr; b) else failwith ""Test failure""".
 
 Module Make (WS: WORDSIZE).
 
@@ -489,7 +490,6 @@ Definition tests
           ;   zero_test 
           ;   one_test 
           ;   forallInt (fun x => unop_tests x)]).
-
 
 (* XXX: show that [tests_valid] implies each individual "axiom" *)
 
