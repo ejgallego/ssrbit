@@ -21,14 +21,14 @@ extraction/STAMP: build extraction/axioms.v
 	touch extraction/STAMP
 
 TEST_FILES=$(addprefix extraction/test_int,8 16 32)
-TEST_BYTE:=$(TEST_FILES:=.byte)
-TEST_NATIVE:=$(TEST_FILES:=.native)
+TARGET=native
+TEST_BINARIES:=$(TEST_FILES:=.$(TARGET))
 
 test:
 	mkdir -p test
 
-tests: test extraction $(addsuffix .ml, $(TEST_FILES))
-	$(OCB) -package unix $(TEST_NATIVE)
+tests: test extraction $(addsuffix .ml, $(TEST_FILES)) extraction/forall.ml
+	$(OCB) -package unix $(TEST_BINARIES)
 
 clean: Makefile.coq
 	$(MAKE) -f Makefile.coq clean
