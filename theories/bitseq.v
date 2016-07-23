@@ -768,6 +768,11 @@ Definition adds bs1 bs2 : bitseq :=
   let t := lift_top bs1 bs2 in
   val (t.1 + t.2)%R.
 
+Definition adds_eff k bs1 bs2 : bitseq :=
+  let d     := 2^k    in
+  let inZ u := nats u in
+  bitn k ((inZ bs1 + inZ bs2) %% d).
+
 Lemma adds_tupleP k (b1 b2 : 'B_k) : size (adds b1 b2) == k.
 Proof. by rewrite !size_tuple minnn. Qed.
 Canonical adds_tuple k (b1 b2 : 'B_k) := Tuple (adds_tupleP b1 b2).
@@ -800,12 +805,23 @@ Lemma opps_eff_relE k bs (bv : 'B_k) :
   bs ≈ bv -> opps_eff k bs ≈ (- bv)%R.
 Proof. by move->; congr bitn; rewrite /= prednK ?expn_gt0. Qed.
 
+Lemma opps_eff_defE k (bv : 'B_k) :
+  opps_eff k bv = opps bv.
+Proof. by rewrite (opps_eff_relE erefl) (opps_relE erefl). Qed.
+
 Lemma adds_relE k bs1 bs2 (bv1 bv2 : 'B_k) :
   bs1 ≈ bv1 -> bs2 ≈ bv2 -> adds bs1 bs2 ≈ (bv1 + bv2)%R.
 Proof.
 move=> ->->.
 by rewrite /adds /lift_top /= !size_tuple !minnn unzip1_zip ?unzip2_zip ?size_tuple.
 Qed.
+
+Lemma adds_eff_relE k bs1 bs2 (bv1 bv2 : 'B_k) :
+  bs1 ≈ bv1 -> bs2 ≈ bv2 -> adds_eff k bs1 bs2 ≈ (bv1 + bv2)%R.
+Proof. by move=> ->->; congr bitn; rewrite /= prednK ?expn_gt0 //. Qed.
+
+Lemma adds_eff_defE k (bv1 bv2 : 'B_k) : adds_eff k bv1 bv2 = adds bv1 bv2.
+Proof. by rewrite (adds_eff_relE erefl erefl) (adds_relE erefl erefl). Qed.
 
 Lemma subs_relE k bs1 bs2 (bv1 bv2 : 'B_k) :
   bs1 ≈ bv1 -> bs2 ≈ bv2 -> subs bs1 bs2 ≈ (bv1 - bv2)%R.
@@ -820,6 +836,10 @@ Proof.
 move=> -> ->; congr bitn; rewrite /= prednK ?expn_gt0 //.
 by rewrite bitnK ?inE ?ltn_pmod ?expn_gt0 // modnDmr.
 Qed.
+
+Lemma subs_eff_defE k (bv1 bv2 : 'B_k) : subs_eff k bv1 bv2 = subs bv1 bv2.
+Proof. by rewrite (subs_eff_relE erefl erefl) (subs_relE erefl erefl). Qed.
+Proof.
 
 End SeqZModule.
 

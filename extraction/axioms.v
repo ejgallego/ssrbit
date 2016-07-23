@@ -425,7 +425,7 @@ Axiom lsl_valid: lsl_test.
 Definition opp_test: bool
   := forallInt (fun i =>
          Tnative (opp i) 
-                 (opps (bitsFromInt w i))).
+                 (opps_eff w (bitsFromInt w i))).
 
 Axiom opp_valid: opp_test.
 
@@ -433,7 +433,7 @@ Definition sub_test: bool
   := forallInt (fun i =>
        forallInt (fun j =>
          Tnative (sub i j) 
-                 (subs (bitsFromInt w i) (bitsFromInt w j)))).
+                 (subs_eff w (bitsFromInt w i) (bitsFromInt w j)))).
 
 Axiom sub_valid: sub_test.
 
@@ -442,7 +442,7 @@ Definition add_test: bool
   := forallInt (fun i =>
        forallInt (fun j =>
          Tnative (add i j)
-                 (adds (bitsFromInt w i) (bitsFromInt w j)))).
+                 (adds_eff w (bitsFromInt w i) (bitsFromInt w j)))).
 
 Axiom add_valid: add_test.
 
@@ -458,8 +458,8 @@ Definition binop_tests x bitsX y bitsY :=
     ;   Tnative (land x y) (ands bitsX bitsY) 
     ;   Tnative (lor x y) (ors bitsX bitsY) 
     ;   Tnative (lxor x y) (xors bitsX bitsY) 
-    ;   Tnative (add x y) (adds bitsX bitsY)
-    ;   Tnative (sub x y) (subs bitsX bitsY)].
+    ;   Tnative (add x y) (adds_eff w bitsX bitsY)
+    ;   Tnative (sub x y) (subs_eff w bitsX bitsY)].
 
 Definition shift_tests x toNatX y bitsY :=
   allb
@@ -471,7 +471,7 @@ Definition unop_tests x :=
   let toNatX := nats bitsX in
   allb
     [:: Tnative (lnot x) (negs bitsX) 
-    ;   Tnative (opp x) (opps bitsX) 
+    ;   Tnative (opp x) (opps_eff w bitsX) 
     ;   if (toNatX <= w) then
           forallInt (fun y =>
             let bitsY := bitsFromInt w y in

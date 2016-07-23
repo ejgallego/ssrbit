@@ -403,7 +403,7 @@ rewrite !refinesE => bs1 w1 <- bs2 w2 <-.
 have /forallIntP /(_ w1) 
      /forallIntP /(_ w2) 
      /eqIntP ->  := Native.add_valid.
-by rewrite /Rnative/fun_hrel Native.bitsToIntK.
+by rewrite /Rnative/fun_hrel Native.bitsToIntK -adds_eff_defE.
 Qed.
 
 Global Instance Rnative_sub:
@@ -413,7 +413,7 @@ rewrite !refinesE => bs1 w1 <- bs2 w2 <-.
 have /forallIntP /(_ w1) 
      /forallIntP /(_ w2) 
      /eqIntP ->  := Native.sub_valid.
-by rewrite /Rnative/fun_hrel Native.bitsToIntK.
+by rewrite /Rnative/fun_hrel Native.bitsToIntK -subs_eff_defE.
 Qed.
 
 Global Instance Rnative_opp:
@@ -422,7 +422,7 @@ Proof.
 rewrite !refinesE => bs w <- .
 have /forallIntP /(_ w) 
      /eqIntP ->  := Native.opp_valid.
-by rewrite /Rnative/fun_hrel Native.bitsToIntK.
+by rewrite /Rnative/fun_hrel Native.bitsToIntK -opps_eff_defE.
 Qed.
 
 (************************************************************************)
