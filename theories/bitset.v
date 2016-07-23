@@ -319,9 +319,8 @@ Lemma ntz_setP n (bs : 'B_n) :
 (* =end= *)
 Proof.
 case: pickP => [x xinT|xinN].
-  case: arg_minP => // y yin ymin.
-  rewrite ntzP; congr inB.
-  (* Same indexP as before *)
+  case: arg_minP => // y yin ymin; rewrite ntzP; congr inB.
+  (* Same applications of indexP as before *)
   admit.
 have:= mem_setBN' xinN; rewrite -index_mem ltn_neqAle index_size andbT negbK.
 by rewrite size_tuple ntzP => /eqP ->.

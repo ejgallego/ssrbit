@@ -171,6 +171,21 @@ Definition ntz n (bs: 'B_n) : 'B_n :=
 (* =ntzP= *)
 Lemma ntzP n (bs : 'B_n) : ntz bs = inB (index true bs).
 (* =end= *)
+Proof.
+rewrite /ntz.
+suff : n - count id (orB bs (oppB bs)) = index true bs.
+  admit.
+apply: (@addIn (count id (orB bs (oppB bs)))).
+rewrite subnK ?(leq_trans (count_size _ _)) ?size_tuple //.
+(*
+This should derive from the mask theory.
+orB bs (oppB bs) = 00000011111111111 = bmask (index ) n
+                         ^ index
+
+Useful lemma from the old development:
+Definition negB {n} (p: BITS n) := incB (invB p).
+
+*)
 Admitted.
 
 (*  *)
