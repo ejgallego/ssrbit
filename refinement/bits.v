@@ -149,62 +149,69 @@ Proof. by move->; apply/bool_Rxx. Qed.
 Let can_enum D := can2_imset_pre D (@enum_valK T) (@enum_rankK _).
 Let enum_can D := can2_imset_pre D (@enum_rankK T) (@enum_valK _).
 
+Ltac runfold_cut :=
+  rewrite /singleton/get/full/empty/insert/remove/subset.
+
+Ltac runfold_op  :=
+  rewrite
+          /eq_op/one_op/zero_op/shl_op/and_op/or_op/sub_op
+          /singleton_op/set_op/get_op/full_op/empty_op/remove_op/subset_op.
+
+Ltac runfold_fin :=
+  rewrite /finB/Rfin/eq_fin
+          /singleton_fin/set_fin/get_fin/full_fin/empty_fin/remove_fin/subset_fin.
+
+Ltac runfold_B   :=
+  rewrite /eq_B/one_B/zero_B/shl_B/and_B/or_B/sub_B
+          /singleton_B/set_B/get_B/full_B/empty_B/remove_B/subset_B.
+
+(* Ltac runfold_N  := rewrite /get_B/one_B/zero_B/shl_B/and_B/or_B *)
+
+Ltac runfold := runfold_op; runfold_fin; runfold_B; runfold_cut.
+
 Global Instance Rfin_eq:
   refines (Rfin ==> Rfin ==> param.bool_R) eq_op eq_op.
 Proof.
-rewrite refinesE=> E bs <- E' bs' <-.
-by apply/eq_bool_R; rewrite /eq_op /eq_fin (inj_eq (can_inj (@bitFK _))).
+rewrite refinesE=> E bs <- E' bs' <-; apply/eq_bool_R; runfold.
+by rewrite (inj_eq (can_inj (@bitFK _))).
 Qed.
 
 Global Instance Rfin_get:
   refines (Rord ==> Rfin ==> param.bool_R) get_op get_op.
 Proof.
-rewrite refinesE => t _ <- E2 bs2 <- .
-apply eq_bool_R.
-rewrite /finB/get_op/get_fin/get_B
-        /get /one_op /one_B /zero_op /zero_B /shl_op /shl_B
-        /eq_op /eq_B /and_op/and_B.
-
-by rewrite can_enum inE mem_setb gets_def !size_tuple -val_eqE bitn_zero.
+rewrite refinesE => t _ <- E2 bs2 <-; apply eq_bool_R; runfold.
+by rewrite /finB can_enum inE mem_setb gets_def !size_tuple bitn_zero.
 Qed.
 
 Global Instance Rfin_singleton:
     refines (Rord ==> Rfin) singleton_op singleton_op.
 Proof.
-rewrite refinesE => t _ <-.
-apply/setP=> x.
-rewrite /Rfin /fun_hrel /finB
-        /singleton_op /singleton_B /singleton_fin /singleton
-        /shl_op /shl_B /one_op /one_B.
+rewrite refinesE => t _ <-; runfold; apply/setP=> x.
+rewrite /singleton /shl_op /shl_B /one_op /one_B /finB.
 by rewrite !inE can_enum inE mem_setB tnth_shlB_one (inj_eq enum_rank_inj).
 Qed.
 
-Global Instance Rfin_full:
+Global Instance Rfin_full :
   refines Rfin full_op full_op.
 Proof.
-rewrite refinesE.
-rewrite /full_op/full_B/full_fin/full/Rfin/fun_hrel
-        /finB/zero_op/zero_B/not_op/not_B/sub_op/one_op/sub_B/one_B.
+rewrite refinesE; do 3!runfold.
 apply/setP=> t; rewrite can_enum inE.
+(* XXX *)
 have := full_def; rewrite /decB /subB /= => <-.
 by rewrite mem_setb nth_nseq ltn_ord inE.
 Qed.
 
-Global Instance Rfin_empty: 
+Global Instance Rfin_empty :
   refines Rfin empty_op empty_op.
 Proof.
-rewrite refinesE.
-rewrite /empty_op/empty_B/empty_fin/empty/Rfin/fun_hrel
-        /finB/zero_op/zero_B/sub_op/sub_B/one_op/one_B.
+rewrite refinesE; do 2!runfold.
 by apply/setP=> t; rewrite can_enum inE mem_setb nth_nseq ltn_ord inE.
 Qed.
 
 Global Instance Rfin_insert:
   refines (Rord ==> Rfin ==> Rfin) set_op set_op.
 Proof.
-rewrite refinesE => t _ <- E bs2 <- .
-rewrite /Rfin /fun_hrel /set_op /set_B /set_fin.
-rewrite /insert/one_op/one_B/or_op/or_B/shl_op/shl_B/finB.
+rewrite refinesE => t _ <- E bs2 <-; do 2!runfold.
 apply/setP=> x.
 rewrite !can_enum inE mem_setB !tnth_liftz 3!inE orbC mem_setB tnth_shlB_one.
 by rewrite (inj_eq enum_rank_inj) eq_sym.
@@ -215,10 +222,7 @@ Global Instance Rfin_remove:
   refines (Rfin ==> Rord ==> Rfin) remove_op remove_op.
 Proof.
 (* XXX: proof duplication with [Rfin_insert] *)
-rewrite refinesE => E bs2 <- t _ <-  .
-rewrite /Rfin /fun_hrel /remove_op /remove_B /remove_fin.
-rewrite /remove/one_op/one_B/or_op/or_B/shl_op/shl_B/not_op/not_B.
-rewrite /and_op/and_B/finB.
+rewrite refinesE => E bs2 <- t _ <-; do 2!runfold.
 apply/setP=> x; rewrite !can_enum inE mem_setB 3!inE mem_setB.
 (* XXX: FIXME *)
 rewrite !(tnth_nth false) /= -{2}[#|T|](size_tuple bs2) -(sets_def _ _ false).
@@ -231,14 +235,13 @@ Qed.
 Global Instance Rfin_compl :
   refines (Rfin ==> Rfin) compl_op compl_op.
 Proof.
-rewrite refinesE => E bs <-.
-by rewrite /Rfin /fun_hrel Fcompl_morphL.
+by rewrite refinesE => E bs <-; rewrite /Rfin /fun_hrel Fcompl_morphL.
 Qed.
 
 Global Instance Rfin_union:
   refines (Rfin ==> Rfin ==> Rfin) union_op union_op.
 Proof.
-rewrite refinesE => E1 bs1 <- E2 bs2 <- .
+rewrite refinesE => E1 bs1 <- E2 bs2 <-.
 by rewrite /Rfin /fun_hrel Funion_morphL.
 Qed.
 
@@ -259,12 +262,9 @@ Qed.
 Global Instance Rfin_subset:
   refines (Rfin ==> Rfin ==> bool_R) subset_op subset_op.
 Proof.
-rewrite refinesE => E1 bs1 <- E2 bs2 <- .
-apply eq_bool_R.
-rewrite /subset_op/subset_fin/subset_B/subset.
-apply/setIidPl/idP.
-  by rewrite -Finter_morphL => /(can_inj (@bitFK _)) {2}<-; exact/eqP.
-by rewrite -Finter_morphL => /eqP {2}<-.
+rewrite refinesE => E1 bs1 <- E2 bs2 <-; apply eq_bool_R; do 2!runfold.
+apply/setIidPl/eqP; rewrite -Finter_morphL; last by move->.
+by move/(can_inj (@bitFK _)).
 Qed.
 
 Definition cardTT (A : {set T}) := #|A|.
