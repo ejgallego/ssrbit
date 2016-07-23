@@ -291,10 +291,12 @@ Lemma keep_min_setP n (bs : 'B_n) :
 Proof.
 case: pickP => [x xin|inN].
   apply/setP => y; rewrite mem_setb keep_minP.
-  case: arg_minP => // i hin hmin; rewrite inE.
   rewrite /setls size_nseq.
   have ->: index true bs < n.
-    rewrite -{2}(size_tuple bs) index_mem.  admit.
+    rewrite -{2}(size_tuple bs) index_mem.
+    rewrite mem_setb in xin.
+    by rewrite -xin mem_nth ?size_tuple.
+  case: arg_minP => // i hin hmin; rewrite inE.
     rewrite nth_set_nth /=.
     admit. (* Import indexP from old development *)
 apply/setP => y; rewrite mem_setb keep_minP.
@@ -308,6 +310,9 @@ Admitted.
 
 (** Value of the minimum (ie number of trailing zeroes) *)
 (* Lemma ntzP n (bs : 'B_n) : ntz bs = inB (index true bs). *)
+
+Lemma keep_min_setP n (bs : 'B_n) :
+
 
 (* XXX: Emilio: move? *)
 Definition ord_iota k m n : seq 'I_k := pmap insub (iota m n).
