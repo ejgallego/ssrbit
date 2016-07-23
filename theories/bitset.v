@@ -277,8 +277,34 @@ Qed.
 
 
 (** Minimum *)
+
+Require Import bitocaml.
+
 (* Lemma keep_minP n (bs: 'B_n) : *)
 (*   keep_min bs = setls '0_n (index true bs) true :> bitseq. *)
+
+(* =keep_setP= *)
+Lemma keep_min_setP n (bs : 'B_n) :
+  if [pick x in setB bs] is Some x then
+    setB (keep_min bs) = [set [arg min_(i < x in setB bs) i]]
+  else setB (keep_min bs) = set0.
+Proof.
+case: pickP => [x xin|inN].
+  apply/setP => y; rewrite mem_setb keep_minP.
+  case: arg_minP => // i hin hmin; rewrite inE.
+  rewrite /setls size_nseq.
+  have ->: index true bs < n.
+    rewrite -{2}(size_tuple bs) index_mem.  admit.
+    rewrite nth_set_nth /=.
+    admit. (* Import indexP from old development *)
+apply/setP => y; rewrite mem_setb keep_minP.
+have: true \notin bs.
+  apply/count_memPn. admit.     (* easy *)
+rewrite -index_mem /setls size_tuple size_nseq.
+move/negbTE->.
+by rewrite nth_nseq ltn_ord inE.
+Admitted.
+(* =end= *)
 
 (** Value of the minimum (ie number of trailing zeroes) *)
 (* Lemma ntzP n (bs : 'B_n) : ntz bs = inB (index true bs). *)
