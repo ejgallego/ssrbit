@@ -54,8 +54,9 @@ let forall_int2 wordsize test_f =
         end;
       (* We do upc*upb loops thus j*i has to be: *)
       for j = 0 to upb do
-        if ((i*j) mod (up_inner * upc)) = 0 then (
-          printf "\r  [Inner loop: %3d %% done]%!" (i*j*10*100/(up_inner*upc))
+        (* if ((i*j) mod (up_inner * upc)) = 0 then ( *)
+        if (j mod up_inner) = 0 then (
+          printf "\r  [Inner loop: %3d %% done]%!" (j*10/up_inner * (i mod upc))
         );
         if not (test_f i j) then raise (TestFailure2 (i, j))
       done;
