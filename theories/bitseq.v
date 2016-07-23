@@ -940,16 +940,13 @@ Qed.
 
 Lemma negs_bmask k i j : negs (bmask k i j) = bumask k i j.
 Proof.
-rewrite /bmask /bumask.
-elim/big_rec2: _ => [|x y1 y2 _].
-  by rewrite ors0 ands1 negs_zero.
-rewrite !negs_ors !negs_zero negs_setls negs_zero.
-Admitted.
+have negs_nil : negs [::] = [::] by [].
+rewrite /bmask /bumask negs_ors negs_zero (big_morph _ negs_ors negs_nil).
+by congr ands; apply: eq_bigr => n _; rewrite negs_setls negs_zero.
+Qed.
 
 Lemma bumaskP k i j n (hk : n < k) : (bumask k i j)`_n = ~~ (i <= n < j).
-Proof.
-by rewrite -negs_bmask (nth_map false) ?size_bmask // bmaskP.
-Qed.
+Proof. by rewrite -negs_bmask (nth_map false) ?size_bmask // bmaskP. Qed.
 
 (* Lemma shlsS_bitn n i k : i < k -> shls (bitn k n) i.+1 = shls (bitn k n.*2) i. *)
 
@@ -1203,4 +1200,3 @@ Global Instance shl_B {n} : shl_of 'I_n 'B_n := (fun x y => @shlB _ x y).
 Global Instance zero_B {n} : zero_of 'B_n := '0.
 Global Instance one_B  {n} : one_of  'B_n := inB 1.
 Global Instance sub_B  {n} : sub_of  'B_n  := (@subB _).
-
