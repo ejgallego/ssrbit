@@ -302,7 +302,14 @@ case: pickP => [x xin|inN].
     admit. (* Import indexP from old development *)
 apply/setP => y; rewrite mem_setb keep_minP.
 have: true \notin bs.
-  apply/count_memPn. admit.     (* easy *)
+  (* XXX: Improve *)
+  apply/count_memPn.
+  have U : {in bs, (pred1 true) =1 xpred0 }.
+    move=> u /(nthP false) [idx hidx hth].
+    rewrite size_tuple in hidx.
+    have := inN (Ordinal hidx).
+    by rewrite mem_setb hth => ->.
+  by have -> := eq_in_count U; rewrite count_pred0.
 rewrite -index_mem /setls size_tuple size_nseq.
 move/negbTE->.
 by rewrite nth_nseq ltn_ord inE.
@@ -322,7 +329,14 @@ case: pickP => [x xinT|xinN].
   (* Same indexP as before *)
   admit.
 have: true \notin bs.
-  apply/count_memPn. admit.
+  (* XXX: Improve *)
+  apply/count_memPn.
+  have U : {in bs, (pred1 true) =1 xpred0 }.
+    move=> u /(nthP false) [idx hidx hth].
+    rewrite size_tuple in hidx.
+    have := xinN (Ordinal hidx).
+    by rewrite mem_setb hth => ->.
+  by have -> := eq_in_count U; rewrite count_pred0.
 rewrite ntzP -index_mem ltn_neqAle index_size andbT negbK size_tuple.
 by move/eqP->.
 Admitted.
