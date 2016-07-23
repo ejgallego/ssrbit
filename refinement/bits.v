@@ -11,15 +11,12 @@ Import Refinements.Op.
 Import Logical.Op.
 Import Sets.Op.
 
-
 Local Open Scope rel_scope.
 Local Open Scope bits_scope.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
-
-
 
 (**
 
@@ -149,45 +146,26 @@ Global Instance subset_S    : subset_of bitseq           := subset.
 Lemma eq_bool_R x y : x = y -> bool_R x y.
 Proof. by move->; apply/bool_Rxx. Qed.
 
-Lemma mem_can_imset (aT rT: finType)(f: aT -> rT)(A: {set aT}) y:
-  injective f -> f y \in [set f x | x in A ] = (y \in A).
-Proof.
-  move=> Hinj.
-  apply/imsetP/idP=> [[a Ha Hfeq] | H].
-  - rewrite (Hinj _ _ Hfeq) //=.
-  - exists y=> //.
-Qed.
-
 Let can_enum D := can2_imset_pre D (@enum_valK T) (@enum_rankK _).
 Let enum_can D := can2_imset_pre D (@enum_rankK T) (@enum_valK _).
-
 
 Global Instance Rfin_eq:
   refines (Rfin ==> Rfin ==> param.bool_R) eq_op eq_op.
 Proof.
-  rewrite refinesE=> E bs <- E' bs' <-.
-  apply/eq_bool_R.
-  apply/eqP/eqP=> [|-> //].
-  apply: (can_inj (@bitFK _)).
+rewrite refinesE=> E bs <- E' bs' <-.
+by apply/eq_bool_R; rewrite /eq_op /eq_fin (inj_eq (can_inj (@bitFK _))).
 Qed.
 
-
-Lemma ltn_2ord: forall n (k: 'I_n), k < 2 ^ n.
-Proof. 
-move=> n k.
-apply: leq_ltn_trans; last by apply: ltn_expl.
-apply ltnW, ltn_ord.
-Qed.
-
-Global Instance Rfin_get: 
+Global Instance Rfin_get:
   refines (Rord ==> Rfin ==> param.bool_R) get_op get_op.
 Proof.
-  rewrite refinesE => t _ <- E2 bs2 <- .
-  apply eq_bool_R.
-  rewrite /finB/get_op/get_fin/get_B
-          /get /one_op /one_B /zero_op /zero_B /shl_op /shl_B
-          /eq_op /eq_B /and_op/and_B.
-by rewrite  can_enum inE mem_setb gets_def !size_tuple -val_eqE bitn_zero.
+rewrite refinesE => t _ <- E2 bs2 <- .
+apply eq_bool_R.
+rewrite /finB/get_op/get_fin/get_B
+        /get /one_op /one_B /zero_op /zero_B /shl_op /shl_B
+        /eq_op /eq_B /and_op/and_B.
+
+by rewrite can_enum inE mem_setb gets_def !size_tuple -val_eqE bitn_zero.
 Qed.
 
 Global Instance Rfin_singleton:
@@ -285,10 +263,8 @@ rewrite refinesE => E1 bs1 <- E2 bs2 <- .
 apply eq_bool_R.
 rewrite /subset_op/subset_fin/subset_B/subset.
 apply/setIidPl/idP.
-- rewrite -Finter_morphL=> H.
-  apply/eqP. 
-  by apply: (can_inj (@bitFK _))=> //.
-- rewrite -Finter_morphL=> /eqP {2}<- //. 
+  by rewrite -Finter_morphL => /(can_inj (@bitFK _)) {2}<-; exact/eqP.
+by rewrite -Finter_morphL => /eqP {2}<-.
 Qed.
 
 Definition cardTT (A : {set T}) := #|A|.

@@ -624,8 +624,19 @@ elim: k => //= k ihk; rewrite nats_cons ihk.
 by rewrite expnS -addnn !mulSn mul0n addn0 addnA subnKC ?addnBA ?expn_gt0.
 Qed.
 
+Lemma bitn_one_def k : bitn k 1 = belast true '0_k.
+Proof.
+case: k => // k; rewrite bitn_cons /=; congr cons.
+by elim: k => // k ihk; rewrite bitn_cons ihk.
+Qed.
+
 Lemma tnth_one k (i : 'I_k) : tnth (inB 1) i = (val i == 0).
-Admitted.
+Proof.
+rewrite (tnth_nth false) /= bitn_one_def.
+case: k i => [|k] [[|i] hi] //=.
+(* XXX: use belast_nth *)
+by elim: k i {hi} => [|k /= ihk] [|i] //=; rewrite ihk.
+Qed.
 
 Lemma tnth_shlB_one k (n i : 'I_k) : tnth (shlB (inB 1) n) i = (n == i).
 Proof.
@@ -946,12 +957,6 @@ Lemma take_belast T x (s : seq T) k (k_size : k <= size s) :
   take k (x :: s) = take k (belast x s).
 Proof.
 by elim: s x k k_size => [|y s ihs] x [|k] //= k_size; rewrite -take_cons ihs.
-Qed.
-
-Lemma bitn_one_def k : bitn k 1 = belast true '0_k.
-Proof.
-case: k => // k; rewrite bitn_cons /=; congr cons.
-by elim: k => // k ihk; rewrite bitn_cons ihk.
 Qed.
 
 Lemma shlsS x s i : shls [:: x & s] i.+1 = [:: false & shls (belast x s) i].
