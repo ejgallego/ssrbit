@@ -32,11 +32,13 @@
 
 - expand theory of arithmetic.
 
+* Build
+
+  - Fix makefile (it now spuriously rebuilds bits.v and axioms.v
+
 * Extraction
 
   - Move to forallInt2
-
-  - Remaining time report seems off.
 
   - Check why we get a stack overflow on int32 (we should not call enum_all_tuples)
 
