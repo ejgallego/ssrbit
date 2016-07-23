@@ -286,11 +286,56 @@ Qed.
 
 
 (** Minimum *)
+
+Require Import bitocaml.
+
 (* Lemma keep_minP n (bs: 'B_n) : *)
 (*   keep_min bs = setls '0_n (index true bs) true :> bitseq. *)
 
-(** Value of the minimum (ie number of trailing zeroes) *)
-(* Lemma ntzP n (bs : 'B_n) : ntz bs = inB (index true bs). *)
+(* =keep_setP= *)
+Lemma keep_min_setP n (bs : 'B_n) :
+  if [pick x in setB bs] is Some x
+  then setB (keep_min bs) = [set [arg min_(i < x in setB bs) i]]
+  else setB (keep_min bs) = set0.
+(* =end= *)
+Proof.
+case: pickP => [x xin|inN].
+  apply/setP => y; rewrite mem_setb keep_minP.
+  rewrite /setls size_nseq.
+  have ->: index true bs < n.
+    rewrite -{2}(size_tuple bs) index_mem.
+    rewrite mem_setb in xin.
+    by rewrite -xin mem_nth ?size_tuple.
+  case: arg_minP => // i hin hmin; rewrite inE.
+    rewrite nth_set_nth /=.
+    admit. (* Import indexP from old development *)
+apply/setP => y; rewrite mem_setb keep_minP.
+have: true \notin bs.
+  apply/count_memPn. admit.     (* easy *)
+rewrite -index_mem /setls size_tuple size_nseq.
+move/negbTE->.
+by rewrite nth_nseq ltn_ord inE.
+Admitted.
+(* =end= *)
+
+(* =ntz_setP= *)
+Lemma ntz_setP n (bs : 'B_n) :
+  if [pick x in setB bs] is Some x
+  then ntz bs = inB [arg min_(k < x in setB bs) k]
+  else ntz bs = inB n.
+(* =end= *)
+Proof.
+case: pickP => [x xinT|xinN].
+  case: arg_minP => // y yin ymin.
+  rewrite ntzP; congr inB.
+  (* Same indexP as before *)
+  admit.
+have: true \notin bs.
+  apply/count_memPn. admit.
+rewrite ntzP -index_mem ltn_neqAle index_size andbT negbK size_tuple.
+by move/eqP->.
+Admitted.
+(* =end= *)
 
 (* XXX: Emilio: move? *)
 Definition ord_iota k m n : seq 'I_k := pmap insub (iota m n).
