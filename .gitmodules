@@ -1,0 +1,7 @@
+[submodule "lib/paramcoq"]
+	path = lib/paramcoq
+	url = https://github.com/drouhling/paramcoq
+[submodule "lib/CoqEAL"]
+	path = lib/CoqEAL
+	url = https://github.com/CoqEAL/CoqEAL.git
+	branch = paramcoq-dev
