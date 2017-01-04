@@ -292,6 +292,14 @@ Require Import bitocaml.
 (* Lemma keep_minP n (bs: 'B_n) : *)
 (*   keep_min bs = setls '0_n (index true bs) true :> bitseq. *)
 
+Lemma mem_setBN n (bs : 'B_n) (hN : forall i, i \notin setB bs) :
+  true \notin bs.
+Proof. by apply/tnthP => -[xi hi]; have := hN xi; rewrite mem_setB -hi. Qed.
+
+Lemma mem_setBN' n (bs : 'B_n) (hN : forall i, i \in setB bs = false) :
+  true \notin bs.
+Proof. by apply/tnthP => -[xi hi]; have := hN xi; rewrite mem_setB -hi. Qed.
+
 (* =keep_setP= *)
 Lemma keep_min_setP n (bs : 'B_n) :
   if [pick x in setB bs] is Some x
@@ -300,21 +308,15 @@ Lemma keep_min_setP n (bs : 'B_n) :
 (* =end= *)
 Proof.
 case: pickP => [x xin|inN].
+  have bs_x := xin; rewrite mem_setb in bs_x.
   apply/setP => y; rewrite mem_setb keep_minP.
-  rewrite /setls size_nseq.
-  have ->: index true bs < n.
-    rewrite -{2}(size_tuple bs) index_mem.
-    rewrite mem_setb in xin.
-    by rewrite -xin mem_nth ?size_tuple.
-  case: arg_minP => // i hin hmin; rewrite inE.
-    rewrite nth_set_nth /=.
-    admit. (* Import indexP from old development *)
+  rewrite /setls size_nseq -[n in _ < n](size_tuple bs).
+  rewrite index_mem -bs_x mem_nth ?size_tuple // !inE.
+  case: arg_minP => // i hin hmin; rewrite nth_set_nth /=.
+  admit. (* Import indexP from old development *)
 apply/setP => y; rewrite mem_setb keep_minP.
-have: true \notin bs.
-  apply/count_memPn. admit.     (* easy *)
-rewrite -index_mem /setls size_tuple size_nseq.
-move/negbTE->.
-by rewrite nth_nseq ltn_ord inE.
+have:= mem_setBN' inN; rewrite -index_mem /setls size_tuple size_nseq.
+by move/negbTE->; rewrite nth_nseq ltn_ord inE.
 Admitted.
 (* =end= *)
 
@@ -326,14 +328,11 @@ Lemma ntz_setP n (bs : 'B_n) :
 (* =end= *)
 Proof.
 case: pickP => [x xinT|xinN].
-  case: arg_minP => // y yin ymin.
-  rewrite ntzP; congr inB.
-  (* Same indexP as before *)
+  case: arg_minP => // y yin ymin; rewrite ntzP; congr inB.
+  (* Same applications of indexP as before *)
   admit.
-have: true \notin bs.
-  apply/count_memPn. admit.
-rewrite ntzP -index_mem ltn_neqAle index_size andbT negbK size_tuple.
-by move/eqP->.
+have:= mem_setBN' xinN; rewrite -index_mem ltn_neqAle index_size andbT negbK.
+by rewrite size_tuple ntzP => /eqP ->.
 Admitted.
 (* =end= *)
 

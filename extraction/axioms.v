@@ -254,6 +254,9 @@ Axiom forallIntG : NativeInt.Int -> (NativeInt.Int -> bool) -> bool.
 Extract Inlined Constant forallIntG => "Forall.forall_int".
 (* =end= *)
 
+Axiom forallInt2G : NativeInt.Int -> (NativeInt.Int -> NativeInt.Int -> bool) -> bool.
+Extract Inlined Constant forallInt2G => "Forall.forall_int2".
+
 Section Trust.
 
 (* Axiom 1: Equality of integer is embedded within Coq's propositional equality: *)
@@ -268,10 +271,14 @@ Axiom forallIntP : forall w (P : pred _),
     reflect (forall x, P x) (forallIntG w P).
 (* =end= *)
 
+Axiom forallInt2P : forall w (P : _ -> _ -> bool),
+    reflect (forall x y, P x y) (forallInt2G w P).
+
 End Trust.
 
 Axiom assertion : bool -> bool.
-Extract Constant assertion => "fun b -> if b then b else failwith ""Test failure""".
+Extract Constant assertion =>
+  "fun b -> if b then (Gc.print_stat stderr; b) else failwith ""Test failure""".
 
 Module Make (WS: WORDSIZE).
 
@@ -300,7 +307,9 @@ Definition lsl := mask_binop NativeInt.lsl.
 Definition add := mask_binop NativeInt.add.
 Definition sub := mask_binop NativeInt.sub.
 
-Definition forallInt := forallIntG wordsize.
+Definition forallInt  := forallIntG wordsize.
+Definition forallInt2 := forallInt2G wordsize.
+
 Definition forallSeq (p : pred bitseq) := all p (all_seqs [:: true; false] w).
 
 
@@ -356,10 +365,9 @@ Proof.
   clear H.
   apply/eqIntP.
   move: Hseq; apply/implyP.
-  move: y; apply/forallIntP.
-  move: x; apply/forallIntP.
+  move: x y; apply/forallInt2P.
   by apply bitsFromInt_inj_valid.
-Qed. 
+Qed.
 
 Lemma bitsFromIntK: cancel (bitsFromInt w) bitsToInt.
 Proof.
@@ -403,42 +411,37 @@ Axiom lnot_valid: lnot_test.
 (* =end= *)
 
 Definition land_test: bool
-  := forallInt (fun i =>
-       forallInt (fun i' =>
+  := forallInt2 (fun i i' =>
          Tnative (land i i')
-                 (ands (bitsFromInt w i) (bitsFromInt w i')))).
+                 (ands (bitsFromInt w i) (bitsFromInt w i'))).
 
 Axiom land_valid: land_test.
 
 Definition lor_test: bool
-  := forallInt (fun i =>
-       forallInt (fun i' =>
+  := forallInt2 (fun i i' =>
          Tnative (lor i i')
-                 (ors (bitsFromInt w i) (bitsFromInt w i')))).
+                 (ors (bitsFromInt w i) (bitsFromInt w i'))).
 
 Axiom lor_valid: lor_test.
 
 Definition lxor_test: bool
-  := forallInt (fun i =>
-       forallInt (fun i' =>
+  := forallInt2 (fun i i' =>
          Tnative (lxor i i')
-                 (xors (bitsFromInt w i) (bitsFromInt w i')))).
+                 (xors (bitsFromInt w i) (bitsFromInt w i'))).
 
 Axiom lxor_valid: lxor_test.
 
 Definition lsr_test: bool
-  := forallInt (fun i =>
-       forallInt (fun i' =>
+  := forallInt2 (fun i i' =>
          let n := nats (bitsFromInt w i') in
          (n <= w) ==>
          Tnative (lsr i i') 
-                 (shrs (bitsFromInt w i) n))).
+                 (shrs (bitsFromInt w i) n)).
 
 Axiom lsr_valid: lsr_test.
 
 Definition lsl_test: bool
-  := forallInt (fun i =>
-       forallInt (fun i' =>
+  := forallInt2 (fun i i' =>
           let n := nats (bitsFromInt w i') in 
 
           (* XXX: in fact, we need [n <= 64] (as opposed to [n <= w])
@@ -446,7 +449,7 @@ Definition lsl_test: bool
 
           (n <= w) ==> 
            Tnative (lsl i i')
-                   (shls (bitsFromInt w i) n))).
+                   (shls (bitsFromInt w i) n)).
 
 Axiom lsl_valid: lsl_test.
 
@@ -456,24 +459,22 @@ Axiom lsl_valid: lsl_test.
 Definition opp_test: bool
   := forallInt (fun i =>
          Tnative (opp i) 
-                 (opps (bitsFromInt w i))).
+                 (opps_eff w (bitsFromInt w i))).
 
 Axiom opp_valid: opp_test.
 
 Definition sub_test: bool
-  := forallInt (fun i =>
-       forallInt (fun j =>
+  := forallInt2 (fun i j =>
          Tnative (sub i j) 
-                 (subs (bitsFromInt w i) (bitsFromInt w j)))).
+                 (subs_eff w (bitsFromInt w i) (bitsFromInt w j))).
 
 Axiom sub_valid: sub_test.
 
  
 Definition add_test: bool
-  := forallInt (fun i =>
-       forallInt (fun j =>
+  := forallInt2 (fun i j =>
          Tnative (add i j)
-                 (adds (bitsFromInt w i) (bitsFromInt w j)))).
+                 (adds_eff w (bitsFromInt w i) (bitsFromInt w j))).
 
 Axiom add_valid: add_test.
 
@@ -489,8 +490,8 @@ Definition binop_tests x bitsX y bitsY :=
     ;   Tnative (land x y) (ands bitsX bitsY) 
     ;   Tnative (lor x y) (ors bitsX bitsY) 
     ;   Tnative (lxor x y) (xors bitsX bitsY) 
-    ;   Tnative (add x y) (adds bitsX bitsY)
-    ;   Tnative (sub x y) (subs bitsX bitsY)].
+    ;   Tnative (add x y) (adds_eff w bitsX bitsY)
+    ;   Tnative (sub x y) (subs_eff w bitsX bitsY)].
 
 Definition shift_tests x toNatX y bitsY :=
   allb
@@ -502,7 +503,7 @@ Definition unop_tests x :=
   let toNatX := nats bitsX in
   allb
     [:: Tnative (lnot x) (negs bitsX) 
-    ;   Tnative (opp x) (opps bitsX) 
+    ;   Tnative (opp x) (opps_eff w bitsX) 
     ;   if (toNatX <= w) then
           forallInt (fun y =>
             let bitsY := bitsFromInt w y in
@@ -521,7 +522,6 @@ Definition tests
           ;   zero_test 
           ;   one_test 
           ;   forallInt (fun x => unop_tests x)]).
-
 
 (* XXX: show that [tests_valid] implies each individual "axiom" *)
 

@@ -321,6 +321,15 @@ Proof. by rewrite size_setls size_tuple. Qed.
 
 Canonical setlB bv i b := Tuple (setls_tupleP bv i b).
 
+Lemma nth_setls s i b (j : nat) :
+  (setls s i b)`_j =
+  if j < size s then [eta nth false s with i |-> b] j else false.
+Proof.
+case: ltnP => hj; last by rewrite nth_default // ?size_setls.
+rewrite /setls (fun_if ((nth false)^~j)) nth_set_nth /=.
+by case: eqP => [<-|]; rewrite ?hj ?if_same.
+Qed.
+
 (* Properties of bget bset wrt to bit operations *)
 (* Bigops? *)
 
@@ -450,7 +459,12 @@ Lemma tnth_shlB (b : 'B_k) n (i : 'I_k) :
   tnth (shlB b n) i = if i < n
                       then false
                       else tnth b (insubd i (i - n)).
-Admitted.
+Proof.
+rewrite !(tnth_nth false) !nth_cat !size_nseq !nth_nseq size_tuple leq_min ltn_ord.
+case: ltnP => // hn; have n_le_k := leq_ltn_trans hn (ltn_ord i).
+rewrite (minn_idPr (ltnW n_le_k)) val_insubd ?nth_take ?ltn_sub2r //.
+by rewrite (leq_ltn_trans _ (ltn_ord i)) ?leq_subr.
+Qed.
 
 (* Inversion of bits *)
 Definition negs s := [seq negb b | b <- s].
@@ -631,8 +645,19 @@ elim: k => //= k ihk; rewrite nats_cons ihk.
 by rewrite expnS -addnn !mulSn mul0n addn0 addnA subnKC ?addnBA ?expn_gt0.
 Qed.
 
+Lemma bitn_one_def k : bitn k 1 = belast true '0_k.
+Proof.
+case: k => // k; rewrite bitn_cons /=; congr cons.
+by elim: k => // k ihk; rewrite bitn_cons ihk.
+Qed.
+
 Lemma tnth_one k (i : 'I_k) : tnth (inB 1) i = (val i == 0).
-Admitted.
+Proof.
+rewrite (tnth_nth false) /= bitn_one_def.
+case: k i => [|k] [[|i] hi] //=.
+(* XXX: use belast_nth *)
+by elim: k i {hi} => [|k /= ihk] [|i] //=; rewrite ihk.
+Qed.
 
 Lemma tnth_shlB_one k (n i : 'I_k) : tnth (shlB (inB 1) n) i = (n == i).
 Proof.
@@ -671,7 +696,8 @@ Implicit Types (bv : 'B_k).
 Implicit Types (o  : 'I_(2^k).-1.+1).
 
 (* Bits of an unsigned *)
-Definition bito o     := [bits of bitn k o].
+Definition bito o     := @inB k o.
+
 (* Unsigned of bits *)
 Lemma nats_ltn_exp bv : nats bv < 2^k.
 Proof. by have := nats_ltn bv; rewrite size_tuple. Qed.
@@ -768,6 +794,11 @@ Definition adds bs1 bs2 : bitseq :=
   let t := lift_top bs1 bs2 in
   val (t.1 + t.2)%R.
 
+Definition adds_eff k bs1 bs2 : bitseq :=
+  let d     := 2^k    in
+  let inZ u := nats u in
+  bitn k ((inZ bs1 + inZ bs2) %% d).
+
 Lemma adds_tupleP k (b1 b2 : 'B_k) : size (adds b1 b2) == k.
 Proof. by rewrite !size_tuple minnn. Qed.
 Canonical adds_tuple k (b1 b2 : 'B_k) := Tuple (adds_tupleP b1 b2).
@@ -800,12 +831,23 @@ Lemma opps_eff_relE k bs (bv : 'B_k) :
   bs ≈ bv -> opps_eff k bs ≈ (- bv)%R.
 Proof. by move->; congr bitn; rewrite /= prednK ?expn_gt0. Qed.
 
+Lemma opps_eff_defE k (bv : 'B_k) :
+  opps_eff k bv = opps bv.
+Proof. by rewrite (opps_eff_relE erefl) (opps_relE erefl). Qed.
+
 Lemma adds_relE k bs1 bs2 (bv1 bv2 : 'B_k) :
   bs1 ≈ bv1 -> bs2 ≈ bv2 -> adds bs1 bs2 ≈ (bv1 + bv2)%R.
 Proof.
 move=> ->->.
 by rewrite /adds /lift_top /= !size_tuple !minnn unzip1_zip ?unzip2_zip ?size_tuple.
 Qed.
+
+Lemma adds_eff_relE k bs1 bs2 (bv1 bv2 : 'B_k) :
+  bs1 ≈ bv1 -> bs2 ≈ bv2 -> adds_eff k bs1 bs2 ≈ (bv1 + bv2)%R.
+Proof. by move=> ->->; congr bitn; rewrite /= prednK ?expn_gt0 //. Qed.
+
+Lemma adds_eff_defE k (bv1 bv2 : 'B_k) : adds_eff k bv1 bv2 = adds bv1 bv2.
+Proof. by rewrite (adds_eff_relE erefl erefl) (adds_relE erefl erefl). Qed.
 
 Lemma subs_relE k bs1 bs2 (bv1 bv2 : 'B_k) :
   bs1 ≈ bv1 -> bs2 ≈ bv2 -> subs bs1 bs2 ≈ (bv1 - bv2)%R.
@@ -820,6 +862,10 @@ Proof.
 move=> -> ->; congr bitn; rewrite /= prednK ?expn_gt0 //.
 by rewrite bitnK ?inE ?ltn_pmod ?expn_gt0 // modnDmr.
 Qed.
+
+Lemma subs_eff_defE k (bv1 bv2 : 'B_k) : subs_eff k bv1 bv2 = subs bv1 bv2.
+Proof. by rewrite (subs_eff_relE erefl erefl) (subs_relE erefl erefl). Qed.
+Proof.
 
 End SeqZModule.
 
@@ -881,8 +927,29 @@ Arguments inB [n] k.
  * We still don't provide a good general theory for such masks but here is a
  * start.
  *)
+
+(* Main operator morphism lemmas *)
 Lemma nth_ors i : {morph [fun x => nth false x i] : x y / ors x y >-> orb x y}.
 Proof. by move=> x y; rewrite /= (nth_liftz_idem _ _ _ _ orbb). Qed.
+
+Lemma negs_ors : {morph negs : s1 s2 / ors s1 s2 >-> ands s1 s2}.
+Proof.
+by elim=> [|x xs IHs] [|? ?]; rewrite ?and1s ?ands1 ?or0s ?ors0 //= IHs negb_or.
+Qed.
+
+(* XXX: Maybe we can prove this in a less specific way? If we show the
+ * basic relation with sets we could indeed profit from that embedding.
+ *)
+Lemma negs_setls bs i b : negs (setls bs i b) = setls (negs bs) i (~~ b).
+Proof.
+apply: (@eq_from_nth _ false); first by rewrite size_map !size_setls size_map.
+move=> j; rewrite size_map size_setls => hj.
+rewrite (nth_map false) ?size_setls // !nth_setls size_map hj //.
+by rewrite (fun_if negb) /= (nth_map false).
+Qed.
+
+Lemma negs_zero k : negs '0_k = '1_k.
+Proof. by rewrite /negs map_nseq. Qed.
 
 Definition bmask k i j :=
   ors '0_k (\big[ors/[::]]_(i <= n < j) setls '0_k n true).
@@ -891,8 +958,7 @@ Lemma size_bmask k i j : size (bmask k i j) = k.
 Proof.
 rewrite /bmask; elim/big_rec: _ => [|idx x _].
   by rewrite size_liftz size_nseq maxn0.
-rewrite !size_liftz size_setls size_nseq.
-by rewrite maxnA maxnn.
+by rewrite !size_liftz size_setls size_nseq maxnA maxnn.
 Qed.
 
 Lemma bmaskP k i j n (hk : n < k) : (bmask k i j)`_n = (i <= n < j).
@@ -901,32 +967,10 @@ rewrite /bmask (nth_liftz_idem _ _ _ _ orbb) nth_nseq if_same /=.
 have /= -> := (big_morph _ (nth_ors _) (nth_nil _ _) _ _ ((setls '0_k)^~true)).
 rewrite big_has; apply/hasP/andP.
   case=> x; rewrite mem_index_iota => /andP[h1 h2].
-  rewrite /setls; case: ifP => _; rewrite ?nth_set_nth ?nth_nseq ?if_same //=.
-  by case: eqP => [->|]; rewrite ?nth_nseq ?if_same.
+  by rewrite nth_setls size_nseq hk /= nth_nseq hk; case: eqP => [->|].
 case=> [hl hu]; exists n; rewrite ?mem_index_iota ?hl ?hu //.
-by rewrite /setls ?size_nseq hk nth_set_nth /= eqxx.
+by rewrite nth_setls ?size_nseq hk /= eqxx.
 Qed.
-
-Lemma negs_ors bs1 bs2 : negs (ors bs1 bs2) = ands (negs bs1) (negs bs2).
-Proof.
-elim: bs1 bs2 => [|x xs IHs] [|y ys] //.
-+ by rewrite and1s or0s.
-+ by rewrite ors0 ands1.
-+ by rewrite /= IHs negb_or.
-Qed.
-
-Lemma negs_setls bs i b : negs (setls bs i b) = setls (negs bs) i (~~ b).
-Proof.
-rewrite /setls size_map; case: ifP => // hs.
-apply: (@eq_from_nth _ false).
-  by rewrite size_map !size_set_nth size_map.
-move=> j; rewrite size_map size_set_nth (maxn_idPr hs) => hj.
-rewrite (nth_map false) ?size_set_nth ?(maxn_idPr hs) //.
-by rewrite !nth_set_nth /=; case: ifP; rewrite // (nth_map false).
-Qed.
-
-Lemma negs_zero k : negs '0_k = '1_k.
-Proof. by rewrite /negs map_nseq. Qed.
 
 Definition bumask k i j :=
   ands '1_k (\big[ands/[::]]_(i <= n < j) setls '1_k n false).
@@ -940,16 +984,14 @@ Qed.
 
 Lemma negs_bmask k i j : negs (bmask k i j) = bumask k i j.
 Proof.
-rewrite /bmask /bumask.
-elim/big_rec2: _ => [|x y1 y2 _].
-  by rewrite ors0 ands1 negs_zero.
-rewrite !negs_ors !negs_zero negs_setls negs_zero.
-Admitted.
+have negs_nil : negs [::] = [::] by [].
+rewrite /bmask /bumask negs_ors negs_zero (big_morph _ negs_ors negs_nil).
+by congr ands; apply: eq_bigr => n _; rewrite negs_setls negs_zero.
+Qed.
 
 Lemma bumaskP k i j n (hk : n < k) : (bumask k i j)`_n = ~~ (i <= n < j).
-Proof.
-by rewrite -negs_bmask (nth_map false) ?size_bmask // bmaskP.
-Qed.
+Proof. by rewrite -negs_bmask (nth_map false) ?size_bmask // bmaskP. Qed.
+
 
 (* Lemma shlsS_bitn n i k : i < k -> shls (bitn k n) i.+1 = shls (bitn k n.*2) i. *)
 
@@ -957,12 +999,6 @@ Lemma take_belast T x (s : seq T) k (k_size : k <= size s) :
   take k (x :: s) = take k (belast x s).
 Proof.
 by elim: s x k k_size => [|y s ihs] x [|k] //= k_size; rewrite -take_cons ihs.
-Qed.
-
-Lemma bitn_one_def k : bitn k 1 = belast true '0_k.
-Proof.
-case: k => // k; rewrite bitn_cons /=; congr cons.
-by elim: k => // k ihk; rewrite bitn_cons ihk.
 Qed.
 
 Lemma shlsS x s i : shls [:: x & s] i.+1 = [:: false & shls (belast x s) i].
@@ -987,18 +1023,17 @@ Lemma nth_ands_bit s i j :
 Proof.
 have [hsz|h] := ltnP i (size s); last first.
   by rewrite !nth_default ?if_same // size_liftz size_setls size_nseq maxnn.
-rewrite /setls nth_liftz ?size_setls ?size_nseq ?hsz //.
-case: eqP => [|/(introF eqP)] H.
-  by rewrite -H hsz nth_set_nth  /= eqxx andbT.
-case: ifP => _; last by rewrite nth_nseq if_same andbF.
-by rewrite nth_set_nth /= H nth_nseq if_same andbF.
+rewrite nth_liftz ?size_setls ?size_nseq ?hsz //.
+rewrite nth_setls ?size_nseq hsz /= nth_nseq if_same.
+by case: s`_i; rewrite ?if_same.
 Qed.
 
 Lemma getsE s i : s`_i = (ands s (setls '0_(size s) i true))`_i.
 Proof. by rewrite nth_ands_bit eqxx. Qed.
 
 (* Definition of get/test bit in terms of shifts *)
-Lemma gets_def s i : let B n := bitn (size s) n in
+Lemma gets_def s i :
+  let B n := bitn (size s) n in
   s`_i = (ands s (shls (B 1) i) != B 0).
 Proof.
 rewrite /= shls_one bitn_zero getsE.
@@ -1025,13 +1060,9 @@ Proof.
 apply: (@eq_from_nth _ false).
   by rewrite size_liftz !size_setls size_nseq maxnn.
 move=> i hi; have hi': i < size bs by rewrite size_setls in hi.
-rewrite /setls size_nseq; case: ifP => hn; last by rewrite ors0' ?inE.
-rewrite nth_liftz ?size_set_nth ?size_nseq ?(maxn_idPr hn) //.
-by rewrite !nth_set_nth (fun_if (orb bs`_i)) orbT nth_nseq hi' orbF.
+rewrite nth_liftz ?nth_setls ?size_setls ?size_nseq ?hi' //=.
+by rewrite nth_nseq if_same (fun_if (orb bs`_i)) orbT orbF.
 Qed.
-
-Lemma negs0 k : negs '0_k = '1_k.
-Proof. by rewrite /negs map_nseq. Qed.
 
 (* XXx: Similar to setlsE, there's a missing general principle here.
  *
@@ -1042,9 +1073,8 @@ Proof.
 apply: (@eq_from_nth _ false).
   by rewrite size_liftz !size_setls size_nseq maxnn.
 move=> i hi; have hi': i < size bs by rewrite size_setls in hi.
-rewrite /setls size_nseq; case: ifP => hn; last by rewrite ands1' ?inE.
-rewrite nth_liftz ?size_set_nth ?size_nseq ?(maxn_idPr hn) //.
-by rewrite !nth_set_nth (fun_if (andb bs`_i)) andbF nth_nseq hi' andbT.
+rewrite nth_liftz ?nth_setls ?size_setls ?size_nseq ?hi' //=.
+by rewrite (fun_if (andb bs`_i)) andbF nth_nseq hi' andbT.
 Qed.
 
 Lemma sets_def s i b : let B n := bitn (size s) n in
@@ -1053,7 +1083,7 @@ Lemma sets_def s i b : let B n := bitn (size s) n in
                 else
                   ands s (negs (shls (B 1) i)).
 Proof.
-rewrite /= shls_one negs_setls negs0.
+rewrite /= shls_one negs_setls negs_zero.
 by case: b; [rewrite setlsE | rewrite unsetlsE].
 Qed.
 

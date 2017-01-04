@@ -169,6 +169,21 @@ Definition ntz n (bs: 'B_n) : 'B_n :=
 Lemma ntzP n (bs : 'B_n) :
     ntz bs = inB (index true bs).
 (* =end= *)
+Proof.
+rewrite /ntz.
+suff : n - count id (orB bs (oppB bs)) = index true bs.
+  admit.
+apply: (@addIn (count id (orB bs (oppB bs)))).
+rewrite subnK ?(leq_trans (count_size _ _)) ?size_tuple //.
+(*
+This should derive from the mask theory.
+orB bs (oppB bs) = 00000011111111111 = bmask (index ) n
+                         ^ index
+
+Useful lemma from the old development:
+Definition negB {n} (p: BITS n) := incB (invB p).
+
+*)
 Admitted.
 
 (*  *)
@@ -179,20 +194,20 @@ Definition U_test n (bs : 'B_n) :=
    nats (setls '0_n (index true bs) true)).
 
 Definition U_inputs :=
-[:: [::]
- ;  [:: false]
- ;  [:: true ; true]
- ;  [:: true ; false]
- ;  [:: false; true]
- ;  [:: false; false]
- ;  [:: false; false; false; false; false]
- ;  [:: true; false;  false; false; false]
- ;  [:: false; false; true;  false; false]
- ;  [:: false; false; true;  false; true]
- ;  [:: false; false; false; false; true]
+[:: ( 0, [::])
+ ;  ( 1, [:: false])
+ ;  ( 2, [:: true ; true])
+ ;  ( 3, [:: true ; false])
+ ;  ( 4, [:: false; true])
+ ;  ( 5, [:: false; false])
+ ;  ( 6, [:: false; false; false; false; false])
+ ;  ( 7, [:: true; false;  false; false; false])
+ ;  ( 8, [:: false; false; true;  false; false])
+ ;  ( 9, [:: false; false; true;  false; true])
+ ;  (10, [:: false; false; false; false; true])
 ].
 
-(* Compute map (fun u => U_test (in_tuple u)) U_inputs. *)
+(* Compute map (fun u => (u.1, U_test (in_tuple u.2))) U_inputs. *)
 (* Definition ntz' n b := n - count id (ors b (opps b)). *)
 
 End BitMin.

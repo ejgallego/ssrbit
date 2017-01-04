@@ -121,7 +121,7 @@ Lemma bitwE w : bitw w = seqw w :> bitseq.
 Proof. by rewrite val_tcast. Qed.
 
 (* The rest should follow from the cancellation lemmas *)
-Lemma wrdtK : cancel wrdB bitw.
+Lemma wrdBK : cancel wrdB bitw.
 Proof.
 move=> t; apply: eq_from_tnth => i.
 by rewrite tcastE tnth_fgraph ffunE enum_val_ord cast_ordKV.
