@@ -61,7 +61,7 @@ Definition n := #| T |.
 (** ** From sets over a finite type to machine words: *)
 
 Definition Rfin: {set T} -> 'B_#| T | -> Type  := fun_hrel (@finB T).
-Definition Rtuple : 'B_n -> bitseq -> Type :=  fun a b => val a = b.
+Definition Rtuple : 'B_n -> bitseq -> Type :=  fun a b => tval a = b.
 Definition Rnative: bitseq -> Native.Int -> Type := fun_hrel (bitsFromInt Native.w).
 
 Definition Rbitset: {set T} -> Native.Int -> Type := Rfin \o (Rtuple \o Rnative).
