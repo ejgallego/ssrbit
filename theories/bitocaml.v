@@ -105,7 +105,8 @@ Definition pm_sqrt n :=
 Definition cardinal_smart n (bs: 'B_n) : 'B_n :=
   cardinal (pm_sqrt n) bs.
 
-Eval compute in (map val (@pop_table 4 2)).
+Eval compute in (map (fun n => nats (tval n)) (@pop_table 4 2)).
+Eval compute in (map (fun n => nats (tval n)) (@pop_table 32 4)).
 Eval compute in (val (@pop_elem 3 1 [tuple true; false; true] 0)).
 Eval compute in (val (cardinal 2 [tuple true; true])).
 
