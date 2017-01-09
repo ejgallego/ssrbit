@@ -38,7 +38,7 @@ Unset Printing Implicit Defensive.
 (** * An axiomatization of OCaml native integers *)
 
 (** This module should not be used directly. *)
-Module NativeInt.
+Module Native.
 
 (** We assume that we are running on a 64 bit machine. *)
 (* =int_axiom= *)
@@ -79,22 +79,24 @@ Extract Inlined Constant add  => "(+)".
 Extract         Constant opp  => "(fun x -> -x)".
 Extract Inlined Constant sub  => "(-)".
 
-End NativeInt.
+End Native.
 
-Local Instance   eq_NativeInt : eq_of   NativeInt.Int := NativeInt.eq.
+Import Native.
 
-Local Instance zero_NativeInt : zero_of NativeInt.Int := NativeInt.zero.
-Local Instance  one_NativeInt : one_of  NativeInt.Int := NativeInt.one.
-Local Instance  opp_NativeInt : opp_of  NativeInt.Int := NativeInt.opp.
-Local Instance  sub_NativeInt : sub_of  NativeInt.Int := NativeInt.sub.
-Local Instance  add_NativeInt : add_of  NativeInt.Int := NativeInt.add.
+Local Instance   eq_Native : eq_of   Int := eq.
 
-Local Instance  not_NativeInt : not_of  NativeInt.Int := NativeInt.lnot.
-Local Instance   or_NativeInt : or_of   NativeInt.Int := NativeInt.lor.
-Local Instance  and_NativeInt : and_of  NativeInt.Int := NativeInt.land.
-Local Instance  xor_NativeInt : xor_of  NativeInt.Int := NativeInt.lxor.
-Local Instance  shl_NativeInt : shl_of  NativeInt.Int NativeInt.Int := NativeInt.lsl.
-Local Instance  shr_NativeInt : shr_of  NativeInt.Int NativeInt.Int := NativeInt.lsr.
+Local Instance zero_Native : zero_of Int := zero.
+Local Instance  one_Native : one_of  Int := one.
+Local Instance  opp_Native : opp_of  Int := opp.
+Local Instance  sub_Native : sub_of  Int := sub.
+Local Instance  add_Native : add_of  Int := add.
+
+Local Instance  not_Native : not_of  Int := lnot.
+Local Instance   or_Native : or_of   Int := lor.
+Local Instance  and_Native : and_of  Int := land.
+Local Instance  xor_Native : xor_of  Int := lxor.
+Local Instance  shl_Native : shl_of  Int Int := lsl.
+Local Instance  shr_Native : shr_of  Int Int := lsr.
 
 (** * Conversion between machine integers and bit sequences *)
 
@@ -210,14 +212,14 @@ Variable n : nat.
 Implicit Types (s : bitseq) (b : 'B_n).
 
 (* =bitsToInt= *)
-Fixpoint bitsToInt s : NativeInt.Int :=
+Fixpoint bitsToInt s : Int :=
   (match s with
     | [::]           => 0
     | [:: false & s] =>      bitsToInt s :<<: 1
     | [:: true  & s] => 1 || (bitsToInt s :<<: 1)
   end)%C.
 
-Fixpoint bitsFromInt (k: nat) (n: NativeInt.Int) : bitseq :=
+Fixpoint bitsFromInt (k: nat) (n: Int) : bitseq :=
   (match k with
     | 0 => [::]
     | k.+1 =>
@@ -226,12 +228,12 @@ Fixpoint bitsFromInt (k: nat) (n: NativeInt.Int) : bitseq :=
   end)%C.
 (* =end= *)
 
-Lemma bitsFromIntP {k} (i: NativeInt.Int): size (bitsFromInt k i) == k.
+Lemma bitsFromIntP {k} (i: Int): size (bitsFromInt k i) == k.
 Proof.
   elim: k i => // [k IH] i //=; rewrite eqSS //.
 Qed.
 
-Canonical bitsFromInt_tuple (i: NativeInt.Int): 'B_n
+Canonical bitsFromInt_tuple (i: Int): 'B_n
   := Tuple (bitsFromIntP i).
 
 
@@ -250,18 +252,18 @@ End WORDSIZE.
  *)
 
 (* =forallint_ax= *)
-Axiom forallIntG : NativeInt.Int -> (NativeInt.Int -> bool) -> bool.
+Axiom forallIntG  : Int -> (Int -> bool) -> bool.
 Extract Inlined Constant forallIntG => "Forall.forall_int".
 (* =end= *)
 
-Axiom forallInt2G : NativeInt.Int -> (NativeInt.Int -> NativeInt.Int -> bool) -> bool.
+Axiom forallInt2G : Int -> (Int -> Int -> bool) -> bool.
 Extract Inlined Constant forallInt2G => "Forall.forall_int2".
 
 Section Trust.
 
 (* Axiom 1: Equality of integer is embedded within Coq's propositional equality: *)
 (* =eqintp= *)
-Axiom eqIntP : Equality.axiom NativeInt.eq.
+Axiom eqIntP : Equality.axiom eq.
 (* =end= *)
 
 (* Axiom 2: If a property is true for all integers, then it is
@@ -284,14 +286,14 @@ Module Make (WS: WORDSIZE).
 
 Definition w := WS.wordsize.
 
-Definition Int  := NativeInt.Int.
-Definition eq   := NativeInt.eq.
-Definition zero := NativeInt.zero.
-Definition one  := NativeInt.one.
-Definition lor  := NativeInt.lor.
-Definition land := NativeInt.land.
-Definition lsr  := NativeInt.lsr.
-Definition lxor := NativeInt.lxor.
+Definition Int  := Native.Int.
+Definition eq   := Native.eq.
+Definition zero := Native.zero.
+Definition one  := Native.one.
+Definition lor  := Native.lor.
+Definition land := Native.land.
+Definition lsr  := Native.lsr.
+Definition lxor := Native.lxor.
 
 Definition wordsize := bitsToInt (bitn 63 WS.wordsize).
 
@@ -300,12 +302,12 @@ Definition bitmask := ((1 :<<: wordsize) - 1: Int)%C.
 Definition mask_unop  (f : Int -> Int) x := (bitmask && f x)%C.
 Definition mask_binop (f : Int -> Int -> Int) x y := (bitmask && f x y)%C.
 
-Definition lnot := mask_unop NativeInt.lnot.
-Definition opp  := mask_unop NativeInt.opp.
+Definition lnot := mask_unop Native.lnot.
+Definition opp  := mask_unop Native.opp.
 
-Definition lsl := mask_binop NativeInt.lsl.
-Definition add := mask_binop NativeInt.add.
-Definition sub := mask_binop NativeInt.sub.
+Definition lsl := mask_binop Native.lsl.
+Definition add := mask_binop Native.add.
+Definition sub := mask_binop Native.sub.
 
 Definition forallInt  := forallIntG wordsize.
 Definition forallInt2 := forallInt2G wordsize.
