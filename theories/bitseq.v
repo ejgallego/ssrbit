@@ -314,6 +314,9 @@ Proof. by rewrite size_setls size_tuple. Qed.
 
 Canonical setlB bv i b := Tuple (setls_tupleP bv i b).
 
+Lemma setls_default s i b : size s <= i -> setls s i b = s.
+Proof. by rewrite leqNgt /setls; case: ifP. Qed.
+
 Lemma nth_setls s i b (j : nat) :
   (setls s i b)`_j =
   if j < size s then [eta nth false s with i |-> b] j else false.
@@ -371,6 +374,13 @@ Proof. exact: (lift0z' andTb). Qed.
 
 Lemma ands1' : {in [pred s | k <= size s], right_id '1_k ands}.
 Proof. exact: (liftz0' andbT). Qed.
+
+Lemma and0s : {in [pred s | k == size s], left_zero '0_k ands}.
+Proof.
+(* XXX : use right_zero *)
+move=> s; rewrite inE; elim: s k => [|b s ihs] [|k'] //=.
+by rewrite ands_cons => /ihs ->.
+Qed.
 
 Section OpsTup.
 
@@ -572,6 +582,9 @@ Eval compute in bitn 10 00.
 Eval compute in nats
                 [:: false; true; false; false; false; false; false; false; false; false].
 
+Lemma bitn_nil k : bitn 0 k = [::].
+Proof. by []. Qed.
+
 Lemma bitn_cons n k : bitn n.+1 k = [:: odd k & bitn n k./2].
 Proof. by []. Qed.
 
@@ -642,6 +655,12 @@ Lemma bitn_one_def k : bitn k 1 = belast true '0_k.
 Proof.
 case: k => // k; rewrite bitn_cons /=; congr cons.
 by elim: k => // k ihk; rewrite bitn_cons ihk.
+Qed.
+
+Lemma nth_bitn k n i : i < k -> (bitn k n)`_i = odd (n %/ 2^i).
+Proof.
+elim: k n i => // b ihs n [|i] hi; rewrite ?divn1 //.
+by rewrite bitn_cons /= expnS divnMA divn2 ihs.
 Qed.
 
 Lemma tnth_one k (i : 'I_k) : tnth (inB 1) i = (val i == 0).
