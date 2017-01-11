@@ -63,11 +63,11 @@ Implicit Types (i j : nat).
 Implicit Types (s : seq nat).
 
 (* Auxiliary results *)
-Lemma memS_mask l i m j k : size m <= k ->
+Lemma memS_mask l i m j k :
   (l + i \in mask m (iota (l + j) k)) =
   (    i \in mask m (iota      j  k)).
 Proof.
-elim: k m i j l => [|k ihk] [|b m] i j l hs; rewrite // !mem_mask_cons.
+elim: k m i j l => [|k ihk] [|b m] i j l; rewrite // !mem_mask_cons.
 by rewrite eqn_add2l -addnS ihk.
 Qed.
 
@@ -78,10 +78,10 @@ by case: m => // -[] m; rewrite mem_mask_cons ihk ?(ltn_eqF hij) ?ltnS // ltnW.
 Qed.
 
 (* Main lemma relating bitmasks with their enumerations *)
-Lemma mem_mask_iota k i j m : j <= i < k -> size m <= k ->
+Lemma mem_mask_iota k i j m : j <= i < k ->
    i \in mask m (iota j k) = m`_(i - j).
 Proof.
-elim: k i j m => [|k ihk] i j [|b m] /andP [hji hik] hs //.
+elim: k i j m => [|k ihk] i j [|b m] /andP [hji hik] //.
   by rewrite nth_nil.
 rewrite mem_mask_cons; case: eqP => [->|/eqP/negbTE neq_ij].
   by rewrite mem_mask_gt // subnn andbT orbF.
@@ -90,6 +90,7 @@ case: i hji hik {neq_ij} hj => // i hji hik hj.
 rewrite (memS_mask 1) // andbF (ihk i) ?subSn //.
 by rewrite ltnS in hj; rewrite hj.
 Qed.
+
 End MemIota.
 
 (* Untyped operations, useful for computing and avoid {set _} *)
