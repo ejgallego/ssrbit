@@ -123,6 +123,28 @@ Section AuxTheory.
 Lemma tnth_nseq m T (x : T) i : tnth [tuple of nseq m x] i = x.
 Proof. by rewrite (tnth_nth x) nth_nseq ltn_ord. Qed.
 
+Lemma rev_nseq A n (x : A) : rev (nseq n x) = nseq n x.
+Proof.
+by elim: n => //= n ihn; rewrite rev_cons {}ihn; elim: n => //= n ->.
+Qed.
+
+(* Lemma ltn_sub_aux p m n : p - m < p - n = (0 < p) && (n < m). *)
+(* Admitted. *)
+
+(* Lemma take_nseq T n m (x : T) : take n (nseq m x) = nseq (minn n m) x. *)
+(* Proof. by elim: n m => [|n ihn] [|m]; rewrite ?minnSS //= ihn. Qed. *)
+
+Lemma rev_drop A n (s : seq A) :
+  rev (drop n s) = take (size s - n) (rev s).
+Proof.
+elim: n s => [|n ihn] [|x s] //=.
+  by rewrite subn0 take_oversize // size_rev.
+rewrite {}ihn subSS rev_cons -cats1 take_cat size_rev.
+(* Proof a bit clumsy here *)
+case: n => [|n]; first by rewrite subn0 ltnn subnn take0 cats0 -size_rev take_size.
+by case: s => [|y s]; rewrite // subSS ltnS leq_subr.
+Qed.
+
 End AuxTheory.
 
 (************************************************************************)
@@ -424,22 +446,51 @@ Proof. exact: rotK. Qed.
 Definition rolB n (t : 'B_k) := [bits of rols n t].
 Definition rorB n (t : 'B_k) := [bits of rors n t].
 
-(* Shift to left/right *)
+(******************************************************************************)
+(* Shift to left/right                                                        *)
+(******************************************************************************)
 Definition shls s n := '0_(minn (size s) n) ++ take (size s - n) s.
 Definition shrs s n := drop n s ++ '0_(minn (size s) n).
 
-(* XXX *)
-Lemma size_shls n s : size (shls s n) = size s.
+Lemma shlsE s n : shls s n = rev (shrs (rev s) n).
+Proof. by rewrite rev_cat rev_nseq /shls rev_drop size_rev revK. Qed.
+
+Lemma shrsE s n : shrs s n = rev (shls (rev s) n).
+Proof. by rewrite shlsE !revK. Qed.
+
+Lemma size_shls s n : size (shls s n) = size s.
 Proof. by rewrite size_cat size_nseq size_takel ?minnE ?subnK ?leq_subr. Qed.
 
-Lemma size_shrs n s : size (shrs s n) = size s.
+Lemma size_shrs s n : size (shrs s n) = size s.
 Proof. by rewrite size_cat size_nseq size_drop minnE subnKC ?leq_subr. Qed.
 
 Lemma shls0 s : shls s 0 = s.
 Proof. by rewrite /shls minn0 subn0 take_oversize. Qed.
 
-(* Lemma take_nseq T n m (x : T) : take n (nseq m x) = nseq (minn n m) x. *)
-(* Proof. by elim: n m => [|n ihn] [|m]; rewrite ?minnSS //= ihn. Qed. *)
+Lemma shrs0 s : shrs s 0 = s.
+Proof. by rewrite /shrs minn0 cats0 drop0. Qed.
+
+Lemma nth_shls s n i (i_bnd : i < size s) : (shls s n)`_i = (n <= i) && s`_(i-n).
+Proof.
+rewrite /shls nth_cat size_nseq nth_nseq leq_min i_bnd if_same.
+case: ltnP => //= n_leq_i.
+have n_lt_sz := leq_ltn_trans n_leq_i i_bnd.
+by rewrite nth_take (minn_idPr (ltnW n_lt_sz)) ?ltn_sub2r.
+Qed.
+
+Definition nth_shrs s n i : (shrs s n)`_i = (i < size s - n) && s`_(i+n).
+Proof.
+rewrite /shrs nth_cat size_drop nth_nseq if_same nth_drop.
+by case: ifP => //= i_le_szn; rewrite addnC.
+Qed.
+
+(* Proof using the equivalence:
+Lemma nth_shl' s n i (i_bnd : i < size s) : (shls s n)`_i = (n <= i) && s`_(i-n).
+Proof.
+rewrite shlsE nth_rev ?size_shrs ?size_rev // nth_shrs size_rev.
+congr andb; first by rewrite ltn_sub_aux ltnS (leq_ltn_trans (leq0n i)).
+Admitted.
+*)
 
 (* Example lemmas from the old lib: compare *)
 Lemma shls_overflow n s (hs : size s <= n) : shls s n = '0_(size s).
@@ -459,17 +510,22 @@ Canonical shlB (t : 'B_k) n := Tuple (shls_tupleP n t).
 Canonical shrB (t : 'B_k) n := Tuple (shrs_tupleP n t).
 
 Lemma tnth_shlB (b : 'B_k) n (i : 'I_k) :
-  tnth (shlB b n) i = if i < n
-                      then false
-                      else tnth b (insubd i (i - n)).
+  tnth (shlB b n) i = (n <= i) && tnth b (insubd i (i - n)).
 Proof.
-rewrite !(tnth_nth false) !nth_cat !size_nseq !nth_nseq size_tuple leq_min ltn_ord.
-case: ltnP => // hn; have n_le_k := leq_ltn_trans hn (ltn_ord i).
-rewrite (minn_idPr (ltnW n_le_k)) val_insubd ?nth_take ?ltn_sub2r //.
+rewrite !(tnth_nth false) /= nth_shls ?size_tuple // val_insubd.
 by rewrite (leq_ltn_trans _ (ltn_ord i)) ?leq_subr.
 Qed.
 
-(* Inversion of bits *)
+Lemma tnth_shrB (b : 'B_k) n (i : 'I_k) :
+  tnth (shrB b n) i = (i < k - n) && tnth b (insubd i (i + n)).
+Proof.
+rewrite !(tnth_nth false) /= nth_shrs ?size_tuple // val_insubd.
+by rewrite ltn_subRL addnC; case: ifP.
+Qed.
+
+(******************************************************************************)
+(* Inversion of bits                                                           *)
+(******************************************************************************)
 Definition negs s := [seq negb b | b <- s].
 Definition negB (t : 'B_k) := [bits of negs t].
 
@@ -673,9 +729,8 @@ Qed.
 
 Lemma tnth_shlB_one k (n i : 'I_k) : tnth (shlB (inB 1) n) i = (n == i).
 Proof.
-rewrite tnth_shlB tnth_one val_insubd; case: ltnP; first by move/gtn_eqF.
-rewrite (leq_ltn_trans (leq_subr n _)) ?ltn_ord // => hle.
-by rewrite subn_eq0 leq_eqVlt ltnNge hle orbF eq_sym.
+rewrite tnth_shlB tnth_one val_insubd (leq_ltn_trans (leq_subr n _)) ?ltn_ord //.
+by rewrite subn_eq0 -eqn_leq.
 Qed.
 
 (* Development of the bounded operators *)

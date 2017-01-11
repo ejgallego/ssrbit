@@ -167,34 +167,39 @@ rewrite /rolB (tnth_nth false) nth_rotr ?size_tuple //.
 by rewrite ltnW.
 Admitted.
 
-(* Shifts *)
+(******************************************************************************)
+(* Word Shift                                                                 *)
+(******************************************************************************)
 
 Definition shlw (n : 'I_k.+1) w : word :=
-  [ffun i : 'I_k.+1 => if (n <= i)%N then w (i - n)%R else false].
+  [ffun i : 'I_k.+1 => (n <= i)%N && w (i-n) ].
 
-Lemma shlwP' n w i : (shlw n w) i =
-                     if (n <= i)%N then w (i - n)%R else false.
-Proof. by rewrite ffunE. Qed.
+Definition shrw (n : 'I_k.+1) w : word :=
+  [ffun i : 'I_k.+1 => (i < k.+1 - n)%N && w (i+n) ].
 
 Lemma shlwP n w : bitw (shlw n w) = shlB (bitw w) n.
 Proof.
-apply/eq_from_tnth=> i.
-rewrite tcastE tnth_fgraph ffunE enum_val_ord !cast_ordKV.
-rewrite /shlB (tnth_nth false) /= nth_shls.
-case: ifP => // hni. rewrite val_tcast /=.
-have <- := @nth_fgraph_ord _ k.+1 false (i - n) w.
-have -> // : (i - n)%R = (i - n)%N :> nat.
-case: i n hni => [i hi] [n hn] /= hni.
-rewrite !modnDmr addnBA //; last by rewrite ltnW.
-rewrite addnC.
-rewrite -addnBA // modnDl modn_small // ltnS.
-by rewrite leq_subLR -[i]add0n leq_add.
+apply/eq_from_tnth=> i; rewrite tcastE tnth_fgraph ffunE enum_val_ord cast_ordKV.
+rewrite tnth_shlB wordP; case: leqP => //= h_leq.
+(* Boring arithmetic, we may streamline this *)
+suff -> : insubd i (i - n)%N = i - n by [].
+apply/val_inj; rewrite val_insubd /=; set u := k.+1.
+have in_ltn_u : (i - n < u)%N.
+  by rewrite (leq_ltn_trans (leq_subr _ _)).
+rewrite in_ltn_u !modnDmr addnBA 1?ltnW //.
+by rewrite  addnC -addnBA // modnDl modn_small.
 Qed.
 
-(*
-Definition shrw k w : word :=
-  [ffun i => w (i-k)%R].
-*)
+Lemma shrwP n w : bitw (shrw n w) = shrB (bitw w) n.
+Proof.
+apply/eq_from_tnth=> i; rewrite tcastE tnth_fgraph ffunE enum_val_ord cast_ordKV.
+rewrite tnth_shrB wordP; case: ltnP => //= h_leq.
+(* Boring arithmetic, we may streamline this *)
+suff -> : insubd i (i + n)%N = i + n by [].
+apply/val_inj; rewrite val_insubd /=; set u := k.+1 in h_leq *.
+by rewrite ltn_subRL addnC in h_leq; rewrite h_leq modn_small.
+Qed.
+
 End WordIdx.
 
 (* Arithmetic *)
