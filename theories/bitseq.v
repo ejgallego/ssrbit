@@ -509,14 +509,14 @@ Proof. by rewrite size_shrs size_tuple. Qed.
 Canonical shlB (t : 'B_k) n := Tuple (shls_tupleP n t).
 Canonical shrB (t : 'B_k) n := Tuple (shrs_tupleP n t).
 
-Lemma tnth_shlB (b : 'B_k) n (i : 'I_k) :
+Lemma tnth_shlB_insub (b : 'B_k) n (i : 'I_k) :
   tnth (shlB b n) i = (n <= i) && tnth b (insubd i (i - n)).
 Proof.
 rewrite !(tnth_nth false) /= nth_shls ?size_tuple // val_insubd.
 by rewrite (leq_ltn_trans _ (ltn_ord i)) ?leq_subr.
 Qed.
 
-Lemma tnth_shrB (b : 'B_k) n (i : 'I_k) :
+Lemma tnth_shrB_insub (b : 'B_k) n (i : 'I_k) :
   tnth (shrB b n) i = (i < k - n) && tnth b (insubd i (i + n)).
 Proof.
 rewrite !(tnth_nth false) /= nth_shrs ?size_tuple // val_insubd.
@@ -605,6 +605,33 @@ Lemma sbb0B_carry n (p: BITS n.+1) : fst (sbbB false #0 p) = (p != #0).
 *)
 
 End BitOps.
+
+Section BitOpsP.
+
+Variable k' : nat.
+Let k := k'.+1.
+
+Implicit Types (b : 'B_k) (n i : 'I_k).
+
+Lemma tnth_shlB b n i :
+  tnth (shlB b n) i = (n <= i) && tnth b (i - n)%R.
+Proof.
+rewrite !(tnth_nth false) /= nth_shls ?size_tuple //.
+case: leqP => //= h_leq.
+rewrite modnDmr addnBA 1?ltnW //.
+rewrite addnC -addnBA // modnDl modn_small //.
+by rewrite (leq_ltn_trans (leq_subr _ _)).
+Qed.
+
+Lemma tnth_shrB b n i :
+  tnth (shrB b n) i = (i < k - n) && tnth b (i + n)%R.
+Proof.
+rewrite !(tnth_nth false) /= nth_shrs ?size_tuple.
+rewrite ltn_subRL addnC; case: ltnP => //= h_leq.
+by rewrite modn_small.
+Qed.
+
+End BitOpsP.
 
 (* May need improvement *)
 Canonical ors_monoid := Monoid.Law orsA or0s ors0.
@@ -729,7 +756,7 @@ Qed.
 
 Lemma tnth_shlB_one k (n i : 'I_k) : tnth (shlB (inB 1) n) i = (n == i).
 Proof.
-rewrite tnth_shlB tnth_one val_insubd (leq_ltn_trans (leq_subr n _)) ?ltn_ord //.
+rewrite tnth_shlB_insub tnth_one val_insubd (leq_ltn_trans (leq_subr n _)) ?ltn_ord //.
 by rewrite subn_eq0 -eqn_leq.
 Qed.
 

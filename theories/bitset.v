@@ -15,6 +15,8 @@ From mathcomp
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq div.
 From mathcomp
 Require Import choice fintype finset tuple path bigop.
+From mathcomp
+Require Import ssralg ssrnum fingroup perm finalg zmodp.
 
 (******************************************************************************)
 (* A bit library for Coq: sets encoded as bitseqs.                            *)
@@ -210,6 +212,10 @@ Qed.
 
 Prenex Implicits setnK setbK.
 
+(******************************************************************************)
+(** Main operators, union, intersection                                       *)
+(******************************************************************************)
+
 (* Example property: union *)
 (* XXX: move to use {morph ...} notation *)
 Lemma union_morphL k (b1 b2 : 'B_k) :
@@ -265,7 +271,9 @@ Qed.
 (* shift. *)
 (* get. *)
 
-(** Cardinality *)
+(******************************************************************************)
+(** Cardinality                                                               *)
+(******************************************************************************)
 Definition cardb k (s : 'B_k) := count id s.
 
 Arguments seqb_uniq [k s].
@@ -277,8 +285,9 @@ by rewrite cardsE (card_uniqP seqb_uniq) size_mask // size_tuple size_enum_ord.
 Qed.
 
 
-(** Minimum *)
-
+(******************************************************************************)
+(** Minimum                                                                   *)
+(******************************************************************************)
 Require Import bitocaml.
 
 (* Lemma keep_minP n (bs: 'B_n) : *)
@@ -343,8 +352,7 @@ Lemma initseg_repr k i : setB (initseg k i) = set_iota k 0 i.
 
 (* Add a bitset with 1 bit to true to any bitset *)
 Definition set_isNext_g {n} (S: {set 'I_n.+1}) y x := (y \notin S) && (y >= x).
-
-Definition set_next_g {n} (S: {set 'I_n.+1}) x := [arg min_(y < ord0 | set_isNext_g S y x) y].
+Definition set_next_g   {n} (S: {set 'I_n.+1}) x := [arg min_(y < ord0 | set_isNext_g S y x) y].
 
 (* Lemma ripple_repr_1 k (bs: 'B_k.+1) (x: 'I_k.+1) f (isNext_f: set_isNext_g (setB bs) f x) : *)
 (*   setB (addB (setn [set x]) bs) = *)
@@ -353,7 +361,68 @@ Definition set_next_g {n} (S: {set 'I_n.+1}) x := [arg min_(y < ord0 | set_isNex
 (* Admitted. *)
 
 (******************************************************************************)
-(* Bijection to any set of cardinality n, from an idea by Arthur Blot.        *)
+(** Set Shifting                                                              *)
+(******************************************************************************)
+
+Section SetShift.
+
+(* Local Open Scope ring_scope. *)
+Import GRing.Theory.
+
+(* Shift a set *)
+Definition shlS k (s : {set 'I_k.+1}) (n : 'I_k.+1) :=
+  [set (i + n)%R | i in s & i < k.+1 - n].
+
+Lemma shl_morph k (b : 'B_k.+1) (n : 'I_k.+1) :
+  setB (shlB b n) = shlS (setB b) n.
+Proof.
+apply/setP=> i; rewrite mem_setB tnth_shlB /shlS.
+apply/andP/imsetP=> /= [[h_le_i hnth]|[x]].
+  exists (i-n)%R; last by rewrite addrNK.
+  rewrite inE mem_setB hnth.
+  have/leq_ltn_trans-> //: (i-n)%R <= i-n.
+    suff ->: i - n = (i - n)%R by [].
+    rewrite /= modnDmr addnBA 1?ltnW //.
+    rewrite addnC -addnBA // modnDl modn_small //.
+    by rewrite (leq_ltn_trans (leq_subr _ _)).
+  by rewrite ltn_sub2r.
+rewrite inE; case/andP; rewrite mem_setB => [htnth hlt ->]; split.
+  have/(leq_trans (leq_addl _ _)) -> //: (x + n <= (x + n)%R)%N.
+  suff ->: x + n = (x + n)%R by [].
+  rewrite /= modn_small ?leq_addl //.
+  by rewrite ltn_subRL addnC in hlt.
+by rewrite addrK htnth.
+Qed.
+
+Definition shrS k (s : {set 'I_k.+1}) (n : 'I_k.+1) :=
+  [set (i - n)%R | i in s & n <= i].
+
+Lemma shr_morph k (b : 'B_k.+1) (n : 'I_k.+1) :
+  setB (shrB b n) = shrS (setB b) n.
+Proof.
+apply/setP=> i; rewrite mem_setB tnth_shrB /shrS.
+apply/andP/imsetP=> /= [[h_le_i hnth]|[x]].
+  exists (i+n)%R; last by rewrite addrK.
+  rewrite inE mem_setB hnth.
+  have/(leq_trans (leq_addl _ _)) -> //: (i + n <= (i + n)%R)%N.
+  suff ->: i + n = (i + n)%R by [].
+  rewrite /= modn_small //.
+  by rewrite ltn_subRL addnC in h_le_i.
+rewrite inE mem_setB; case/andP=> [htnth hnx ->{i}]; split; last first.
+  by rewrite addrNK htnth.
+have/leq_ltn_trans-> //: (x-n)%R <= x-n.
+  suff ->: x - n = (x - n)%R by [].
+  rewrite /= modnDmr addnBA 1?ltnW //.
+  rewrite addnC -addnBA // modnDl modn_small //.
+  by rewrite (leq_ltn_trans (leq_subr _ _)).
+by rewrite ltn_sub2r.
+Qed.
+
+End SetShift.
+
+(******************************************************************************)
+(* Bijection to any set of cardinality n, from an o
+idea by Arthur Blot.        *)
 (******************************************************************************)
 Section FinSet.
 
