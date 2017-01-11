@@ -293,39 +293,39 @@ Lemma mem_setBN' n (bs : 'B_n) (hN : forall i, i \in setB bs = false) :
 Proof. by apply/tnthP => -[xi hi]; have := hN xi; rewrite mem_setB -hi. Qed.
 
 (* =keep_setP= *)
-Lemma keep_min_setP n (bs : 'B_n) :
-  if [pick x in setB bs] is Some x
-  then setB (keep_min bs) = [set [arg min_(i < x in setB bs) i]]
-  else setB (keep_min bs) = set0.
-(* =end= *)
-Proof.
-case: pickP => [x xin|inN].
-  have bs_x := xin; rewrite mem_setb in bs_x.
-  apply/setP => y; rewrite mem_setb keep_minP.
-  rewrite /setls size_nseq -[n in _ < n](size_tuple bs).
-  rewrite index_mem -bs_x mem_nth ?size_tuple // !inE.
-  case: arg_minP => // i hin hmin; rewrite nth_set_nth /=.
-  admit. (* Import indexP from old development *)
-apply/setP => y; rewrite mem_setb keep_minP.
-have:= mem_setBN' inN; rewrite -index_mem /setls size_tuple size_nseq.
-by move/negbTE->; rewrite nth_nseq ltn_ord inE.
-Admitted.
+(* Lemma keep_min_setP n (bs : 'B_n) : *)
+(*   if [pick x in setB bs] is Some x *)
+(*   then setB (keep_min bs) = [set [arg min_(i < x in setB bs) i]] *)
+(*   else setB (keep_min bs) = set0. *)
+(* (* =end= *) *)
+(* Proof. *)
+(* case: pickP => [x xin|inN]. *)
+(*   have bs_x := xin; rewrite mem_setb in bs_x. *)
+(*   apply/setP => y; rewrite mem_setb keep_minP. *)
+(*   rewrite /setls size_nseq -[n in _ < n](size_tuple bs). *)
+(*   rewrite index_mem -bs_x mem_nth ?size_tuple // !inE. *)
+(*   case: arg_minP => // i hin hmin; rewrite nth_set_nth /=. *)
+(*   admit. (* Import indexP from old development *) *)
+(* apply/setP => y; rewrite mem_setb keep_minP. *)
+(* have:= mem_setBN' inN; rewrite -index_mem /setls size_tuple size_nseq. *)
+(* by move/negbTE->; rewrite nth_nseq ltn_ord inE. *)
+(* Admitted. *)
 (* =end= *)
 
 (* =ntz_setP= *)
-Lemma ntz_setP n (bs : 'B_n) :
-  if [pick x in setB bs] is Some x
-  then ntz bs = inB [arg min_(k < x in setB bs) k]
-  else ntz bs = inB n.
-(* =end= *)
-Proof.
-case: pickP => [x xinT|xinN].
-  case: arg_minP => // y yin ymin; rewrite ntzP; congr inB.
-  (* Same applications of indexP as before *)
-  admit.
-have:= mem_setBN' xinN; rewrite -index_mem ltn_neqAle index_size andbT negbK.
-by rewrite size_tuple ntzP => /eqP ->.
-Admitted.
+(* Lemma ntz_setP n (bs : 'B_n) : *)
+(*   if [pick x in setB bs] is Some x *)
+(*   then ntz bs = inB [arg min_(k < x in setB bs) k] *)
+(*   else ntz bs = inB n. *)
+(* (* =end= *) *)
+(* Proof. *)
+(* case: pickP => [x xinT|xinN]. *)
+(*   case: arg_minP => // y yin ymin; rewrite ntzP; congr inB. *)
+(*   (* Same applications of indexP as before *) *)
+(*   admit. *)
+(* have:= mem_setBN' xinN; rewrite -index_mem ltn_neqAle index_size andbT negbK. *)
+(* by rewrite size_tuple ntzP => /eqP ->. *)
+(* Admitted. *)
 (* =end= *)
 
 (* XXX: Emilio: move? *)
@@ -338,7 +338,7 @@ Definition set_iota k m n : {set 'I_k} := [set x in ord_iota k m n].
 Definition initseg k i := @decB k (shlB (bito 1%R) i).
 
 Lemma initseg_repr k i : setB (initseg k i) = set_iota k 0 i.
-Admitted.
+(* Admitted. *)
 *)
 
 (* Add a bitset with 1 bit to true to any bitset *)
@@ -346,11 +346,11 @@ Definition set_isNext_g {n} (S: {set 'I_n.+1}) y x := (y \notin S) && (y >= x).
 
 Definition set_next_g {n} (S: {set 'I_n.+1}) x := [arg min_(y < ord0 | set_isNext_g S y x) y].
 
-Lemma ripple_repr_1 k (bs: 'B_k.+1) (x: 'I_k.+1) f (isNext_f: set_isNext_g (setB bs) f x) :
-  setB (addB (setn [set x]) bs) =
-  (set_next_g (setB bs) x) |: [set y in (setB bs) | y < x] :|: [set y in (setB bs) | y > set_next_g (setB bs) x].
+(* Lemma ripple_repr_1 k (bs: 'B_k.+1) (x: 'I_k.+1) f (isNext_f: set_isNext_g (setB bs) f x) : *)
+(*   setB (addB (setn [set x]) bs) = *)
+(*   (set_next_g (setB bs) x) |: [set y in (setB bs) | y < x] :|: [set y in (setB bs) | y > set_next_g (setB bs) x]. *)
 (* XXX: Arthur *)
-Admitted.
+(* Admitted. *)
 
 (******************************************************************************)
 (* Bijection to any set of cardinality n, from an idea by Arthur Blot.        *)

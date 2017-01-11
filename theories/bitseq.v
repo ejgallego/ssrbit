@@ -489,7 +489,7 @@ Lemma nth_shl' s n i (i_bnd : i < size s) : (shls s n)`_i = (n <= i) && s`_(i-n)
 Proof.
 rewrite shlsE nth_rev ?size_shrs ?size_rev // nth_shrs size_rev.
 congr andb; first by rewrite ltn_sub_aux ltnS (leq_ltn_trans (leq0n i)).
-Admitted.
+(* Admitted. *)
 *)
 
 (* Example lemmas from the old lib: compare *)
@@ -1227,17 +1227,17 @@ Proof. by rewrite /bitU /= orbF subn0 !maxn0. Qed.
 (* Proof. elim: y => //= y yl ihl; rewrite bit0U bitU0 ihl. Qed. *)
 *)
 Lemma bitUA : associative bitU.
-Admitted.
+(* Admitted. *)
 
 Lemma bitUC : commutative bitU.
-Admitted.
+(* Admitted. *)
 
 (* Oh so we indeed should pad! *)
 Lemma bit0U k : left_id (nseq k false) bitU.
-Admitted.
+(* Admitted. *)
 
 Lemma bitU0 k : right_id (nseq k false) bitU.
-Admitted.
+(* Admitted. *)
 
 About Monoid.Law.
 Canonical bitU_monoid k := Monoid.Law bitUA (bit0U k) (bitU0 k).

@@ -267,13 +267,13 @@ apply/setIidPl/eqP; rewrite -Finter_morphL; last by move->.
 by move/(can_inj (@bitFK _)).
 Qed.
 
-Definition cardTT (A : {set T}) := #|A|.
-Global Instance Rfin_cardinal:
-  refines (Rfin ==> eq) (cardTT) (fun x => nats (cardinal_smart x)).
-Proof.
-rewrite !refinesE => A1 y1 <-.
-by rewrite /cardTT cardinalP (card_imset _ enum_val_inj) cardbP.
-Qed.
+(* Definition cardTT (A : {set T}) := #|A|. *)
+(* Global Instance Rfin_cardinal: *)
+(*   refines (Rfin ==> eq) (cardTT) (fun x => nats (cardinal_smart x)). *)
+(* Proof. *)
+(* rewrite !refinesE => A1 y1 <-. *)
+(* by rewrite /cardTT cardinalP (card_imset _ enum_val_inj) cardbP. *)
+(* Qed. *)
 
 (* XXX: To be moved *)
 Lemma arg_min_enum_rank (aT : finType) (A : {set 'I_#|aT| }) x (h_x : x \in A) :
@@ -290,16 +290,16 @@ have P2 := umin _ xrin.
 by have/andP := conj P1 P2; rewrite -eqn_leq => /eqP /val_inj.
 Qed.
 
-Global Instance Rfin_ntz x (h_in : x \in T) :
-  refines (Rfin ==> eq) (fun E => val (enum_rank [arg min_(k < x in E) enum_rank k]))
-          (fun x => nats (ntz x)).
-Proof.
-rewrite !refinesE => A1 b1 <-.
+(* Global Instance Rfin_ntz x (h_in : x \in T) : *)
+(*   refines (Rfin ==> eq) (fun E => val (enum_rank [arg min_(k < x in E) enum_rank k])) *)
+(*           (fun x => nats (ntz x)). *)
+(* Proof. *)
+(* rewrite !refinesE => A1 b1 <-. *)
 (* rewrite ntzP /=. *)
 (* rewrite /finB. *)
 (* have -> : x = enum_val (enum_rank x) by rewrite enum_rankK. *)
 (* rewrite arg_min_enum_rank. *)
-Admitted.
+(* Admitted. *)
 
 (************************************************************************)
 (** * From machine words to bit sequences                               *)

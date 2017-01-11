@@ -119,23 +119,23 @@ Proof. by []. Qed.
 
 (* ss is a partition of S then *)
 (*  "cardb S = \sum(s <- ss) cardb s" *)
-Lemma cardinalE n k (bv : 'B_n) :
-  nats (cardinal k bv) =
-  \sum_(pbv <- reshape (nseq (n %/ k) k) bv) (nats pbv).
-Proof.
-rewrite /cardinal.
-elim: (n %/ k) {1 2 3 6}n bv => [|nk ihnk] nv bv.
+(* Lemma cardinalE n k (bv : 'B_n) : *)
+(*   nats (cardinal k bv) = *)
+(*   \sum_(pbv <- reshape (nseq (n %/ k) k) bv) (nats pbv). *)
+(* Proof. *)
+(* rewrite /cardinal. *)
+(* elim: (n %/ k) {1 2 3 6}n bv => [|nk ihnk] nv bv. *)
 (*   by rewrite nats_zero big_nil. *)
 (* rewrite card_rec_cons [reshape _ _]/= big_cons -ihnk. *)
-Admitted.
+(* Admitted. *)
 
 (* Lemma cardinalE : \sum_(l reshape  *)
 
 (* Lemma cardinalP k (s : 'B_k) i (* (div_i: i %| k) (ltz_i: i > 0) *) : *)
-Lemma cardinalP k (s : 'B_k) i :
-  nats (cardinal i s) = count id s.
-Proof.
-Admitted.
+(* Lemma cardinalP k (s : 'B_k) i : *)
+(*   nats (cardinal i s) = count id s. *)
+(* Proof. *)
+(* Admitted. *)
 
 End CardTheory.
 End Card.
@@ -155,12 +155,12 @@ Definition keep_min n (bs: 'B_n) : 'B_n :=
 (* =end= *)
 
 (* =keep_minP= *)
-Lemma keep_minP n (bs: 'B_n) :
-  keep_min bs = setls '0_n (index true bs) true :> bitseq.
+(* Lemma keep_minP n (bs: 'B_n) : *)
+(*   keep_min bs = setls '0_n (index true bs) true :> bitseq. *)
 (* =end= *)
 
 (* XXX: maybe ripple_repr could be useful here, as neg is (inv + 1) *)
-Admitted.
+(* Admitted. *)
 
 (* Value of the minimum (ie number of trailing zeroes) *)
 
@@ -170,14 +170,14 @@ Definition ntz n (bs: 'B_n) : 'B_n :=
 (* =end= *)
 
 (* =ntzP= *)
-Lemma ntzP n (bs : 'B_n) : ntz bs = inB (index true bs).
-(* =end= *)
-Proof.
-rewrite /ntz.
-suff : n - count id (orB bs (oppB bs)) = index true bs.
-  admit.
-apply: (@addIn (count id (orB bs (oppB bs)))).
-rewrite subnK ?(leq_trans (count_size _ _)) ?size_tuple //.
+(* Lemma ntzP n (bs : 'B_n) : ntz bs = inB (index true bs). *)
+(* (* =end= *) *)
+(* Proof. *)
+(* rewrite /ntz. *)
+(* suff : n - count id (orB bs (oppB bs)) = index true bs. *)
+(*   admit. *)
+(* apply: (@addIn (count id (orB bs (oppB bs)))). *)
+(* rewrite subnK ?(leq_trans (count_size _ _)) ?size_tuple //. *)
 (*
 This should derive from the mask theory.
 orB bs (oppB bs) = 00000011111111111 = bmask (index ) n
@@ -187,7 +187,7 @@ Useful lemma from the old development:
 Definition negB {n} (p: BITS n) := incB (invB p).
 
 *)
-Admitted.
+(* Admitted. *)
 
 (*  *)
 Definition U_test n (bs : 'B_n) :=

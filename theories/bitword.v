@@ -52,33 +52,25 @@ Lemma val_tcast T n m (t : n.-tuple T) (eq_nm : n = m) :
 Proof. by move: (eq_nm); rewrite /tcast -eq_nm => eq_nn; rewrite eq_axiomK. Qed.
 
 (* XXX: Move. Note this is "list order" *)
-Lemma nth_rot T x0 n i (s : seq T) (i_lt_s : i < size s) (n_lt_s : n <= size s) :
-  nth x0 (rot n s) i = nth x0 s ((n + i) %% size s).
-Proof.
-rewrite nth_cat nth_drop; case: ltnP; rewrite size_drop ?ltn_subRL => hs.
-  by rewrite modn_small.
-(* Second case, we are taking after the drop *)
-rewrite nth_take.
-Admitted.
+(* Lemma nth_rot T x0 n i (s : seq T) (i_lt_s : i < size s) (n_lt_s : n <= size s) : *)
+(*   nth x0 (rot n s) i = nth x0 s ((n + i) %% size s). *)
+(* Proof. *)
+(* rewrite nth_cat nth_drop; case: ltnP; rewrite size_drop ?ltn_subRL => hs. *)
+(*   by rewrite modn_small. *)
+(* (* Second case, we are taking after the drop *) *)
+(* rewrite nth_take. *)
+(* Admitted. *)
 
-Lemma nth_rotr T x0 n i (s : seq T) (i_lt_s : i < size s) (n_lt_s : n <= size s) :
-  nth x0 (rotr n s) i = nth x0 s ((size s - n + i) %% size s).
-Proof. by rewrite /rot nth_rot // leq_subr. Qed.
+(* Lemma nth_rotr T x0 n i (s : seq T) (i_lt_s : i < size s) (n_lt_s : n <= size s) : *)
+(*   nth x0 (rotr n s) i = nth x0 s ((size s - n + i) %% size s). *)
+(* Proof. by rewrite /rot nth_rot // leq_subr. Qed. *)
 
-Lemma tnth_rot T k n (n_lt_s : n <= k.+1) (t : k.+1.-tuple T) (i : 'I_k.+1):
-  tnth [tuple of rot n t] i = tnth t (inZp n + i)%R.
-Proof.
-set x0 := tnth t ord0.
-by rewrite !(tnth_nth x0) nth_rot ?size_tuple // /inZp /= modnDml.
-Qed.
-
-Lemma nth_shls x0 n s i : nth x0 (shls s n) i =
-                          if n <= i then nth x0 s (i - n) else false.
-Proof.
-rewrite /shls nth_cat size_nseq nth_nseq.
-set k := size s.
-Admitted.
-
+(* Lemma tnth_rot T k n (n_lt_s : n <= k.+1) (t : k.+1.-tuple T) (i : 'I_k.+1): *)
+(*   tnth [tuple of rot n t] i = tnth t (inZp n + i)%R. *)
+(* Proof. *)
+(* set x0 := tnth t ord0. *)
+(* by rewrite !(tnth_nth x0) nth_rot ?size_tuple // /inZp /= modnDml. *)
+(* Qed. *)
 
 Definition word n := {ffun 'I_n -> bool}.
 
@@ -153,19 +145,21 @@ Local Open Scope ring_scope.
 
 Implicit Type (s : bitseq) (b : 'B_k.+1) (w : word).
 
-(* Rotation *)
+(******************************************************************************)
+(* Rotation                                                                   *)
+(******************************************************************************)
 Definition rolw k w : word := [ffun i => w (i+k)].
 Definition rorw k w : word := [ffun i => w (i-k)].
 
-Lemma rolwP n w : bitw (rolw n w) = rolB n (bitw w).
-Proof.
-apply/eq_from_tnth=> i.
-rewrite tcastE tnth_fgraph ffunE enum_val_ord !cast_ordKV.
-rewrite /rolB (tnth_nth false) nth_rotr ?size_tuple //.
-  rewrite val_tcast (_ : (_ %% _) = (i+n)) ?nth_fgraph_ord //.
-  admit.
-by rewrite ltnW.
-Admitted.
+(* Lemma rolwP n w : bitw (rolw n w) = rolB n (bitw w). *)
+(* Proof. *)
+(* apply/eq_from_tnth=> i. *)
+(* rewrite tcastE tnth_fgraph ffunE enum_val_ord !cast_ordKV. *)
+(* rewrite /rolB (tnth_nth false) nth_rotr ?size_tuple //. *)
+(*   rewrite val_tcast (_ : (_ %% _) = (i+n)) ?nth_fgraph_ord //. *)
+(*   admit. *)
+(* by rewrite ltnW. *)
+(* Admitted. *)
 
 (******************************************************************************)
 (* Word Shift                                                                 *)
