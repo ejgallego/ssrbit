@@ -369,6 +369,18 @@ Section SetShift.
 (* Local Open Scope ring_scope. *)
 Import GRing.Theory.
 
+(* Aux lemmas *)
+
+Lemma ord_add_mod k (i n : 'I_k.+1) (in_le_k : i + n < k.+1) :
+  (i + n)%R = i + n :> nat.
+Proof. by rewrite /= modn_small. Qed.
+
+Lemma ord_sub_mod k (i n : 'I_k.+1) (n_le_i : n <= i) : (i - n)%R = i - n :> nat.
+Proof.
+rewrite /= modnDmr addnBA 1?ltnW // addnC -addnBA //.
+by rewrite modnDl modn_small // (leq_ltn_trans (leq_subr _ _)).
+Qed.
+
 (* Shift a set *)
 Definition shlS k (s : {set 'I_k.+1}) (n : 'I_k.+1) :=
   [set (i + n)%R | i in s & i < k.+1 - n].
@@ -379,19 +391,10 @@ Proof.
 apply/setP=> i; rewrite mem_setB tnth_shlB /shlS.
 apply/andP/imsetP=> /= [[h_le_i hnth]|[x]].
   exists (i-n)%R; last by rewrite addrNK.
-  rewrite inE mem_setB hnth.
-  have/leq_ltn_trans-> //: (i-n)%R <= i-n.
-    suff ->: i - n = (i - n)%R by [].
-    rewrite /= modnDmr addnBA 1?ltnW //.
-    rewrite addnC -addnBA // modnDl modn_small //.
-    by rewrite (leq_ltn_trans (leq_subr _ _)).
-  by rewrite ltn_sub2r.
-rewrite inE; case/andP; rewrite mem_setB => [htnth hlt ->]; split.
-  have/(leq_trans (leq_addl _ _)) -> //: (x + n <= (x + n)%R)%N.
-  suff ->: x + n = (x + n)%R by [].
-  rewrite /= modn_small ?leq_addl //.
-  by rewrite ltn_subRL addnC in hlt.
-by rewrite addrK htnth.
+  by rewrite inE mem_setB hnth ord_sub_mod ?ltn_sub2r.
+rewrite inE; case/andP; rewrite mem_setB => [htnth hlt ->].
+rewrite ord_add_mod ?addrK ?htnth ?leq_addl //.
+by rewrite ltn_subRL addnC in hlt.
 Qed.
 
 Definition shrS k (s : {set 'I_k.+1}) (n : 'I_k.+1) :=
@@ -403,19 +406,10 @@ Proof.
 apply/setP=> i; rewrite mem_setB tnth_shrB /shrS.
 apply/andP/imsetP=> /= [[h_le_i hnth]|[x]].
   exists (i+n)%R; last by rewrite addrK.
-  rewrite inE mem_setB hnth.
-  have/(leq_trans (leq_addl _ _)) -> //: (i + n <= (i + n)%R)%N.
-  suff ->: i + n = (i + n)%R by [].
-  rewrite /= modn_small //.
+  rewrite inE mem_setB hnth ord_add_mod ?leq_addl //.
   by rewrite ltn_subRL addnC in h_le_i.
-rewrite inE mem_setB; case/andP=> [htnth hnx ->{i}]; split; last first.
-  by rewrite addrNK htnth.
-have/leq_ltn_trans-> //: (x-n)%R <= x-n.
-  suff ->: x - n = (x - n)%R by [].
-  rewrite /= modnDmr addnBA 1?ltnW //.
-  rewrite addnC -addnBA // modnDl modn_small //.
-  by rewrite (leq_ltn_trans (leq_subr _ _)).
-by rewrite ltn_sub2r.
+rewrite inE mem_setB; case/andP=> [htnth hnx ->{i}].
+by rewrite addrNK htnth ord_sub_mod ?ltn_sub2r.
 Qed.
 
 End SetShift.
