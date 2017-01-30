@@ -50,10 +50,12 @@ Class symdiff_of fset := symdiff_op : fset -> fset -> fset.
 Class union_of fset := union_op : fset -> fset -> fset.
 Class singleton_of e fset := singleton_op : e -> fset.
 Class subset_of fset := subset_op : fset -> fset -> bool.
+Class pred_of fset := pred_op : fset -> fset.
+Class succ_of fset := succ_op : fset -> fset.
 
 Typeclasses Transparent cardinal_of compl_of empty_of full_of
   get_of set_of inter_of min_of remove_of symdiff_of union_of
-  singleton_of subset_of.
+  singleton_of subset_of pred_of succ_of.
 
 From mathcomp
 Require Import fintype finset.

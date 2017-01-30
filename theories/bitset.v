@@ -706,6 +706,19 @@ Global Instance keep_min_fin:  keep_min_of {set T}  :=
 
 End OpFin.
 
+(* For ordinals: *)
+
+Section OpOrds.
+
+Variable n: nat.
+
+Global Instance pred_fin:  pred_of {set 'I_n.+1}  := 
+  fun E => shlS E (inord 1).
+Global Instance succ_fin:  succ_of {set 'I_n.+1}  := 
+  fun E => shrS E (inord 1).
+
+End OpOrds.
+
 (* For bit vectors: *)
 
 Section OpB.
