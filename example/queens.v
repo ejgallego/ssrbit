@@ -68,7 +68,7 @@ Definition is_valid_row (b: board)(i j: 'I_n): bool :=
 
 Definition is_valid_asc_diag (b: board)(i j: 'I_n): bool := 
   [forall (x : 'I_n | x < i),
-      forall (y : 'I_n | (max i j - min i j == max x y - min x y)%N),
+      forall (y : 'I_n | (maxn i j - minn i j == maxn x y - minn x y)%N),
         ~~ b x y ].
 
 Definition is_valid_desc_diag (b: board)(i j: 'I_n): bool := 
@@ -117,8 +117,8 @@ Definition cols (p: Pos): {set 'I_n} :=
 Lemma curr_col_cols: forall p, Inv p ->
     (p.(p_curr_col) : nat) = (n - #| cols p |)%N.
 Proof.
-move=>[b i j] /=.
-rewrite /cols.
+case=> [b i j]; rewrite /inv /cols /=; case/and3P => h1 h2 h3.
+(* rewrite cardsE /=. *)
 Admitted.
 
 Definition asc_diag (p: Spec.Pos): {set 'I_n} :=
@@ -150,7 +150,6 @@ case arg_minP.
   move/and4P: H1=> /= [H11 H12 H13 H14].
   have H3: (x <= j)
     by apply H2; rewrite inE; apply/and3P; split.
-  
   apply /eqP.
   etransitivity.
   apply eqn_leq.
@@ -160,22 +159,18 @@ Qed.
 Definition init: Pos := Mk_pos' (\matrix_(i, j) false) ord0 ord0.
 
 Lemma inv_init: Inv init.
-Admitted.
-(*
-Next Obligation.
-apply/forallP=> x.
-by apply/implyP.
+apply/and3P; split.
+(* XXX: no is_valid_posP ?? *)
++ apply/and4P; split.
+  (* XXX: no is_valid_colP ?? *)
+  - by apply/forallP.
+  - by apply/'forall_implyP=> x hx; rewrite mxE.
+  - by apply/'forall_implyP=> x hx; apply/forallP=> y; rewrite mxE.
+  - by apply/'forall_implyP=> x hx; apply/forallP=> y; rewrite mxE.
+  (* A pity the lack of computation in forallP... *)
++ by apply/'forall_implyP=> x hx; apply/'exists_andP; exists ord0.
++ by apply/'forall_implyP=> x hx; apply/forallP=> y; rewrite mxE.
 Qed.
-Next Obligation.
-apply/forallP=> i.
-apply/implyP=> ?.
-apply/forallP=> j.
-by rewrite mxE.
-Qed.
-Next Obligation.
-Admitted. (* by def.*)
-*)
-
 
 Definition is_full (p: Pos): bool := #| cols p | == 0%N.
 
@@ -387,6 +382,16 @@ Admitted.
 
 Lemma next_with_cols: forall p, Inv p ->
     cols (next_valid_with_curr p) = cols p :\ p.(p_curr_col).
+Proof.
+(* XXX: The andP should go to a __P lemma *)
+move=> p hinv.
+have/inv_next_valid_with_curr/and3P[/and4P [hi11 hi12 hi13 hi14] hi2 hi3] := hinv.
+have/and3P[/and4P [h11 h12 h13 h14] h2 h3] := hinv.
+apply/setP=> c; rewrite !inE /=.
+(* EJGA: Not correct *)
+case: eqP => heq //=.
++ admit.
++ admit.
 Admitted.
    
 Lemma next_with_asc_diag: forall p, Inv p ->
@@ -434,7 +439,7 @@ Lemma next_without_asc_diag: forall p, Inv p ->
     asc_diag (next_valid_without_curr p) = asc_diag p.
 move=> [b i j] /and3P[Hv Hf Hb] //=.
 rewrite /next_valid_without_curr.
-by case pickP=> [col /and3P [Hcol1 Hcol2 Hcol3]|Hempty].
+by case: pickP=> [col /and3P [Hcol1 Hcol2 Hcol3]|Hempty].
 Qed.
 
 Lemma next_without_desc_diag: forall p, Inv p ->
@@ -447,20 +452,19 @@ Qed.
 Lemma next_without_valid_cols: forall p, Inv p ->
     valid_cols (next_valid_without_curr p) = valid_cols p :\ p.(p_curr_col).
 Proof.
-move=> [b i j] /and3P[Hv Hf Hb] //=.
+move=> [b i j] /and3P[Hv Hf Hb].
 rewrite /next_valid_without_curr.
 case pickP=> [col /and3P [Hcol1 Hcol2 Hcol3]|Hempty].
 - simpl in *.
-  rewrite /valid_cols.
-  apply setP.
-  move=> y.
-  rewrite !inE //=.
+  apply/setP=> y; rewrite !inE /=.
   apply/andP/and3P.
   + move=> [H1 H2].
-    have Hjy: j < y by admit. (* by H1 *)
+    have Hjy: j < y.
+      rewrite (leq_trans _ H1) //.
+      by case: arg_minP; rewrite ?Hcol2 ?Hcol3 // => k /andP[hk _].
     split=> //.
     * by rewrite neq_ltn Hjy orbT.
-    * by apply ltnW.
+    * by apply: ltnW.
   + move=> [H1 H2 Hval].
     split=> //.
     case arg_minP.
@@ -470,13 +474,17 @@ case pickP=> [col /and3P [Hcol1 Hcol2 Hcol3]|Hempty].
       rewrite ltn_neqAle; apply /andP; split=> //.
       apply/eqP=> H'.
       apply val_inj in H'.
-      rewrite H' //= in H1 .      
+      rewrite H' //= in H1 .
       move/eqP: H1.
-      by apply.
+      exact.
 - have H0: valid_cols {| p_board := b; p_curr_row := i; p_curr_col := j |} = set0.
+  simpl in *.
+  apply/setP=> c; rewrite !inE; apply/and3P; case=> [/= _ h1 /and4P /= [h2 h3 h4 h5]].
+  have := Hempty c; move/idP; apply.
+  rewrite /is_valid_pos h2 h3 h4 h5 !andbT.
   admit.
+  by rewrite H0 set0D.
 Admitted.
-
 
 Require Import Wellfounded.Lexicographic_Product.
 Import Relation_Operators.
@@ -610,6 +618,7 @@ Definition next_valid_without_curr := next_valid_without_curr {set 'I_n}.
 
 
 Lemma Pos_wf: well_founded Pos_order. 
+Proof.
 Admitted. (* XXX: TODO *)
 
 Lemma next_valid_with_curr_wf: forall p, Pos_order (next_valid_with_curr p) p.
