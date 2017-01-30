@@ -561,7 +561,7 @@ Definition full  : Bits := (0-1)%C.
 
 Definition inter bs bs' := bs && bs'.
 Definition union bs bs' := bs || bs'.
-Definition min   bs     := bs && ~ bs.
+Definition keep_min   bs     := bs && ~ bs.
 
 
 (* XXX: Order of arguments *)
@@ -579,7 +579,7 @@ Arguments empty {_}{_}.
 Arguments full {_}{_}{_}{_}.
 Arguments inter {_}{_} bs bs'.
 Arguments union {_}{_} bs bs'.
-Arguments min {_}{_}{_} bs.
+Arguments keep_min {_}{_}{_} bs.
 Arguments insert {_}{_}{_}{_}{_} k bs.
 Arguments remove {_}{_}{_}{_}{_}{_} bs k.
 Arguments symdiff {_}{_} bs1 bs2.
@@ -592,7 +592,7 @@ Parametricity full.
 Parametricity empty.
 Parametricity inter.
 Parametricity union.
-Parametricity min.
+Parametricity keep_min.
 Parametricity insert.
 Parametricity remove.
 Parametricity symdiff.
