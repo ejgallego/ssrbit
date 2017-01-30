@@ -44,6 +44,7 @@ Class get_of e fset := get_op   : e -> fset -> bool.
 Class set_of e fset := set_op   : e -> fset -> fset.
 Class inter_of fset := inter_op : fset -> fset -> fset.
 Class min_of e fset := min_op : fset -> e.
+Class keep_min_of fset := keep_min_op : fset -> fset.
 Class remove_of e fset := remove_op : fset -> e -> fset.
 Class symdiff_of fset := symdiff_op : fset -> fset -> fset.
 Class union_of fset := union_op : fset -> fset -> fset.

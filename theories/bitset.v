@@ -561,7 +561,7 @@ Definition full  : Bits := (0-1)%C.
 
 Definition inter bs bs' := bs && bs'.
 Definition union bs bs' := bs || bs'.
-Definition keep_min   bs     := bs && ~ bs.
+Definition keep_min bs  := bs && ~ bs.
 
 
 (* XXX: Order of arguments *)
@@ -633,6 +633,10 @@ Global Instance union_fin: union_of {set T} := @setU _.
 Global Instance symdiff_fin: symdiff_of {set T} := fun E E' => ((E :\: E') :|: (E' :\: E)).
 Global Instance subset_fin:  subset_of {set T}  := fun E E' => E \subset E'.
 
+Global Instance cardinal_fin:  cardinal_of nat {set T}  := fun E => #| E |.
+Global Instance keep_min_fin:  keep_min_of {set T}  := 
+  fun E => [set x in E | [forall (y | y \in E), enum_rank x <= enum_rank y]].
+
 End OpFin.
 
 (* For bit vectors: *)
@@ -654,5 +658,9 @@ Global Instance inter_B     : inter_of 'B_n          := inter.
 Global Instance union_B     : union_of 'B_n          := union.
 Global Instance symdiff_B   : symdiff_of 'B_n        := symdiff.
 Global Instance subset_B    : subset_of 'B_n         := subset.
+Global Instance cardinal_B  : cardinal_of nat 'B_n   := 
+  (fun x => nats (cardinal_smart x)).
+Global Instance keep_min_B  : keep_min_of 'B_n. Admitted.
+
 
 End OpB.
