@@ -5,7 +5,7 @@ Require Import choice fintype finset tuple ssralg zmodp matrix bigop mxalgebra.
 From CoqEAL
 Require Import hrel param refinements.
 
-Require Import bitseq bitword notation bits axioms bitocaml bitset.
+Require Import bitseq bitword notation bits bitocaml bitset.
 
 Import Refinements.Op.
 Import Logical.Op.
@@ -13,6 +13,12 @@ Import Sets.Op.
 
 (* Board size *)
 Definition n := 8. (* XXX: generalize to any [n > 0] *)
+
+Definition T := [finType of 'I_n].
+
+Module Fintype : FINTYPE with Definition T := T.
+  Definition T: finType := T.
+End Fintype.
 
 
 (*****************************************************************)
@@ -545,9 +551,8 @@ Context `{empty_of int}.
 Context `{full_of int}.
 Context `{keep_min_of int}.
 Context `{cardinal_of nat int}.
-
-Variable succ_op: int -> int. 
-Variable pred_op: int -> int. 
+Context `{succ_of int}.
+Context `{pred_of int}.
 
 Record Pos := Mk_pos { p_cols: int ; 
                        p_asc_diag: int;
@@ -602,30 +607,14 @@ Parametricity next_valid_without_curr.
 
 Module FSet <: POS.
 
-(*
-Axiom cardinal_op: cardinal_of nat 'W_n.
-Axiom eq_op: eq_of 'W_n.
-Axiom full_op: full_of 'W_n.
-Axiom empty_op: empty_of 'W_n.
-Axiom inter_op: inter_of 'W_n.
-Axiom union_op: union_of 'W_n.
-Axiom compl_op: compl_of 'W_n.
-Axiom keep_min_op: keep_min_of 'W_n.
-*)
-(* XXX: these should already be defined somewhere *)
-Axiom shlS : {set 'I_n} -> {set 'I_n}.
-Axiom shrS : {set 'I_n} -> {set 'I_n}.
-(* XXX: end *)
-
 Definition Pos := Pos {set 'I_n}.
 Definition Pos_order := Pos_order {set 'I_n}.
 
 Definition init := init {set 'I_n}.
 Definition is_full := is_full {set 'I_n}.
 Definition has_valid := has_valid {set 'I_n}.
-Definition next_valid_with_curr := next_valid_with_curr {set 'I_n} shrS shlS.
+Definition next_valid_with_curr := next_valid_with_curr {set 'I_n}.
 Definition next_valid_without_curr := next_valid_without_curr {set 'I_n}.
-
 
 
 Lemma Pos_wf: well_founded Pos_order. 
@@ -646,38 +635,26 @@ End FSet.
 (** This is the extraction-oriented definition. It is purely axiomatic
     and won't execute inside Coq. *)
 
-Module Native <: POS.
+Module R  := Make(Fintype).
+Module Native := R.Native.
 
-(* XXX: these should be defined *)
-Axiom cardinal_op: cardinal_of nat Int32.Int.
-Axiom eq_op: eq_of Int32.Int.
-Axiom full_op: full_of Int32.Int.
-Axiom empty_op: empty_of Int32.Int.
-Axiom inter_op: inter_of Int32.Int.
-Axiom union_op: union_of Int32.Int.
-Axiom compl_op: compl_of Int32.Int.
-Axiom keep_min_op: keep_min_of Int32.Int.
+Module NSet <: POS.
 
-Axiom succ : Int32.Int -> Int32.Int.
-Axiom pred : Int32.Int -> Int32.Int.
-(* XXX: end *)
+Definition Pos := Pos Native.Int.
+Definition Pos_order := Pos_order Native.Int.
 
-Definition Pos := Pos Int32.Int.
-Definition Pos_order := Pos_order Int32.Int.
+Definition init := init Native.Int.
+Definition is_full := is_full Native.Int.
+Definition has_valid := has_valid Native.Int.
+Definition next_valid_with_curr := next_valid_with_curr Native.Int.
+Definition next_valid_without_curr := next_valid_without_curr Native.Int.
 
+(* XXX: Follow from the refinements above. *)
+Axiom Pos_wf: well_founded Pos_order.
+Axiom next_valid_with_curr_wf: forall p, Pos_order (next_valid_with_curr p) p. 
+Axiom next_valid_without_curr_wf: forall p, Pos_order (next_valid_without_curr p) p.
 
-Definition init := init Int32.Int.
-Definition is_full := is_full Int32.Int.
-Definition has_valid := has_valid Int32.Int.
-Definition next_valid_with_curr := next_valid_with_curr Int32.Int succ pred.
-Definition next_valid_without_curr := next_valid_without_curr Int32.Int.
-
-(* Should follow from refinement of above. *)
-Lemma Pos_wf: well_founded Pos_order. Admitted.
-Lemma next_valid_with_curr_wf: forall p, Pos_order (next_valid_with_curr p) p. Admitted.
-Lemma next_valid_without_curr_wf: forall p, Pos_order (next_valid_without_curr p) p. Admitted.
-
-End Native.
+End NSet.
 
 (*********************************************************)
 (** ** Board refinement                                  *)
@@ -905,27 +882,27 @@ Admitted. (* TODO *)
 
 (** Composition of the previous refinements *)
 
-Definition RPos: Spec.Pos -> Native.Pos -> Type := Rspec \o Rword.
+Definition RPos: Spec.Pos -> NSet.Pos -> Type := Rspec \o Rword.
 
 
 Global Instance RPos_init: 
-  refines RPos Spec.init Native.init.
+  refines RPos Spec.init NSet.init.
 Proof. eapply refines_trans; tc. Qed.
 
 Global Instance RPos_is_full: 
-  refines (RPos ==> param.bool_R) Spec.is_full Native.is_full.
+  refines (RPos ==> param.bool_R) Spec.is_full NSet.is_full.
 Proof. eapply refines_trans; tc. Qed.
 
 Global Instance RPos_has_valid: 
-  refines (RPos ==> param.bool_R) Spec.has_valid Native.has_valid.
+  refines (RPos ==> param.bool_R) Spec.has_valid NSet.has_valid.
 Proof. eapply refines_trans; tc. Qed.
 
 Global Instance RPos_next_valid_with_curr: 
-  refines (RPos ==> RPos) Spec.next_valid_with_curr Native.next_valid_with_curr.
+  refines (RPos ==> RPos) Spec.next_valid_with_curr NSet.next_valid_with_curr.
 Proof. eapply refines_trans; tc. Qed.
 
 Global Instance RPos_next_valid_without_curr: 
-  refines (RPos ==> RPos) Spec.next_valid_without_curr Native.next_valid_without_curr.
+  refines (RPos ==> RPos) Spec.next_valid_without_curr NSet.next_valid_without_curr.
 Proof. eapply refines_trans; tc. Qed.
 
 Local Close Scope rel.
@@ -1014,7 +991,7 @@ Admitted. (* XXX *)
 (** ** Extraction                                        *)
 (*********************************************************)
 
-Module Run := Make Native.
+Module Run := Make NSet.
 
 (* XXX: drop the code to a file and check that it's efficient. *)
 (* XXX: write benchmark handler *)
