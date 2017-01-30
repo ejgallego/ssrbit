@@ -109,6 +109,14 @@ Global Instance inter_N     : inter_of Native.Int                := inter.
 Global Instance union_N     : union_of Native.Int                := union.
 Global Instance symdiff_N   : symdiff_of Native.Int              := symdiff.
 Global Instance subset_N    : subset_of Native.Int               := subset.
+Global Instance cardinal_N  : cardinal_of nat Native.Int.
+Admitted.
+Global Instance keep_min_N  : keep_min_of Native.Int.
+Admitted.
+Global Instance succ_N      : succ_of Native.Int.
+Admitted.
+Global Instance pred_N      : pred_of Native.Int.
+Admitted.
 
 (** ** Notations for bit sequences (of size #| T |) *)
 
