@@ -1,11 +1,16 @@
 From mathcomp
 Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq div.
+
 From mathcomp
 Require Import choice fintype finset tuple ssralg zmodp matrix bigop mxalgebra.
 From CoqEAL
 Require Import hrel param refinements.
 
 Require Import bitseq bitword notation bits bitocaml bitset.
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
 
 Import Refinements.Op.
 Import Logical.Op.
@@ -31,19 +36,20 @@ End Fintype.
 
 Module Type POS.
 
-Parameter Pos: Type.
+Parameter pos : Type.
 
-Parameter init: Pos.
-Parameter is_full: Pos -> bool.
-Parameter has_valid: Pos -> bool.
-Parameter next_valid_with_curr: Pos -> Pos.
-Parameter next_valid_without_curr: Pos -> Pos.
+Parameter initp  : pos.
+Parameter fullp  : pos -> bool.
+Parameter validp : pos -> bool.
+(* Next from actual position *)
+Parameter nextp  : pos -> pos.
+(* Alternative from actual position *)
+Parameter altp   : pos -> pos.
+Parameter le_pos : pos -> pos -> Prop.
 
-Parameter Pos_order: Pos -> Pos -> Prop.
-
-Axiom Pos_wf: well_founded Pos_order.
-Axiom next_valid_with_curr_wf: forall p, Pos_order (next_valid_with_curr p) p.
-Axiom next_valid_without_curr_wf: forall p, Pos_order (next_valid_without_curr p) p.
+Axiom le_pos_wf : well_founded le_pos.
+Axiom nextp_wf  : forall p, le_pos (nextp p) p.
+Axiom altp_wf   : forall p, le_pos (altp  p) p.
 
 End POS.
 
@@ -59,104 +65,129 @@ Module Spec <: POS.
 Local Open Scope ring_scope.
 
 Definition board := 'M[bool]_n.
+Definition rowt  := 'I_n.
+Definition colt  := 'I_n.
 
-Definition is_valid_col (b: board)(i j: 'I_n): bool :=
-  [forall (x : 'I_n | x < i), ~~ b x j].
+Implicit Types (b : board) (i : rowt) (j : colt).
 
-Definition is_valid_row (b: board)(i j: 'I_n): bool :=
-  [forall (y : 'I_n | y != j), ~~ b i y].
+Record pos' := mk_pos { p_board    :> board ;
+                        p_curr_row :  rowt  ;
+                        p_curr_col :  colt  ;
+                      }.
 
-Definition is_valid_asc_diag (b: board)(i j: 'I_n): bool := 
-  [forall (x : 'I_n | x < i),
-      forall (y : 'I_n | (maxn i j - minn i j == maxn x y - minn x y)%N),
-        ~~ b x y ].
+(* XXX: Why couldn't I directly declare [pos] as a [record]? *)
+Definition pos := pos'.
+Implicit Types (p : pos).
 
-Definition is_valid_desc_diag (b: board)(i j: 'I_n): bool := 
-  [forall (x : 'I_n | x < i),
-      forall (y : 'I_n | (i + j == x + y)%N),
-        ~~ b x y].
+Coercion to_board p : 'M_n := p_board p.
 
-Definition is_valid_pos (b: board)(i j: 'I_n): bool :=
-  [&& is_valid_col b i j
-   ,  is_valid_row b i j
-   ,  is_valid_asc_diag b i j
-   &  is_valid_desc_diag b i j ].
+(* EG: Improvements welcome *)
+Notation "p .'i" := (p_curr_row p)
+  (at level 2, left associativity, format "p .'i") : pair_scope.
 
-Definition is_full_below (b: board)(i: 'I_n): bool := 
-  [forall (x : 'I_n | x < i),
-      exists y, 
-        b x y && is_valid_pos b x y ].
+Notation "p .'j" := (p_curr_col p)
+  (at level 2, left associativity, format "p .'j") : pair_scope.
 
-Definition is_empty_above (b: board)(i: 'I_n): bool :=
-  [forall (x : 'I_n | x > i), forall j, ~~ b x j].
+(* Coercion to_pos p : (rowt * colt) := (p_curr_row p, p_curr_col p). *)
+
+Definition valC p :=
+  [forall (x : rowt | x < p.'i), ~~ p x p.'j].
+
+(* Valid row *)
+Definition valR p :=
+  [forall (y : colt | y != p.'j), ~~ p p.'i y].
+
+(* Valid ascending diagonal *)
+Definition valA p :=
+  [forall (x : rowt | x < p.'i),
+   forall (y : colt | (maxn p.'i p.'j - minn p.'i p.'j == maxn x y - minn x y)%N),
+   ~~ p x y ].
+
+(* Valid descending diagonal *)
+Definition valD p :=
+  [forall (x : rowt | x < p.'i),
+   forall (y : colt | (p.'i + p.'j == x + y)%N),
+   ~~ p x y].
+
+(* Valid position *)
+Definition valp p := [&& valC p, valR p, valA p & valD p].
+
+(* Update column *)
+Definition upC p j := mk_pos p p.'i j.
+
+(* Update row *)
+Definition upR p i := mk_pos p i p.'j.
+
+Definition full_below p :=
+  [forall (x : rowt | x < p.'i),
+   exists j, p x j && valp (upC p j) ].
+
+(* Lemma is_full_belowP b i j : *)
+(*   reflect (exists ) (is_full_below b i j) *)
+
+Definition empty_above p :=
+  [forall (x : rowt | x > p.'i), forall j, ~~ p x j].
+
+Definition Inv p :=
+  [&&
+   (* Current position is valid: *)
+     valp p
+   (* One valid queen on each row below [p_curr_row]: *)
+   , full_below p
+   (* No queen on any row above [p_curr_row]: *)
+   & empty_above p ].
 
 
-Record Pos' := Mk_pos' { p_board: board  ;
-                         p_curr_row: 'I_n ;
-                         p_curr_col: 'I_n ;
-                       }.
+Definition cols p :=
+  [set j in colt | valC (upC p j)].
 
-Definition Inv (p: Pos'): bool :=
-  [&& 
-     (* Current position is valid: *)
-     is_valid_pos p.(p_board) p.(p_curr_row) p.(p_curr_col) 
-   , (* One valid queen on each row below [p_curr_row]: *)
-      is_full_below p.(p_board) p.(p_curr_row)
-   & (* No queen on any row above [p_curr_row]: *)
-     is_empty_above p.(p_board) p.(p_curr_row) ].
-
-
-Definition Pos := Pos'. 
-(* XXX: Why couldn't I directly declare [Pos] as a [record]? *)
-
-Definition cols (p: Pos): {set 'I_n} :=
-  let b := p.(Spec.p_board) in
-  let i := p.(Spec.p_curr_row) in
-  [set j in 'I_n | is_valid_col b i j].
-
-Lemma curr_col_cols: forall p, Inv p ->
-    (p.(p_curr_col) : nat) = (n - #| cols p |)%N.
+Lemma pred_ord_nat (p : pred nat) k :
+  #|[pred x : 'I_k | p x] | = count p (iota 0 k).
 Proof.
-case=> [b i j]; rewrite /inv /cols /=; case/and3P => h1 h2 h3.
-(* rewrite cardsE /=. *)
-Admitted.
-
-Definition asc_diag (p: Spec.Pos): {set 'I_n} :=
-  let b := p.(Spec.p_board) in
-  let i := p.(Spec.p_curr_row) in
-  [set j in 'I_n | Spec.is_valid_asc_diag b i j ].
-
-Definition desc_diag (p: Spec.Pos): {set 'I_n} :=
-  let b := p.(Spec.p_board) in
-  let i := p.(Spec.p_curr_row) in
-  [set j in 'I_n | Spec.is_valid_desc_diag b i j ].
-
-Definition valid_cols (p: Pos): {set 'I_n} :=
-  let b := p.(p_board) in
-  let i := p.(p_curr_row) in
-  let j := p.(p_curr_col) in
-  [set y in 'I_n | (j <= y) && is_valid_pos b i y ].
-
-Lemma curr_col_valid: forall p, Inv p ->
-    p.(p_curr_col) = [arg min_(j' < p.(p_curr_col) | j' \in valid_cols p ) j' ]%N.
-Proof.
-move=> [b i j] /and3P [Hval_ij Hfull Hemp]; simpl in *.
-case arg_minP.
-- rewrite inE.
-  by apply/and3P; split.
-- rewrite /valid_cols.
-  move=> x H1 H2.
-  rewrite inE in H1.
-  move/and4P: H1=> /= [H11 H12 H13 H14].
-  have H3: (x <= j)
-    by apply H2; rewrite inE; apply/and3P; split.
-  apply /eqP.
-  etransitivity.
-  apply eqn_leq.
-    by apply/andP.
+rewrite cardE size_filter.
+have h_eq: [pred x : 'I_k | p x] =1 (preim val p) by [].
+by rewrite (eq_count h_eq) -count_map unlock val_ord_enum.
 Qed.
 
-Definition init: Pos := Mk_pos' (\matrix_(i, j) false) ord0 ord0.
+Lemma count_iota (i j n : nat) : count [pred x | x < j] (iota i n) = minn (j - i)%N n.
+Proof.
+elim: n i => [|n ihn] i /=; first by rewrite minn0.
+rewrite {}ihn subnS; case: ltnP; rewrite ?(add1n, add0n).
+  by case: j => // j hj; rewrite subSn ?minnSS.
+by rewrite -subn_eq0 => /eqP ->; rewrite !min0n.
+Qed.
+
+Lemma curr_col_cols p : Inv p -> p.'i = (n - #| cols p |)%N :> nat.
+Proof.
+rewrite /Inv /cols /=.
+case/and3P => /and4P [h11 h12 h13 h14].
+move/forallP=> h_full_below.
+move/forallP=> h_empty_above.
+simpl in *.
+(* rewrite cardsE /= eqnE. *)
+(* have U u : [forall (x : 'I_n | x < i), ~~ b x u] =  *)
+  admit.
+(* rewrite cardsE /= (eq_card U) (pred_ord_nat [pred x | x < j]). *)
+(* rewrite count_iota subn0. *)
+Admitted.
+
+Definition asc_diag   p := [set j in colt | valA (upC p j) ].
+
+Definition desc_diag  p := [set j in colt | valD (upC p j) ].
+
+Definition valid_cols p := [set y in colt | (p.'j <= y) && valp (upC p y) ].
+
+Lemma curr_col_valid  p : Inv p ->
+    p.'j = [arg min_(j' < p.'j | j' \in valid_cols p ) j' ]%N.
+Proof.
+case/and3P=> [Hval_ij Hfull Hemp]; simpl in *.
+case: arg_minP => [|x]; first by rewrite inE; apply/and3P.
+rewrite !inE; case/and4P=> [H11 H12 H13 H14] H2.
+have H3: (x <= p.'j) by apply H2; rewrite inE; apply/and3P.
+by apply/val_inj/eqP; rewrite /= eqn_leq H12.
+Qed.
+
+Definition init : pos := mk_pos (const_mx false) ord0 ord0.
 
 Lemma inv_init: Inv init.
 apply/and3P; split.
@@ -172,246 +203,95 @@ apply/and3P; split.
 + by apply/'forall_implyP=> x hx; apply/forallP=> y; rewrite mxE.
 Qed.
 
-Definition is_full (p: Pos): bool := #| cols p | == 0%N.
+Definition is_full   p := #| cols p | == 0%N.
+Definition has_valid p := #| valid_cols p | != 0%N.
 
-Definition has_valid (p: Pos): bool := 
-  (#| valid_cols p | != 0)%N.
+Definition next_row (i : 'I_n) : 'I_n := insubd ord_max i.+1.
 
-Definition next_rowN (n i: nat): nat :=
-  if i.+1 == n then i else i.+1.
+(* j is the column *)
+Definition update_board_nosimpl p j :=
+  mk_pos (\matrix_(x , y) ([&& x == p.'i & y == p.'j] || p x y)) (next_row p.'i) j.
 
-Lemma next_row_proof n (i : 'I_n): next_rowN n i < n.
-Proof.
-rewrite /next_rowN.
-case: ifP=> [/eqP -> | /eqP H ] //.
-case: ltngtP=> // [le_Si_n | eq_Si_n].
-- have le_i_n: (i.+1.-1 < n) 
-    by rewrite -pred_Sn; apply ltn_ord.
-  rewrite ltnNge in le_i_n.
-  by case/negP: le_i_n.
-- by rewrite -eq_Si_n in H.
-Qed.
+Definition update_board := nosimpl update_board_nosimpl.
 
-Definition next_row {n} (i : 'I_n) := Ordinal (next_row_proof n i).
+Lemma update_board_M p k (x y : 'I_n) :
+  (to_board (update_board p k)) x y = [&& x == p.'i & y == p.'j] || p x y.
+Proof. by rewrite mxE. Qed.
 
-(*
-Lemma le_incO {n}: forall (i: 'I_n) k,
-    i < incO k -> i < k \/ i = k.
-Proof.
-move=> i k. 
-Admitted.
+Lemma update_board_i p j : (update_board p j).'i = next_row p.'i.
+Proof. by []. Qed.
 
-Lemma incO_le {n}: forall (i k: 'I_n),
-    incO k < i -> k < i.
-Admitted.
+Lemma update_board_j p j : (update_board p j).'j = j.
+Proof. by []. Qed.
 
-Lemma incO_in {n}: forall(k: 'I_n.+1),
-    k <> ord_max -> incO k <> k.
-Admitted.
-*)
+Lemma upC_update_board p j j' : upC (update_board p j) j' = update_board p j'.
+Proof. by []. Qed.
 
-Definition next_valid_with_curr (p: Pos): Pos :=
-  let b := p.(p_board) in
-  let i := p.(p_curr_row) in
-  let j := p.(p_curr_col) in
-  let b := \matrix_(x , y) 
-            if (x == i) && (y == j) then true
-            else  b x y in
-  let 'row := next_row i in
-  match [pick col in 'I_n | is_valid_pos b row col ] with
-  | Some col => 
-    let 'col := [arg min_(j' < col | is_valid_pos b row j' ) j' ]%N in
-    Mk_pos' b row col
-  | None => p
+Definition compute_pos p : option pos :=
+  match [pick col in 'I_n | valp (update_board p col) ] with
+  | None     => None
+  | Some col => Some (update_board p col)
   end.
 
+(* Main next position *)
+Definition nextp p :=
+  match compute_pos p with
+  | None    => p
+  | Some p' => p'
+  end.
 
-Lemma inv_next_valid_with_curr: forall p, Inv p -> Inv (next_valid_with_curr p).
+CoInductive nextp_spec p : pos -> Prop :=
+ | NVC_Same   : (forall j, ~ valp (update_board p j)) ->
+                nextp_spec p p
+ | NVC_Update : forall j,    valp (update_board p j) ->
+                nextp_spec p (update_board p j)
+ .
 
-(*
-Next Obligation.
-(*
-apply/forallP=> i.
-apply/implyP=> Hi.
-have {Hi} [Hle | Heq]: (i < p.(p_curr_row) \/ i = p.(p_curr_row))
-  by apply: le_incO.
-
-- have H: (\sum_(j < n)
-            (row i
-              (\matrix_(i0, j0) p.(p_board) i0 j0)) ord0 j == 1)%N.
-  {
-    destruct p as [ ? ? ? ? He ?]. simpl in *.
-    move: He=> /forallP /(_ i).
-    move/implyP=> /(_ Hle).
-    move=> H.
-    erewrite eq_bigr.
-    apply: H=> //. move=> i' _.
-    by rewrite !mxE.
-  }
-
-  erewrite eq_bigr; first by apply H.
-  move=> i' _ /=.
-  rewrite !mxE.
-  case: ifP=> // /andP [/eqP H1 H2].
-  by rewrite H1 ltnn in Hle.
-- rewrite Heq. 
-  have H1: (\sum_(j < n)
-            (\row_j0 
-              (if (j0 == p_curr_col p) then true
-               else false)) ord0 j == 1)%N.
-  {
-    admit. (* by def. *)
-  }
-  have H2: (\sum_(j < n)
-            (\row_j0 
-              (if (j0 == p_curr_col p) then true
-               else p.(p_board) (p_curr_row p) j0)) ord0 j == 1)%N.
-  {
-    erewrite eq_bigr; first by apply H1.
-    move=> j _ /=.
-    rewrite !mxE.
-    case: ifP=> // _.
-    destruct p as [? ? ? ? ? ? Hcurr_row]. simpl in *.
-    rewrite - Heq_anonymous0 in Hcurr_row.
-    admit. (* by the sum on row [p_curr_row0] being [0] *)
-  }
-  erewrite eq_bigr; first by apply H2.
-  move=> j _ //=.
-  rewrite !mxE eq_refl /=.
-  by case: ifP.
-*)
-Admitted.
-Next Obligation.
-(*
-apply/forallP=> i.
-apply/implyP=> Hi.
-apply/forallP=> j.
-rewrite mxE.
-have -> /=:((i == p_curr_row p) = false).
-{
-  apply incO_le in Hi.
-  rewrite ltn_neqAle in Hi.
-  move/andP: Hi=> [/eqP Hi _].
-  apply/eqP=> Heq.
-  apply Hi.
-  by rewrite Heq.
-}
-destruct p as [b curr_i curr_j finished Hin Hex Hlast].
-simpl in *.
-move/forallP: Hex => /(_ i).
-have Hcurr_i: curr_i < i.
-{
-  rewrite /inc_bounded in Hi.
-  destruct (curr_i.+1 == n) eqn:Hc=> //.
-  by apply ltnW.
-}
-move/implyP=> /(_ Hcurr_i).
-by move/forallP=> /(_ j).
-Qed.*)
-Admitted.
-Next Obligation.
-(*
-case (eqP (x := p.(p_curr_row))(y := ord_max))=> [Heq | Hneq].
-- (* p_curr_row p = ord_max *)
-  rewrite Heq.
-  have -> : (incO ord_max = ord_max) by admit. (* def. *)
-  have H0: forall j, ~~ p.(p_board) ord_max j.
-  {
-    destruct p as [b curr_i curr_j finished Hin Hex Hlast]; simpl in *.
-    rewrite -Heq_anonymous0 Heq in Hlast.
-    admit. (* by [Hlast] sums to [0] *)
-  }
-  
-  have H1: (\sum_(j < n)
-              (\row_j0 
-                (if (j0 == p_curr_col p) then true
-                 else false)) ord0 j == 1)%N.
-  { 
-    admit. (* by rearranging the sum *)
-  }
-
-  have H2: (\sum_(j < n)
-              (\row_j0 
-                (if (j0 == p_curr_col p) then true
-                 else p.(p_board) ord_max j0)) ord0 j == 1)%N.
-  {
-    erewrite eq_bigr; first by apply H1.
-    move=> j ? /=.
-    rewrite !mxE.
-    case eqP=> // ?.
-    by move: H0=> /(_ j) /negPf ->.
-  }
-
-  erewrite eq_bigr; first by apply H2.
-  move=> j ? /=.
-  by rewrite !mxE eq_refl.
-
-- (* p_curr_row p <> ord_max *)
-  have Hinc: incO (p_curr_row p) != p_curr_row p
-    by apply/eqP; apply incO_in.
-
-  have H0: forall j, ~~ p.(p_board) (incO (p_curr_row p)) j.
-  {
-    move=> j.
-    destruct p as [b curr_i curr_j finished Hin Hex Hlast]; simpl in *.
-    move/forallP: Hex=> /(_ (incO curr_i)).
-    have Hcurr_i: (curr_i < incO curr_i).
-    {
-      admit. (* by def. of [incO] on [curr_i < ord_max] *)
-    }
-    move/implyP=> /(_ Hcurr_i).
-    by move/forallP=> /(_ j).
-  }
-
-  have H1: (\sum_(j < n)
-             (\row_j0 p.(p_board) (incO (p_curr_row p)) j0) ord0 j)%N == false.
-  { 
-    admit. (* by H0 *) 
-  }
-
-  erewrite eq_bigr; first by apply H1.
-  move=> i ? /=.
-  rewrite !mxE.
-  apply (congr1 nat_of_bool).
-  erewrite Bool.andb_if.
-  by etransitivity; first by apply ifN_eq.
-*)
-Admitted.
-*)
-Admitted.
-
-Lemma next_with_cols: forall p, Inv p ->
-    cols (next_valid_with_curr p) = cols p :\ p.(p_curr_col).
+Lemma nextpP p : nextp_spec p (nextp p).
 Proof.
-(* XXX: The andP should go to a __P lemma *)
-move=> p hinv.
-have/inv_next_valid_with_curr/and3P[/and4P [hi11 hi12 hi13 hi14] hi2 hi3] := hinv.
-have/and3P[/and4P [h11 h12 h13 h14] h2 h3] := hinv.
-apply/setP=> c; rewrite !inE /=.
-(* EJGA: Not correct *)
-case: eqP => heq //=.
+rewrite /nextp /compute_pos; case: pickP => [w /andP [hw1 hw2] |hwN].
+  by constructor 2.
+by constructor 1 => j hj; have/negP := hwN j.
+Qed.
+
+Lemma inv_next_valid_with_curr p : Inv p -> Inv (nextp p).
+Proof.
+case: nextpP => // j hj /and3P[hi1 hi2 hi3]; apply/and3P; split => //.
++ rewrite /full_below update_board_i; apply/'forall_implyP=> i hi.
+  apply/'exists_andP; exists p.'j; split.
+  - rewrite update_board_M. admit.
+  - rewrite upC_update_board. admit.
+Admitted.
+
+Lemma next_with_cols p (hinv : Inv p) : cols (nextp p) = cols p :\ p.'j.
+Proof.
+case: nextpP => //= [H|j H].
 + admit.
-+ admit.
++ rewrite /cols; apply/setP=> j0; rewrite !inE /=.
+  rewrite upC_update_board.
+  case: eqP => [->|] //=.
 Admitted.
-   
-Lemma next_with_asc_diag: forall p, Inv p ->
+
+Lemma next_with_asc_diag p : Inv p ->
+    p.'i < n ->
+    asc_diag (nextp p) = shrS (p.'j |: asc_diag p) (inord 1).
+Admitted.
+
+Lemma next_with_desc_diag p : Inv p ->
     p.(p_curr_row) < n ->
-    asc_diag (next_valid_with_curr p) = shrS (p.(p_curr_col) |: asc_diag p) (inord 1).
+    desc_diag (nextp p) = shlS (p.'j |: desc_diag p) (inord 1).
 Admitted.
 
-Lemma next_with_desc_diag: forall p, Inv p ->
-    p.(p_curr_row) < n ->
-    desc_diag (next_valid_with_curr p) = shlS (p.(p_curr_col) |: desc_diag p) (inord 1).
+Lemma next_with_valid_cols' p :
+    valid_cols (nextp p) = valid_cols p :\ p.'j.
 Admitted.
 
-Lemma next_with_valid_cols': forall p,
-    valid_cols (next_valid_with_curr p) = valid_cols p :\ p.(p_curr_col).
-Admitted.
-
-Lemma next_with_valid_cols: forall p p', Inv p ->
-    p' = next_valid_with_curr p ->
+Lemma next_with_valid_cols p p' : Inv p ->
+    p' = nextp p ->
     valid_cols p' = cols p' :&: ~: (asc_diag p' :|: desc_diag p').
 Admitted.
+
+(*********** Emilio ***********)
 
 Definition next_valid_without_curr (p: Pos): Pos :=
   let b := p.(p_board) in
@@ -743,6 +623,7 @@ Global Instance Rspec_next_valid_with_curr:
 Proof.
 rewrite refinesE.
 move=> x y [Hinv Hcols Hasc_diag Hdesc_diag Hvalid].
+(* XXX: Emilio fix this !! *)
 have Hspec_curr: [set Spec.p_curr_col x] = keep_min_op (p_valid y) 
   by admit. (* XXX: Need good spec for [keep_min_op] *)
 split=> //=;
@@ -826,6 +707,9 @@ Proof. param next_valid_without_curr_R.
 - admit. (* XXX: refinement for [keep_min] *)
 Admitted. 
 
+(*********** Emilio ***********)
+
+
 (*************************************************)
 (** *** Abstract [->] Native  refinement         *)
 (*************************************************)
@@ -874,7 +758,10 @@ Variable next_valid_without_curr: Pos -> Pos.
 
 Variable Pos_order: Pos -> Pos -> Prop.
 Variable Pos_wf: well_founded Pos_order.
-Variable next_valid_with_curr_wf: forall p, Pos_order (next_valid_with_curr p) p.
+
+Hypothesis Pos_wfP : forall (P1 P2 : well_founded Pos_order), P1 = P2.
+
+Variable next_valid_with_curr_wf   : forall p, Pos_order (next_valid_with_curr p) p.
 Variable next_valid_without_curr_wf: forall p, Pos_order (next_valid_without_curr p) p.
 
 Definition nqueens_loop: Pos -> nat ->  nat * Pos.
