@@ -591,7 +591,9 @@ Arguments p_desc_diag [_] p.
 Arguments p_valid [_] p.
 
 Parametricity Pos.
-(* Parametricity Pos_order. *)
+Parametricity Coq.Init.Logic.and.
+Parametricity Coq.Init.Logic.or.
+Parametricity Pos_order.
 Parametricity init.
 Parametricity is_full.
 Parametricity has_valid.
@@ -953,12 +955,20 @@ have Href_eq: refines Logic.eq Prove.nqueens Run.nqueens.
 {
   apply refines_nat_eq.
   rewrite refinesE.
-  try apply nqueens_R with (Pos_R := RPos).
-  (* XXX: this smells bad.. *)
-  admit.
+  apply: nqueens_R.
+  - apply RPos_init.
+  - intros. eapply refinesP.
+    eapply refines_apply; eauto.
+    apply RPos_is_full.
+  - intros. eapply refinesP.
+    eapply refines_apply; eauto.
+    apply RPos_has_valid.
+  - admit. (* XXX: would like this to go away *)
+  - admit. (* XXX: would like this to go away *)
+  - admit. (* XXX: would like this to go away *)
 }
 by rewrite refinesE in Href_eq.
-Admitted. (* XXX: complete missing instances *)
+Admitted.
 
 Lemma correctness: Run.nqueens = #| solutions |.
 Proof. by rewrite <- correctness_spec, eq_nqueens. Qed.
