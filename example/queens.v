@@ -117,7 +117,7 @@ Definition cols (p: Pos): {set 'I_n} :=
 Lemma curr_col_cols: forall p, Inv p ->
     (p.(p_curr_col) : nat) = (n - #| cols p |)%N.
 Proof.
-case=> [b i j]; rewrite /inv /cols /=; case/and3P => h1 h2 h3.
+case=> [b i j]; rewrite /Inv /cols /=; case/and3P => h1 h2 h3.
 (* rewrite cardsE /=. *)
 Admitted.
 
