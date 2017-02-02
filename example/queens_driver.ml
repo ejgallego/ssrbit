@@ -1,9 +1,5 @@
 open Queens
 
-
-let rec nat_of_int i =
-  if i = 0 then O else S (nat_of_int (i-1))
-
 let solutions =
   (* counting from 1 *)
   [| 1 ; 0 ; 0 ; 2 ; 10 ; 4 ; 40 ; 92 ; 352 ; 724 ; 
@@ -23,6 +19,6 @@ let _ =
     let time = Sys.time() in
     let module Q = Extractor((M)) in
     Printf.printf "%d queens: %f s.\n%!" i (Sys.time() -. time);
-    let solution = Q.machine_of_nat Q.nqueens in
+    let solution = int_of_nat Q.nqueens in
     assert (solutions.(i-1) = solution)
   done

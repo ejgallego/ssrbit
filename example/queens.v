@@ -968,7 +968,7 @@ Module Extractor (B: BOARDSIZE).
 Import B.
 
 Module Wordsize.
-  Definition wordsize := 31.
+  Definition wordsize := n.
 End Wordsize.
 
 Module Nat := axioms.MakeOps(Wordsize).
@@ -978,12 +978,12 @@ Record Pos := Mk_pos { p_cols      : Nat.Int ;
                        p_desc_diag : Nat.Int ;
                        p_valid     : Nat.Int }.
 
+(* XXX: Careful, this overflows very quickly! *)
 Fixpoint machine_of_nat' (n: nat)(acc: Nat.Int) :=
   match n with
   | 0 => acc
   | S n => machine_of_nat' n (Nat.add Nat.one acc)
   end.
-
 Definition machine_of_nat (n: nat) := machine_of_nat' n Nat.zero. 
 
 Definition machine_n := machine_of_nat n.
@@ -1027,4 +1027,5 @@ Definition nqueens := nqueens_loop init 0.
 
 End Extractor.
 
-Extraction "queens.ml" Extractor.
+Require Import ExtrOcamlIntConv.
+Extraction "queens.ml" int_of_nat nat_of_int Extractor.
