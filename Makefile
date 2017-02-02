@@ -43,4 +43,5 @@ clean: Makefile.coq
 	$(MAKE) -f Makefile.coq clean
 	$(OCB) -clean
 	rm -rf Makefile.coq extraction/test_* extraction/STAMP \
-	       example/QUEENS example/queens.ml*
+	       example/QUEENS example/queens.ml* \
+               example/bloom.ml*
