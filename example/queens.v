@@ -83,14 +83,11 @@ End POS.
 (*****************************************************************)
 
 (* Board size *)
-Definition n := 8. (* XXX: generalize to any [n > 0] *)
 
-Definition T := [finType of 'I_n].
-
-Module Fintype : FINTYPE with Definition T := T.
-  Definition T: finType := T.
-End Fintype.
-
+Module Type BOARDSIZE.
+  Variable sizep : nat.
+  Definition n := sizep.+1.
+End BOARDSIZE.
 
 (*********************************************************)
 (** ** Board specification                               *)
@@ -99,9 +96,11 @@ End Fintype.
 (** This is the proof-oriented and computationally inert specification
 of the board position. *)
 
-Module Spec <: POS.
+Module Spec (B: BOARDSIZE) <: POS.
 
 Local Open Scope ring_scope.
+
+Import B.
 
 Definition board := 'M[bool]_n.
 
@@ -604,7 +603,9 @@ Parametricity next_valid_without_curr.
 (** This implementation models the behavior of the machine
     representation. It is proof-oriented. *)
 
-Module FSet <: POS.
+Module FSet (B: BOARDSIZE) <: POS.
+
+Import B.
 
 Definition Pos := Pos {set 'I_n}.
 
@@ -623,10 +624,18 @@ End FSet.
 (** This is the extraction-oriented definition. It is purely axiomatic
     and won't execute inside Coq. *)
 
+Module NSet (B: BOARDSIZE) <: POS.
+
+Import B.
+
+Definition T := [finType of 'I_n].
+
+Module Fintype : FINTYPE with Definition T := T.
+  Definition T: finType := T.
+End Fintype.
+
 Module R  := Make(Fintype).
 Module Native := R.Native.
-
-Module NSet <: POS.
 
 Definition Pos := Pos Native.Int.
 
@@ -649,6 +658,13 @@ Local Open Scope rel.
 (*************************************************)
 
 (** From the abstract board to the machine board *)
+
+Module Refinement (B: BOARDSIZE).
+
+Module Spec := Spec B.
+Module FSet := FSet B.
+Module NSet := NSet B.
+Import B.
 
 Local Open Scope ring_scope.
 
@@ -779,7 +795,7 @@ Admitted.
 (** From the specification of machine words to native integers. *)
 
 Definition Rword (wp: FSet.Pos)(np: NSet.Pos): Type
-  := Pos_R _ _ R.Rbitset wp np.
+  := Pos_R _ _ NSet.R.Rbitset wp np.
 
 Global Instance Rword_init: 
   refines Rword FSet.init NSet.init.
@@ -838,10 +854,11 @@ Proof. eapply refines_trans; tc. Qed.
 
 Local Close Scope rel.
 
+End Refinement.
+
 (*****************************************************************)
 (** * n-queens positions                                         *)
 (*****************************************************************)
-
 
 Section Queen_generic.
 
@@ -874,20 +891,28 @@ End Queen_generic.
 Parametricity nqueens_loop.
 Parametricity nqueens.
 
-Module Make (P: POS).
+Module MakeQueens (P: POS).
 
 Definition nqueens 
   := nqueens P.Pos 
              P.init P.is_full P.has_valid 
              P.next_valid_with_curr P.next_valid_without_curr.
 
-End Make.
+End MakeQueens.
 
 (*********************************************************)
 (** ** Correctness                                       *)
 (*********************************************************)
 
-Module Prove := Make Spec.
+Module Correctness (B: BOARDSIZE).
+
+Module Refinement := Refinement B.
+Import Refinement.
+
+Module Prove := MakeQueens Spec.
+Module Run := MakeQueens NSet.
+
+Import B.
 
 Definition valid_board (b: Spec.board): bool :=
   [forall x, exists y, b x y && Spec.is_valid_pos b x y ].
@@ -900,8 +925,6 @@ Admitted. (* XXX *)
 (*********************************************************)
 (** ** Extraction                                        *)
 (*********************************************************)
-
-Module Run := Make NSet.
 
 (* XXX: drop the code to a file and check that it's efficient. *)
 (* XXX: write benchmark handler *)
@@ -938,3 +961,5 @@ Qed.
 
 Lemma correctness: Run.nqueens = #| solutions |.
 Proof. by rewrite <- correctness_spec, eq_nqueens. Qed.
+
+End Correctness.
