@@ -11,15 +11,51 @@ Import Refinements.Op.
 Import Logical.Op.
 Import Sets.Op.
 
-(* Board size *)
-Definition n := 8. (* XXX: generalize to any [n > 0] *)
 
-Definition T := [finType of 'I_n].
 
-Module Fintype : FINTYPE with Definition T := T.
-  Definition T: finType := T.
-End Fintype.
+(*****************************************************************)
+(** * General recursion axiom                                    *)
+(*****************************************************************)
 
+(** Parametrically justifying the termination of the algorithm is
+    tricky, to say the least. To side-step this issue, we axiomatize a
+    general fixpoint. Needless to say, if used carelessly (ie. in
+    proofs), this axiom breaks the consistency of the logic. We can
+    use [Print Assumptions proof.] to check that proofs do not depend
+    on it.  *)
+
+Section GenRec.
+
+Variable A B: Type.
+
+Axiom order : A -> A -> Prop.
+Axiom order_wf: well_founded order.
+Axiom gen_rec: forall a1 a2, order a1 a2.
+
+Definition ffix (rec: A -> (A -> B) -> B): A -> B.
+simple refine (Fix order_wf (fun a => B)
+              (fun a loop  => rec a (fun a => loop a _)));
+  auto using gen_rec.
+Defined.
+
+End GenRec.
+
+Axiom ffix_rel: 
+  forall (A₁ A₂ : Type)(A_R : A₁ -> A₂ -> Type) 
+         (B₁ B₂ : Type)(B_R : B₁ -> B₂ -> Type) 
+         (rec₁ : A₁ -> (A₁ -> B₁) -> B₁)
+         (rec₂ : A₂ -> (A₂ -> B₂) -> B₂),
+    (forall (H : A₁) (H0 : A₂),
+        A_R H H0 ->
+        forall (H1 : A₁ -> B₁) 
+               (H2 : A₂ -> B₂),
+          (forall (H3 : A₁) (H4 : A₂), A_R H3 H4 -> B_R (H1 H3) (H2 H4)) ->
+          B_R (rec₁ H H1) (rec₂ H0 H2)) ->
+    forall (H : A₁) (H0 : A₂), A_R H H0 -> B_R (ffix A₁ B₁ rec₁ H) (ffix A₂ B₂ rec₂ H0).
+
+Realizer ffix as ffix_R := ffix_rel.
+
+Arguments ffix [_][_] rec a.
 
 (*****************************************************************)
 (** * n-queens positions                                         *)
@@ -39,13 +75,22 @@ Parameter has_valid: Pos -> bool.
 Parameter next_valid_with_curr: Pos -> Pos.
 Parameter next_valid_without_curr: Pos -> Pos.
 
-Parameter Pos_order: Pos -> Pos -> Prop.
-
-Axiom Pos_wf: well_founded Pos_order.
-Axiom next_valid_with_curr_wf: forall p, Pos_order (next_valid_with_curr p) p.
-Axiom next_valid_without_curr_wf: forall p, Pos_order (next_valid_without_curr p) p.
-
 End POS.
+
+
+(*****************************************************************)
+(** * n-queens board size                                        *)
+(*****************************************************************)
+
+(* Board size *)
+Definition n := 8. (* XXX: generalize to any [n > 0] *)
+
+Definition T := [finType of 'I_n].
+
+Module Fintype : FINTYPE with Definition T := T.
+  Definition T: finType := T.
+End Fintype.
+
 
 (*********************************************************)
 (** ** Board specification                               *)
@@ -486,6 +531,7 @@ case pickP=> [col /and3P [Hcol1 Hcol2 Hcol3]|Hempty].
   by rewrite H0 set0D.
 Admitted.
 
+(*
 Require Import Wellfounded.Lexicographic_Product.
 Import Relation_Operators.
 
@@ -511,7 +557,7 @@ Admitted. (* XXX: define *)
 Admitted. (* XXX: prove *)
 Lemma next_valid_without_curr_wf: forall p, Pos_order (next_valid_without_curr p) p.
 Admitted. (* XXX: prove *)
-
+*)
 (*
 Lemma lt_wf: well_founded lt.
 Proof.
@@ -559,11 +605,6 @@ Record Pos := Mk_pos { p_cols: int ;
                        p_desc_diag: int;
                        p_valid: int }.
 
-Definition Pos_order (p1 p2: Pos): Prop :=
-    (cardinal_op p1.(p_cols) < cardinal_op p2.(p_cols))
-  \/ (  cardinal_op p1.(p_cols) = cardinal_op p2.(p_cols)
-     /\ cardinal_op p1.(p_valid) < cardinal_op p2.(p_valid)).
-
 Definition init := Mk_pos full_op full_op full_op full_op.
 Definition is_full p := eq_op p.(p_cols) empty_op.
 Definition has_valid p := negb (eq_op p.(p_valid) empty_op).
@@ -581,6 +622,12 @@ Definition next_valid_without_curr p :=
   let valid := (p.(p_valid) :&: (compl_op d))%C in
   Mk_pos p.(p_cols) p.(p_asc_diag) p.(p_desc_diag) valid.
 
+(*
+Definition Pos_order (p1 p2: Pos): Prop :=
+    (cardinal_op p1.(p_cols) < cardinal_op p2.(p_cols))
+  \/ (  cardinal_op p1.(p_cols) = cardinal_op p2.(p_cols)
+     /\ cardinal_op p1.(p_valid) < cardinal_op p2.(p_valid)).
+*)
 
 End Machine.
 
@@ -591,9 +638,6 @@ Arguments p_desc_diag [_] p.
 Arguments p_valid [_] p.
 
 Parametricity Pos.
-Parametricity Coq.Init.Logic.and.
-Parametricity Coq.Init.Logic.or.
-Parametricity Pos_order.
 Parametricity init.
 Parametricity is_full.
 Parametricity has_valid.
@@ -610,7 +654,6 @@ Parametricity next_valid_without_curr.
 Module FSet <: POS.
 
 Definition Pos := Pos {set 'I_n}.
-Definition Pos_order := Pos_order {set 'I_n}.
 
 Definition init := init {set 'I_n}.
 Definition is_full := is_full {set 'I_n}.
@@ -618,6 +661,8 @@ Definition has_valid := has_valid {set 'I_n}.
 Definition next_valid_with_curr := next_valid_with_curr {set 'I_n}.
 Definition next_valid_without_curr := next_valid_without_curr {set 'I_n}.
 
+(*
+Definition Pos_order := Pos_order {set 'I_n}.
 
 Lemma Pos_wf: well_founded Pos_order. 
 Proof.
@@ -628,6 +673,7 @@ Admitted. (* XXX: TODO *)
 
 Lemma next_valid_without_curr_wf: forall p, Pos_order (next_valid_without_curr p) p.
 Admitted. (* XXX: TODO *)
+*)
 
 End FSet.
 
@@ -644,18 +690,12 @@ Module Native := R.Native.
 Module NSet <: POS.
 
 Definition Pos := Pos Native.Int.
-Definition Pos_order := Pos_order Native.Int.
 
 Definition init := init Native.Int.
 Definition is_full := is_full Native.Int.
 Definition has_valid := has_valid Native.Int.
 Definition next_valid_with_curr := next_valid_with_curr Native.Int.
 Definition next_valid_without_curr := next_valid_without_curr Native.Int.
-
-(* XXX: Follow from the refinements above. *)
-Axiom Pos_wf: well_founded Pos_order.
-Axiom next_valid_with_curr_wf: forall p, Pos_order (next_valid_with_curr p) p. 
-Axiom next_valid_without_curr_wf: forall p, Pos_order (next_valid_without_curr p) p.
 
 End NSet.
 
@@ -874,43 +914,24 @@ Variable has_valid: Pos -> bool.
 Variable next_valid_with_curr: Pos -> Pos.
 Variable next_valid_without_curr: Pos -> Pos.
 
-Variable Pos_order: Pos -> Pos -> Prop.
-Variable Pos_wf: well_founded Pos_order.
-Variable next_valid_with_curr_wf: forall p, Pos_order (next_valid_with_curr p) p.
-Variable next_valid_without_curr_wf: forall p, Pos_order (next_valid_without_curr p) p.
+Definition nqueens_loop: Pos -> nat ->  nat :=
+  ffix (fun p nqueens_loop score  =>
+          match has_valid p with
+          | false => score 
+          | true => 
+            let score' := 
+                let p' := next_valid_with_curr p in
+                if is_full p' then S score
+                else nqueens_loop p' score            
+            in
+            let p' := next_valid_without_curr p in
+            nqueens_loop p' score'
+          end).
 
-Definition nqueens_loop: Pos -> nat ->  nat * Pos.
-simple
-  refine (Fix Pos_wf (fun pos => nat -> nat * Pos) 
-              (fun p nqueens_loop score  =>
-    (match has_valid p as b
-           return b = has_valid p -> nat * Pos with
-    | false => fun _ => (score, p) 
-    | true => fun His_not_full => 
-      let rec_result := 
-          if is_full p then
-            1%nat
-          else
-            let p' := next_valid_with_curr p in
-            let (score' , _) := nqueens_loop p' _ score in
-            score'
-      in
-      let score' := (score + rec_result)%N in
-      let p' := next_valid_without_curr p in
-      let total := nqueens_loop p' _ score' in
-      total
-     end) (Logic.eq_refl _))); 
-  eauto using next_valid_with_curr_wf, next_valid_without_curr_wf.
-Defined.
-
-
-Definition nqueens :=
-  let (res , _) := nqueens_loop init 1 in
-  res.
+Definition nqueens := nqueens_loop init 0.
 
 End Queen_generic.
 
-Parametricity Acc.
 Parametricity nqueens_loop.
 Parametricity nqueens.
 
@@ -919,9 +940,7 @@ Module Make (P: POS).
 Definition nqueens 
   := nqueens P.Pos 
              P.init P.is_full P.has_valid 
-             P.next_valid_with_curr P.next_valid_without_curr
-             P.Pos_order P.Pos_wf
-             P.next_valid_with_curr_wf P.next_valid_without_curr_wf.
+             P.next_valid_with_curr P.next_valid_without_curr.
 
 End Make.
 
@@ -954,21 +973,29 @@ Proof.
 have Href_eq: refines Logic.eq Prove.nqueens Run.nqueens.
 {
   apply refines_nat_eq.
-  rewrite refinesE.
+  rewrite !refinesE.
   apply: nqueens_R.
-  - apply RPos_init.
+  - intros. eapply refinesP.
+    apply RPos_init.
   - intros. eapply refinesP.
     eapply refines_apply; eauto.
-    apply RPos_is_full.
+    apply RPos_is_full. 
+    rewrite refinesE. auto.
   - intros. eapply refinesP.
     eapply refines_apply; eauto.
     apply RPos_has_valid.
-  - admit. (* XXX: would like this to go away *)
-  - admit. (* XXX: would like this to go away *)
-  - admit. (* XXX: would like this to go away *)
+    rewrite refinesE. auto.
+  - intros. eapply refinesP.
+    eapply refines_apply; eauto.
+    apply RPos_next_valid_with_curr.
+    rewrite refinesE; auto.
+  - intros. eapply refinesP.
+    eapply refines_apply; eauto.
+    apply RPos_next_valid_without_curr.
+    rewrite refinesE; auto.
 }
 by rewrite refinesE in Href_eq.
-Admitted.
+Qed.
 
 Lemma correctness: Run.nqueens = #| solutions |.
 Proof. by rewrite <- correctness_spec, eq_nqueens. Qed.
