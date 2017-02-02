@@ -115,8 +115,13 @@ Definition valp p := [&& valC p, valR p, valA p & valD p].
 (* Update column *)
 Definition upC p j := mk_pos p p.'i j.
 
+Definition upC_id p : upC p p.'j = p.
+Proof. by case: p. Qed.
+
 (* Update row *)
 Definition upR p i := mk_pos p i p.'j.
+Definition upR_id p j : upR p p.'i = p.
+Proof. by case: p. Qed.
 
 Definition full_below p :=
   [forall (x : rowt | x < p.'i),
@@ -208,6 +213,12 @@ Definition has_valid p := #| valid_cols p | != 0%N.
 
 Definition next_row (i : 'I_n) : 'I_n := insubd ord_max i.+1.
 
+Lemma leq_next_row i i' : (i < next_row i') = (i <= i').
+Proof.
+rewrite val_insubd; case: ifP => // /negbT.
+rewrite ltnNge negbK.
+Admitted.
+
 (* j is the column *)
 Definition update_board_nosimpl p j :=
   mk_pos (\matrix_(x , y) ([&& x == p.'i & y == p.'j] || p x y)) (next_row p.'i) j.
@@ -226,6 +237,8 @@ Proof. by []. Qed.
 
 Lemma upC_update_board p j j' : upC (update_board p j) j' = update_board p j'.
 Proof. by []. Qed.
+
+Definition upE := (update_board_M, update_board_i, update_board_j, upC_update_board).
 
 Definition compute_pos p : option pos :=
   match [pick col in 'I_n | valp (update_board p col) ] with
@@ -258,18 +271,37 @@ Lemma inv_next_valid_with_curr p : Inv p -> Inv (nextp p).
 Proof.
 case: nextpP => // j hj /and3P[hi1 hi2 hi3]; apply/and3P; split => //.
 + rewrite /full_below update_board_i; apply/'forall_implyP=> i hi.
-  apply/'exists_andP; exists p.'j; split.
-  - rewrite update_board_M. admit.
-  - rewrite upC_update_board. admit.
+  apply/'exists_andP; exists p.'j; split; rewrite !upE.
+  - admit.
+  - admit.
 Admitted.
 
 Lemma next_with_cols p (hinv : Inv p) : cols (nextp p) = cols p :\ p.'j.
 Proof.
-case: nextpP => //= [H|j H].
-+ admit.
-+ rewrite /cols; apply/setP=> j0; rewrite !inE /=.
-  rewrite upC_update_board.
-  case: eqP => [->|] //=.
+case/and3P: hinv => hi1 hi2 hi3; case: nextpP => //= [hvalN | j hval].
+  rewrite /cols; apply/setP=> j0; rewrite !inE /= andb_idl //.
+  move=> _; apply/negP=> _ {j0}.
+  apply: (hvalN p.'j) => {hvalN}.
+  move/'forall_implyP: hi2 => hi2.
+  rewrite /update_board /update_board_nosimpl /=.
+  admit.
+rewrite /cols; apply/setP=> j0; rewrite !inE /= upC_update_board.
+case: eqP => [->| hjneq] //=.
++ apply/negbTE; rewrite /valC -negb_exists_in negbK !upE.
+  apply/existsP; exists (p.'i); rewrite !upE !eqxx /= andbT.
+  (* Ummm. *)
+  case/and4P: hval => h11 h12 h13 h14.
+  admit.
+rewrite /valC -!negb_exists_in; congr negb.
+apply/existsP/existsP=> -[j1]; rewrite 2!upE /=.
+  case/andP=> hj /orP[ /andP[/eqP h1 /eqP h2 //]|hp].
+  rewrite leq_next_row in hj.
+  exists j1.
+  (* Does this mean that we need to add a side condition on p.'i ?? *)
+  admit.
+case/andP => hj hpj.
+exists j1; rewrite mxE hpj orbT andbT.
+by rewrite leq_next_row ltnW.
 Admitted.
 
 Lemma next_with_asc_diag p : Inv p ->
