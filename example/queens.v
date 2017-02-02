@@ -531,46 +531,6 @@ case pickP=> [col /and3P [Hcol1 Hcol2 Hcol3]|Hempty].
   by rewrite H0 set0D.
 Admitted.
 
-(*
-Require Import Wellfounded.Lexicographic_Product.
-Import Relation_Operators.
-
-Definition Pos_order (p1 p2: Pos): Prop.
-(* XXX: disgusting and useless definition *)
-eapply lexprod with (A := 'I_n)(B := fun _ => ('I_n * board)%type).
-exact (fun x y => lt (val x) (val y)).
-move=> ?.
-intros.
-eapply lexprod with (A := 'I_n) (B := fun _ => board).
-exact (fun x y => lt (val x) (val y)).
-move=> ?.
-exact (fun b1 b2 => [forall i, [forall j, b1 i j ==> b2 i j]]).
-split; case:X => [? ?] //.
-split; case:X0 => [? ?] //.
-split; [|split]; case: p1=> [? ? ?]//.
-split; [|split]; case: p2=> [? ? ?]//.
-Defined.
-
-Lemma Pos_wf: well_founded Pos_order.
-Admitted. (* XXX: define *)
- Lemma next_valid_with_curr_wf: forall p, Pos_order (next_valid_with_curr p) p.
-Admitted. (* XXX: prove *)
-Lemma next_valid_without_curr_wf: forall p, Pos_order (next_valid_without_curr p) p.
-Admitted. (* XXX: prove *)
-*)
-(*
-Lemma lt_wf: well_founded lt.
-Proof.
-have H : forall m n, (n < m)%coq_nat -> Acc lt n.
-{
-  move=> m; elim: m=> [|m IHm] n Hlt_n.
-  - inversion Hlt_n.
-  - constructor=> y Hlt_y.
-    eapply IHm, PeanoNat.Nat.lt_le_trans; eauto using Lt.lt_n_Sm_le. 
-}
-by move=> n; constructor; apply H.
-Qed.
-*)
 
 Local Close Scope ring_scope.
 
@@ -622,13 +582,6 @@ Definition next_valid_without_curr p :=
   let valid := (p.(p_valid) :&: (compl_op d))%C in
   Mk_pos p.(p_cols) p.(p_asc_diag) p.(p_desc_diag) valid.
 
-(*
-Definition Pos_order (p1 p2: Pos): Prop :=
-    (cardinal_op p1.(p_cols) < cardinal_op p2.(p_cols))
-  \/ (  cardinal_op p1.(p_cols) = cardinal_op p2.(p_cols)
-     /\ cardinal_op p1.(p_valid) < cardinal_op p2.(p_valid)).
-*)
-
 End Machine.
 
 Arguments Mk_pos {_} p_cols p_asc_diag p_desc_diag p_valid.
@@ -660,20 +613,6 @@ Definition is_full := is_full {set 'I_n}.
 Definition has_valid := has_valid {set 'I_n}.
 Definition next_valid_with_curr := next_valid_with_curr {set 'I_n}.
 Definition next_valid_without_curr := next_valid_without_curr {set 'I_n}.
-
-(*
-Definition Pos_order := Pos_order {set 'I_n}.
-
-Lemma Pos_wf: well_founded Pos_order. 
-Proof.
-Admitted. (* XXX: TODO *)
-
-Lemma next_valid_with_curr_wf: forall p, Pos_order (next_valid_with_curr p) p.
-Admitted. (* XXX: TODO *)
-
-Lemma next_valid_without_curr_wf: forall p, Pos_order (next_valid_without_curr p) p.
-Admitted. (* XXX: TODO *)
-*)
 
 End FSet.
 
