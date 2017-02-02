@@ -555,7 +555,6 @@ Context `{union_of int}.
 Context `{empty_of int}.
 Context `{full_of int}.
 Context `{keep_min_of int}.
-Context `{cardinal_of nat int}.
 Context `{succ_of int}.
 Context `{pred_of int}.
 
