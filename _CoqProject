@@ -8,4 +8,8 @@ theories/bitword.v
 theories/bitset.v
 theories/notation.v
 extraction/axioms.v
+extraction/specs.v
 refinement/bits.v
+
+example/bloom.v
+example/queens.v

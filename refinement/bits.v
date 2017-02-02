@@ -5,7 +5,7 @@ Require Import choice fintype finset tuple finfun.
 From CoqEAL
 Require Import hrel param refinements.
 
-Require Import bitseq bitword notation axioms.
+Require Import bitseq bitword notation axioms specs.
 
 Import Refinements.Op.
 Import Logical.Op.
@@ -54,7 +54,9 @@ Definition T := FT.T.
 Module Wordsize.
   Definition wordsize := #| T |.
 End Wordsize.
-Module Native := axioms.Make(Wordsize).
+Module Tests := specs.MakeTests(Wordsize).
+Module Native := Tests.Ops.
+
 
 Definition n := #| T |.
 
@@ -319,53 +321,53 @@ Proof.
   rewrite !refinesE => bs1 w1 <- bs2 w2 <-.
   suff -> : Native.eq w1 w2 = (bitsFromInt Native.w w1 == bitsFromInt Native.w w2)
     by exact: bool_Rxx.
-  apply/eqIntP/eqP => [->//|]; exact: Native.bitsFromInt_inj.
+  apply/eqIntP/eqP => [->//|]; exact: Tests.bitsFromInt_inj.
 Qed.
 
 Global Instance Rnative_zero: refines Rnative '0_Native.w Native.zero.
 Proof.
   rewrite refinesE.
-  have /eqIntP -> := Native.zero_valid.
-  by rewrite /Rnative/fun_hrel Native.bitsToIntK.
+  have /eqIntP -> := Tests.zero_valid.
+  by rewrite /Rnative/fun_hrel Tests.bitsToIntK.
 Qed.
 
 Global Instance Rnative_one: refines Rnative (bitn Native.w 1) Native.one.
 Proof.
   rewrite refinesE.
-  have /eqIntP -> := Native.one_valid.
-  by rewrite /Rnative/fun_hrel Native.bitsToIntK.
+  have /eqIntP -> := Tests.one_valid.
+  by rewrite /Rnative/fun_hrel Tests.bitsToIntK.
 Qed.
 
 Global Instance Rnative_lnot:
   refines (Rnative ==> Rnative) negs ~%C.
 Proof.
   rewrite refinesE=> bs w <- . rewrite /not_op /not_N.
-  have /forallIntP /(_ w) /eqIntP -> := Native.lnot_valid.
-  by rewrite /Rnative/Native.Tnative/fun_hrel Native.bitsToIntK.
+  have /forallIntP /(_ w) /eqIntP -> := Tests.lnot_valid.
+  by rewrite /Rnative/Tests.Tnative/fun_hrel Tests.bitsToIntK.
 Qed.
 
 Global Instance Rnative_land:
   refines (Rnative ==> Rnative ==> Rnative) ands Native.land.
 Proof.
   rewrite !refinesE => bs1 w1 <- bs2 w2 <-.
-  have /forallInt2P /(_ w1 w2) /eqIntP -> := Native.land_valid.
-  by rewrite /Rnative/fun_hrel Native.bitsToIntK.
+  have /forallInt2P /(_ w1 w2) /eqIntP -> := Tests.land_valid.
+  by rewrite /Rnative/fun_hrel Tests.bitsToIntK.
 Qed.
 
 Global Instance Rnative_lor:
   refines (Rnative ==> Rnative ==> Rnative) ors Native.lor.
 Proof.
   rewrite !refinesE => bs1 w1 <- bs2 w2 <-.
-  have /forallInt2P /(_ w1 w2) /eqIntP -> := Native.lor_valid.
-  by rewrite /Rnative/fun_hrel Native.bitsToIntK.
+  have /forallInt2P /(_ w1 w2) /eqIntP -> := Tests.lor_valid.
+  by rewrite /Rnative/fun_hrel Tests.bitsToIntK.
 Qed.
 
 Global Instance Rnative_lxor:
   refines (Rnative ==> Rnative ==> Rnative) xors Native.lxor.
 Proof.
   rewrite !refinesE => bs1 w1 <- bs2 w2 <-.
-  have /forallInt2P /(_ w1 w2) /eqIntP -> := Native.lxor_valid.
-  by rewrite /Rnative/fun_hrel Native.bitsToIntK.
+  have /forallInt2P /(_ w1 w2) /eqIntP -> := Tests.lxor_valid.
+  by rewrite /Rnative/fun_hrel Tests.bitsToIntK.
 Qed.
 
 Global Instance Rnative_lsr:
@@ -381,8 +383,8 @@ have Hlt: (nats (bitsFromInt Native.w w2) <= Native.w)%N
 
 have /forallInt2P /(_ w1 w2)
      /implyP    /(_ Hlt)
-     /eqIntP -> := Native.lsr_valid.
-by rewrite /Rnative/fun_hrel Native.bitsToIntK Hw2n bitnK ?inE ?H2bnd.
+     /eqIntP -> := Tests.lsr_valid.
+by rewrite /Rnative/fun_hrel Tests.bitsToIntK Hw2n bitnK ?inE ?H2bnd.
 Qed.
 
 
@@ -398,8 +400,8 @@ have Hlt: (nats (bitsFromInt Native.w w2) <= Native.w)%N
 
 have /forallInt2P /(_ w1 w2)
      /implyP    /(_ Hlt)
-     /eqIntP -> := Native.lsl_valid.
-by rewrite /Rnative/fun_hrel Native.bitsToIntK Hw2n bitnK ?inE ?H2bnd.
+     /eqIntP -> := Tests.lsl_valid.
+by rewrite /Rnative/fun_hrel Tests.bitsToIntK Hw2n bitnK ?inE ?H2bnd.
 Qed.
 
 Global Instance Rnative_add:
@@ -407,8 +409,8 @@ Global Instance Rnative_add:
 Proof.
 rewrite !refinesE => bs1 w1 <- bs2 w2 <-.
 have /forallInt2P /(_ w1 w2)
-     /eqIntP ->  := Native.add_valid.
-by rewrite /Rnative/fun_hrel Native.bitsToIntK -adds_eff_defE.
+     /eqIntP ->  := Tests.add_valid.
+by rewrite /Rnative/fun_hrel Tests.bitsToIntK -adds_eff_defE.
 Qed.
 
 Global Instance Rnative_sub:
@@ -416,8 +418,8 @@ Global Instance Rnative_sub:
 Proof.
 rewrite !refinesE => bs1 w1 <- bs2 w2 <-.
 have /forallInt2P /(_ w1 w2)
-     /eqIntP ->  := Native.sub_valid.
-by rewrite /Rnative/fun_hrel Native.bitsToIntK -subs_eff_defE.
+     /eqIntP ->  := Tests.sub_valid.
+by rewrite /Rnative/fun_hrel Tests.bitsToIntK -subs_eff_defE.
 Qed.
 
 Global Instance Rnative_opp:
@@ -425,8 +427,8 @@ Global Instance Rnative_opp:
 Proof.
 rewrite !refinesE => bs w <- .
 have /forallIntP /(_ w)
-     /eqIntP ->  := Native.opp_valid.
-by rewrite /Rnative/fun_hrel Native.bitsToIntK -opps_eff_defE.
+     /eqIntP ->  := Tests.opp_valid.
+by rewrite /Rnative/fun_hrel Tests.bitsToIntK -opps_eff_defE.
 Qed.
 
 (************************************************************************)

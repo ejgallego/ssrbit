@@ -965,8 +965,65 @@ End Correctness.
 
 Module Extractor (B: BOARDSIZE).
 
-Module NSet := NSet B.
-Module Run := MakeQueens NSet.
+Import B.
+
+Module Wordsize.
+  Definition wordsize := 31.
+End Wordsize.
+
+Module Nat := axioms.MakeOps(Wordsize).
+
+Record Pos := Mk_pos { p_cols      : Nat.Int ;
+                       p_asc_diag  : Nat.Int ;
+                       p_desc_diag : Nat.Int ;
+                       p_valid     : Nat.Int }.
+
+Fixpoint machine_of_nat' (n: nat)(acc: Nat.Int) :=
+  match n with
+  | 0 => acc
+  | S n => machine_of_nat' n (Nat.add Nat.one acc)
+  end.
+
+Definition machine_of_nat (n: nat) := machine_of_nat' n Nat.zero. 
+
+Definition machine_n := machine_of_nat n.
+
+Definition init := 
+  let full_op := Nat.sub (Nat.lsl Nat.one machine_n) Nat.one in
+  Mk_pos full_op Nat.zero Nat.zero full_op.
+
+Definition is_full p := Nat.eq p.(p_cols) Nat.zero.
+Definition has_valid p := negb (Nat.eq p.(p_valid) Nat.zero).
+Definition keep_min bs := Nat.land bs (Nat.opp bs).
+
+Definition next_valid_with_curr p :=
+  let d := keep_min p.(p_valid) in
+  let cols := Nat.land p.(p_cols) (Nat.lnot d) in
+  let asc_diag := Nat.lsr (Nat.lor p.(p_asc_diag) d) Nat.one in
+  let desc_diag := Nat.lsl (Nat.lor p.(p_desc_diag) d) Nat.one in
+  let valid := Nat.land cols (Nat.lnot (Nat.lor asc_diag desc_diag)) in
+  Mk_pos cols asc_diag desc_diag valid.
+
+Definition next_valid_without_curr p :=
+  let d := keep_min p.(p_valid) in
+  let valid := Nat.land p.(p_valid) (Nat.lnot d) in
+  Mk_pos p.(p_cols) p.(p_asc_diag) p.(p_desc_diag) valid.
+
+Definition nqueens_loop: Pos -> nat ->  nat :=
+  ffix (fun p nqueens_loop score  =>
+          match has_valid p with
+          | false => score 
+          | true => 
+            let score := 
+                let p := next_valid_with_curr p in
+                if is_full p then S score
+                else nqueens_loop p score            
+            in
+            let p := next_valid_without_curr p in
+            nqueens_loop p score
+          end).
+
+Definition nqueens := nqueens_loop init 0.
 
 End Extractor.
 
