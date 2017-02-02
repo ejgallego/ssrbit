@@ -922,12 +922,8 @@ Lemma correctness_spec: Prove.nqueens = #| solutions |.
 Admitted. (* XXX *)
 
 (*********************************************************)
-(** ** Extraction                                        *)
+(** ** Equivalence spec / code                           *)
 (*********************************************************)
-
-(* XXX: drop the code to a file and check that it's efficient. *)
-(* XXX: write benchmark handler *)
-(* Recursive Extraction Run.nqueens. *)
 
 Lemma eq_nqueens: Prove.nqueens = Run.nqueens.
 Proof.
@@ -962,3 +958,16 @@ Lemma correctness: Run.nqueens = #| solutions |.
 Proof. by rewrite <- correctness_spec, eq_nqueens. Qed.
 
 End Correctness.
+
+(*********************************************************)
+(** ** Extraction                                        *)
+(*********************************************************)
+
+Module Extractor (B: BOARDSIZE).
+
+Module NSet := NSet B.
+Module Run := MakeQueens NSet.
+
+End Extractor.
+
+Extraction "queens.ml" Extractor.
