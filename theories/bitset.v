@@ -303,24 +303,38 @@ Variable (n : nat).
 Variable (T : finType).
 Implicit Types (A : {set 'I_n}).
 
-Definition setmin A := [set [arg min_(k<x) val k] | x in A].
+Definition setmin  A := [set [arg min_(k<x in A) k] | x in A].
 
-Lemma min1P A x (x_inA : x \in A) : setmin A = [set [arg min_(k<x) val k]].
+(* Definition setmin' A := [set x in A | [forall y in A, x < y] ]. *)
+
+(* Lemma u A : setmin A = setmin' A. *)
+(* Proof. *)
+(* apply/setP=> x; rewrite /setmin !inE. *)
+(* apply/imsetP/andP. *)
+(* + case=> x0 x0_in -> {x}; case: arg_minP => // i _ hmin; split. *)
+(*   admit. *)
+(*   apply/forallP. *)
+
+Lemma min1P A x (x_inA : x \in A) : setmin A = [set [arg min_(k<x in A) val k]].
 Proof.
 apply/setP=> i; rewrite /min !inE; apply/imsetP/eqP; last by exists x.
-case=> [u u_in ->]; case: arg_minP => // i1 _ h1; case: arg_minP => // i2 _ h2.
+case=> [u u_in ->]; case: arg_minP => // i1 I1 h1; case: arg_minP => // i2 I2 h2.
 by apply/val_inj/eqP; rewrite eqn_leq h1 // h2.
 Qed.
 
 Lemma min0P A : (setmin A == set0) = (A == set0).
 Proof. by rewrite /min imset_eq0. Qed.
 
-Lemma min_card A : (0 < #|setmin A|) = (A != set0).
+Lemma card_setmin A : (0 < #|setmin A|) = (A != set0).
 Proof. by rewrite -min0P card_gt0. Qed.
+
+(* Lemma card_setmin A : (0 < #|setmin A|) = (A != set0). *)
+(* Proof. by rewrite -min0P card_gt0. Qed. *)
 
 End MinOrdSet.
 
 Section MinIndex.
+
 
 Lemma indexP (T : eqType) d (x : T) s idx :
   d != x ->
@@ -352,6 +366,53 @@ Qed.
 (* XXX: A likely better approach is to work with the modular version,
    as index will overflow if the bitseq is empty *)
 
+Lemma index_repr_mod n (bs : 'B_n) x (hs : x \in setB bs) :
+  index true bs = [arg min_(k < x in setB bs) val k] %[mod n].
+Proof.
+Admitted.
+
+Require Import bitocaml.
+
+Lemma mask_setls_one T d n m (l : seq T) :
+  m < n -> n <= size l ->
+  mask (setls '0_n m true) l = [:: nth d l m].
+Proof.
+elim: n m l => //= n ihn [|m] [| x l] //= hs /ihn ihn'.
+  by rewrite mask_false.
+by rewrite setls_cons /= ihn'.
+Qed.
+
+Lemma setminP n (bs : 'B_n) : setmin (setB bs) = setB (keep_min bs).
+Proof.
+case: [pick x | x \in setB bs] / pickP => [x xin|nin].
+  rewrite (min1P xin) /setB /seqB keep_minP.
+  apply/setP=> u; rewrite !inE -val_eqE /= -(index_repr xin).
+  have idx_size: index true bs < n.
+    rewrite -{2}(size_tuple bs) index_mem.
+    move: xin; rewrite mem_setb => <-.
+    by rewrite mem_nth // ?size_tuple.
+  rewrite (mask_setls_one x) ?size_enum_ord // inE -val_eqE /= nth_enum_ord //.
+have U: setB bs = set0.
+  by apply/setP=> x; rewrite nin inE.
+have V: bs = '0.
+  apply/(can_inj setbK); rewrite U.
+  by apply/setP=> x; rewrite !inE /= /seqB mask_false.
+have W : setmin set0 = set0.
+  by move=> k; apply/eqP; rewrite min0P.
+rewrite U W V; apply/setP => o.
+rewrite !inE /seqB keep_minP.
+rewrite setls_default /= ?size_nseq ?mask_false //.
+have: true \notin '0_n. by elim: n {bs nin U V W o}.
+by rewrite -index_mem ltnNge negbK size_nseq.
+Qed.
+
+Print Assumptions setminP.
+
+(* Lemma  n (bs : 'B_n) x (hs : x \in setB bs) : *)
+(*   index true bs = [arg min_(k < x in setB bs) val k] %[mod n]. *)
+(* Proof. *)
+(* Admitted. *)
+
 (* Extend with the minimum *)
 (* Definition extm n (A : {set 'I_n}) : {set 'I_n.+1} := *)
 (*   [set widen_ord (@leqnSn _) x | x in A] :|: [set inord n]. *)
@@ -366,13 +427,6 @@ Qed.
 (*   index true bs \in map val (enum (min (setB bs))). *)
 
 End MinIndex.
-
-(* Rest of minimum proof. *)
-Require Import bitocaml.
-
-(* Lemma keep_minP n (bs: 'B_n) : *)
-(*   keep_min bs = setls '0_n (index true bs) true :> bitseq. *)
-
 
 (* =keep_setP= *)
 (* Lemma keep_min_setP n (bs : 'B_n) : *)

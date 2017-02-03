@@ -844,8 +844,8 @@ Canonical B_finGroupType := Eval hnf in [finGroupType of 'B_k for +%R].
 Implicit Types (b : 'B_k).
 
 Definition subB b1 b2 := (b1 - b2)%R.
-Definition incB b := (b + inB 1)%R.
-Definition decB b := (b - inB 1)%R.
+Definition incB b     := (b + inB 1)%R.
+Definition decB b     := (b - inB 1)%R.
 
 (* XXX: Improve Vs *)
 (* Lemma nats_one  k : nats '1_k = 2^k - 1. *)
@@ -961,6 +961,20 @@ End SeqZModule.
 
 Arguments inB [n] k.
 Arguments B0 [k].
+
+Section ArithEquiv.
+
+(* Lemma addE n (b1 b2 : 'B_n) c : addB b1 b2 = (adcB c b1 b2).2 :> bitseq. *)
+(* Proof. *)
+(* case: b1 b2 => [s1 h1] [s2 h2] /=. *)
+(* elim: n s1 h1 s2 h2 => [|n ihn] [|x1 s1] h1 [|x2 s2] h2 //. *)
+(* have {ihn}ihn := ihn _ h1 _ h2. *)
+(* rewrite adcB_cons /= !nats_cons !bitn_cons. *)
+(* rewrite !(ltn_predK (expnS_ge2 _)). *)
+(* (* Here is the carry *) *)
+(* Admitted. *)
+
+End ArithEquiv.
 
 (*
 Section BitRing.
@@ -1081,7 +1095,6 @@ Qed.
 
 Lemma bumaskP k i j n (hk : n < k) : (bumask k i j)`_n = ~~ (i <= n < j).
 Proof. by rewrite -negs_bmask (nth_map false) ?size_bmask // bmaskP. Qed.
-
 
 (* Lemma shlsS_bitn n i k : i < k -> shls (bitn k n) i.+1 = shls (bitn k n.*2) i. *)
 
