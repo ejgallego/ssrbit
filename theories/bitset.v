@@ -259,14 +259,20 @@ Lemma union_morphR k (s1 s2 : {set 'I_k}) :
   orB (setn s1) (setn s2) = setn (s1 :|: s2).
 Proof. by apply: (can_inj setbK); rewrite union_morphL !setnK. Qed.
 
+Section Local.
+
+Local Notation "a && b" := (andB a b).
+
 (* Basically the same proof. *)
 (* =inter_morphL= *)
 Lemma inter_morphL k (b1 b2 : 'B_k) :
-  setB (andB b1 b2) = (setB b1 :&: setB b2).
+  setB (b1 && b2) = (setB b1 :&: setB b2).
 (* =end= *)
 Proof.
 by apply/setP=> i; rewrite !mem_setb inE !mem_setb nth_liftz ?size_tuple.
 Qed.
+
+End Local.
 
 Lemma neg_morphL k (b : 'B_k) :
   setB (negB b) = ~: (setB b).
