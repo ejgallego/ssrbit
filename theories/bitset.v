@@ -128,10 +128,12 @@ by apply/eqP/maxn_idPr; rewrite geq_max ltn_ord.
 Qed.
 
 Definition seqn k (s : seq 'I_k)   := Tuple (from_set_tupleP s).
-Definition setn k (s : {set 'I_k}) := seqn (enum s).
+Definition setn k (s : {set 'I_k}): 'B_k
+  := seqn (enum s).
 
 Definition seqB k (m : 'B_k) := mask m (enum 'I_k).
-Definition setB k (m : 'B_k) := [set x in seqB m].
+Definition setB k (m : 'B_k): {set 'I_k}
+  := [set x in seqB m].
 
 (* Alternative *)
 Definition setb' k (m : 'B_k) := [set i in 'I_k | m`_i].
@@ -552,10 +554,12 @@ Implicit Types (A B : {set T}).
 Implicit Types (b : 'B_#|T|).
 
 (* From a finite set to tuple *)
-Definition bitF A := setn [set enum_rank x | x in A].
+Definition bitF (A: {set T}): 'B_#| T |
+  := setn [set enum_rank x | x in A].
 
 (* From a tuple to a finite set *)
-Definition finB b := [set enum_val x | x in setB b].
+Definition finB (b: 'B_#| T |): {set T}
+  := [set enum_val x | x in setB b].
 
 (* Aux Lemma to avoid using prenex implicits *)
 Let can_enum D := can2_imset_pre D (@enum_valK T) (@enum_rankK _).
