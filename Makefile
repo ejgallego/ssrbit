@@ -1,6 +1,7 @@
 .PHONY=all clean tests
 
 OCB=ocamlbuild -use-ocamlfind
+CC=gcc -O4
 
 all: build extraction tests queens
 
@@ -28,6 +29,14 @@ example/QUEENS: build example/queens.v
 	$(MAKE) -f Makefile.coq example/queens.vo
 	mv queens.ml* example/
 	touch example/QUEENS
+
+bench: example/QUEENS bench/queens.ml bench/queens.c
+	rm -f queens_*.dat
+	$(OCB) -pkg unix bench/queens.native
+	$(CC) -o queens bench/queens.c
+	./queens_driver.native
+	./queens.native
+	./queens
 
 TEST_FILES=$(addprefix extraction/test_int,8 16 32)
 TARGET=native

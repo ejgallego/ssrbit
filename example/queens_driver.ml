@@ -1,5 +1,7 @@
 open Queens
 
+let output = open_out "queens_coq.dat"
+
 let solutions =
   (* counting from 1 *)
   [| 1 ; 0 ; 0 ; 2 ; 10 ; 4 ; 40 ; 92 ; 352 ; 724 ; 
@@ -8,7 +10,7 @@ let solutions =
      314666222712 ; 2691008701644 ; 24233937684440 |]
 
 let _ = 
-  for i = 1 to 18 do
+  for i = 1 to 15 do
     let m = (module 
       struct
         let sizep = nat_of_int (i-1)
@@ -18,7 +20,9 @@ let _ =
     let module M = (val m) in
     let time = Sys.time() in
     let module Q = Extractor((M)) in
-    Printf.printf "%d queens: %f s.\n%!" i (Sys.time() -. time);
+    let time = Sys.time() -. time in
+    Printf.printf "%d queens: %f s.\n%!" i time;
+    Printf.fprintf output "%d\t%f\n" i time;
     let solution = int_of_nat Q.nqueens in
     assert (solutions.(i-1) = solution)
   done
