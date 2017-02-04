@@ -171,7 +171,7 @@ Definition rorw k w : word := [ffun i => w (i-k)].
 (******************************************************************************)
 
 (* =shlw= *)
-Definition shlw (n : 'I_k.+1) w : word :=
+Definition shlw (n : 'I_k.+1) w :=
   [ffun i : 'I_k.+1 => (n <= i)%N && w (i-n) ].
 (* =end= *)
 
