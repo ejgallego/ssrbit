@@ -556,10 +556,6 @@ Instance Rvector_and :
 Proof. by eapply refines_trans; tc. Qed.
 (* =end= *)
 
-Instance Rvector_and :
-  refines (Rvector ==> Rvector ==> Rvector) (@andw n) ands.
-Proof. by eapply refines_trans; tc. Qed.
-
 Instance Rword_neg :
   refines (Rword ==> Rword) (@negw n) (@negB n).
 Proof.
@@ -576,9 +572,6 @@ Section Nand.
   Definition nand (b1 b2: B): B := neg (and b1 b2).
 End Nand.
 (* =end= *)
-
-
-End Nand.
 
 Parametricity nand.
 

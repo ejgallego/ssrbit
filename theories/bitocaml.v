@@ -145,11 +145,21 @@ End Card.
 
 Section BitMin.
 
+Section Local.
+
+From CoqEAL
+Require Import refinements.
+Import Refinements.Op.
+
+Local Open Scope computable_scope.
+
 (* Set containing only the minimum *)
 (* =keep_min= *)
 Definition keep_min n (bs: 'B_n) : 'B_n
-  := bs && (~ bs).
+  := bs && - bs.
 (* =end= *)
+
+End Local.
 
 (* XXX: Move *)
 Lemma setls_here y s x : setls [:: y & s] 0 x = [:: x & s].
@@ -219,12 +229,17 @@ Proof. by rewrite /negs map_nseq. Qed.
 Lemma ands_negs s : ands s (negs s) = '0_(size s).
 Proof. by elim: s => // b s ihs; rewrite ands_cons andbN ihs. Qed.
 
+From CoqEAL
+Require Import refinements.
+Import Refinements.Op.
+Import Logical.Op.
+
 (* =keep_minP= *)
 Lemma keep_minP n (bs: 'B_n) :
-  keep_min bs = setls '0_n (index true bs) true
+  keep_min bs = setls '0_n (index true bs) true :> bitseq.
 (* =end= *)
 Proof.
-rewrite /keep_min oppB_def; case: bs => [s hs] /=.
+rewrite /keep_min/opp_op/opp_B/and_op/and_B oppB_def; case: bs => [s hs] /=.
 case: n hs => // [|n hs].
   by rewrite bitn_nil; case: s.
 rewrite bitnK ?(ltn_predK (expnS_ge2 _)) ?inE ?expnS_ge2 //.

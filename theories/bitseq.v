@@ -1353,4 +1353,5 @@ Global Instance shl_B {n} : shl_of 'I_n 'B_n := (fun x y => @shlB _ x y).
 Global Instance zero_B {n} : zero_of 'B_n := '0.
 Global Instance one_B  {n} : one_of  'B_n := inB 1.
 Global Instance sub_B  {n} : sub_of  'B_n  := (@subB _).
+Global Instance opp_B  {n} : opp_of  'B_n  := (@oppB _).
 
