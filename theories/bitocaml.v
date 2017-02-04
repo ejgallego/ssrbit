@@ -122,23 +122,23 @@ Proof. by []. Qed.
 
 (* ss is a partition of S then *)
 (*  "cardb S = \sum(s <- ss) cardb s" *)
-Lemma cardinalE n k (bv : 'B_n) :
-  nats (cardinal k bv) =
-  \sum_(pbv <- reshape (nseq (n %/ k) k) bv) (nats pbv).
-Proof.
-rewrite /cardinal.
-elim: (n %/ k) {1 2 3 6}n bv => [|nk ihnk] nv bv.
+(* Lemma cardinalE n k (bv : 'B_n) : *)
+(*   nats (cardinal k bv) = *)
+(*   \sum_(pbv <- reshape (nseq (n %/ k) k) bv) (nats pbv). *)
+(* Proof. *)
+(* rewrite /cardinal. *)
+(* elim: (n %/ k) {1 2 3 6}n bv => [|nk ihnk] nv bv. *)
 (*   by rewrite nats_zero big_nil. *)
 (* rewrite card_rec_cons [reshape _ _]/= big_cons -ihnk. *)
-Admitted.
+(* Admitted. *)
 
 (* Lemma cardinalE : \sum_(l reshape  *)
 
 (* Lemma cardinalP k (s : 'B_k) i (* (div_i: i %| k) (ltz_i: i > 0) *) : *)
-Lemma cardinalP k (s : 'B_k) i :
-  nats (cardinal i s) = count id s.
-Proof.
-Admitted.
+(* Lemma cardinalP k (s : 'B_k) i : *)
+(*   nats (cardinal i s) = count id s. *)
+(* Proof. *)
+(* Admitted. *)
 
 End CardTheory.
 End Card.
@@ -151,14 +151,113 @@ Definition keep_min n (bs: 'B_n) : 'B_n
   := bs && (~ bs).
 (* =end= *)
 
+(* XXX: Move *)
+Lemma setls_here y s x : setls [:: y & s] 0 x = [:: x & s].
+Proof. by []. Qed.
+
+(* XXX: Better proof using tuples? *)
+(* Lemma keep_minP n (bs: 'B_n) : *)
+(*   keep_min bs = setlB '0 (index true bs) true. *)
+(* eq_from_tnth *)
+
+(* Lemma andB_invB: *)
+(*   forall n (bs: BITS n), *)
+(*     andB bs (invB bs) = zero n. *)
+
+(* Ummm *)
+(* Lemma oppB_def n (bs : 'B_n) : oppB bs = incB (negB bs). *)
+(* Proof. *)
+(* case: n bs => [|n] [s hs]; apply/val_inj; rewrite /= ?bitn_nil //. *)
+(* congr bitn. *)
+(* rewrite addnC bitnK ?inE ?expnS_ge2 //. *)
+(* elim: n s hs => [|n ihn] [|b s] hs //. *)
+(*   by case: s hs => //= _; case: b. *)
+(* rewrite !nats_cons expnS mul2n. *)
+(* Admitted. *)
+
+Lemma exp2n_gt0 m : 0<2^m.
+Proof. by rewrite expn_gt0. Qed.
+
+(* Lemma nats_one : nats *)
+
+Lemma oppB_def n (bs : 'B_n) : oppB bs = incB (negB bs).
+Proof.
+apply/val_inj; rewrite /= prednK ?expn_gt0 //.
+case: n bs => [|n] // bs.
+case: (bs == '0) / eqP => [->|hbs].
+  rewrite nats_zero subn0 modnn negs_zero nats_full.
+  by rewrite bitnK ?inE ?expnS_ge2 // subnK ?expn_gt0 // modnn.
+have n_gt0 : 0 < nats bs.
+  move/eqP: hbs; rewrite -val_eqE /=; case: bs => /=.
+  elim: n => [|n ihn] [|b s] //= hs.
+    by case: s hs; case: b.
+  rewrite eqseq_cons /=; case: b; rewrite // negb_and eqxx /=.
+  by rewrite nats_cons add0n double_gt0 => /ihn ->.
+have n_leq : nats (negs bs) < (2^n.+1).-1.
+  admit.
+rewrite bitnK ?inE ?expnS_ge2 //.
+rewrite modn_small; last first.
+  by rewrite -[X in _ < X]subn0 ltn_sub2l ?expn_gt0.
+rewrite modn_small; last first.
+  move: (n_leq).
+  rewrite -subn_gt0 -(ltn_add2l 1).
+  rewrite addn0 -ltn_subRL addnBA; last by rewrite ltnW.
+  by rewrite add1n prednK ?expn_gt0.
+congr bitn.
+Search _ nats.
+have U s: 1 + nats (negs s) = 2^(size s) - nats s.
+  elim: s => [|b s ihs].
+    by rewrite /= (nats_zero 0) expn0.
+Admitted.
+
+Lemma negs_cons b s : negs [:: b & s] = [:: ~~ b & negs s].
+Proof. by []. Qed.
+
+Lemma negs_one n : negs '1_n = '0_n.
+Proof. by rewrite /negs map_nseq. Qed.
+
+Lemma ands_negs s : ands s (negs s) = '0_(size s).
+Proof. by elim: s => // b s ihs; rewrite ands_cons andbN ihs. Qed.
+
 (* =keep_minP= *)
 Lemma keep_minP n (bs: 'B_n) :
   keep_min bs = setls '0_n (index true bs) true
 (* =end= *)
- :> bitseq.
-Admitted.
-
-(* XXX: maybe ripple_repr could be useful here, as neg is (inv + 1) *)
+Proof.
+rewrite /keep_min oppB_def; case: bs => [s hs] /=.
+case: n hs => // [|n hs].
+  by rewrite bitn_nil; case: s.
+rewrite bitnK ?(ltn_predK (expnS_ge2 _)) ?inE ?expnS_ge2 //.
+(* We need to case on wether we overflow or not *)
+case: (s == '0_n.+1) / eqP => [->|hno].
+  rewrite negs_zero nats_full subn1 addn1 (ltn_predK (expnS_ge2 _)) modnn.
+  rewrite and0s ?inE ?size_bitn //=.
+  rewrite setls_default //= size_nseq.
+  have/(congr1 negb) := index_mem true '0_n.
+  rewrite ltnNge negbK size_nseq ltnS => ->.
+  by elim: n {hs}.
+rewrite modn_small addnC; last first.
+  elim: n s hs hno => [|n ihn] [|b s] hs hno //=.
+    by case: s hs hno => //; case: b.
+    rewrite expnS nats_cons mul2n.
+    case: b hs hno => //= hs hno.
+      rewrite add0n.
+      have := nats_ltn (negs s).
+      have hss : size s = n.+1 by case/eqP: hs.
+      rewrite size_map hss.
+      by rewrite -doubleS leq_double.
+    rewrite !add1n -doubleS ltn_double ihn //.
+    by move/eqP: hno; rewrite eqseq_cons eqxx negb_and /= => /eqP.
+elim: n s hs hno => [|n ihn] [|b s] hs hno //=.
+  by case: s hs hno => //; case: b.
+rewrite nats_cons bitn_cons ands_cons /=.
+case: b hs hno => //= /eqP [hs] /eqP hno.
+  rewrite setls_here add0n uphalf_double.
+  have hss: size (negs s) = n.+1 by rewrite size_map.
+  by rewrite -hss natsK ands_negs hs odd_double.
+rewrite setls_cons half_double -add1n ihn ?hs //.
+by move: hno; rewrite eqseq_cons eqxx negb_and /= => /eqP.
+Qed.
 
 (* Value of the minimum (ie number of trailing zeroes) *)
 (* =ntz= *)
@@ -167,15 +266,14 @@ Definition ntz n (bs: 'B_n) : 'B_n :=
 (* =end= *)
 
 (* =ntzP= *)
-Lemma ntzP n (bs : 'B_n) :
-    ntz bs = inB (index true bs).
+(* Lemma ntzP n (bs : 'B_n) : ntz bs = inB (index true bs). *)
 (* =end= *)
-Proof.
-rewrite /ntz.
-suff : n - count id (orB bs (oppB bs)) = index true bs.
-  admit.
-apply: (@addIn (count id (orB bs (oppB bs)))).
-rewrite subnK ?(leq_trans (count_size _ _)) ?size_tuple //.
+(* Proof. *)
+(* rewrite /ntz. *)
+(* suff : n - count id (orB bs (oppB bs)) = index true bs. *)
+(*   admit. *)
+(* apply: (@addIn (count id (orB bs (oppB bs)))). *)
+(* rewrite subnK ?(leq_trans (count_size _ _)) ?size_tuple //. *)
 (*
 This should derive from the mask theory.
 orB bs (oppB bs) = 00000011111111111 = bmask (index ) n
@@ -185,7 +283,7 @@ Useful lemma from the old development:
 Definition negB {n} (p: BITS n) := incB (invB p).
 
 *)
-Admitted.
+(* Admitted. *)
 
 (*  *)
 Definition U_test n (bs : 'B_n) :=

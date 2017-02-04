@@ -44,15 +44,18 @@ Class get_of e fset := get_op   : e -> fset -> bool.
 Class set_of e fset := set_op   : e -> fset -> fset.
 Class inter_of fset := inter_op : fset -> fset -> fset.
 Class min_of e fset := min_op : fset -> e.
+Class keep_min_of fset := keep_min_op : fset -> fset.
 Class remove_of e fset := remove_op : fset -> e -> fset.
 Class symdiff_of fset := symdiff_op : fset -> fset -> fset.
 Class union_of fset := union_op : fset -> fset -> fset.
 Class singleton_of e fset := singleton_op : e -> fset.
 Class subset_of fset := subset_op : fset -> fset -> bool.
+Class pred_of fset := pred_op : fset -> fset.
+Class succ_of fset := succ_op : fset -> fset.
 
 Typeclasses Transparent cardinal_of compl_of empty_of full_of
   get_of set_of inter_of min_of remove_of symdiff_of union_of
-  singleton_of subset_of.
+  singleton_of subset_of pred_of succ_of.
 
 From mathcomp
 Require Import fintype finset.

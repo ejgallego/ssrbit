@@ -6,3 +6,9 @@
 Makefile.coq
 test
 _build
+test_*.ml*
+example/bloom.ml*
+example/queens.ml*
+example/QUEENS
+extraction/STAMP
+*.native

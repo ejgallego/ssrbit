@@ -168,7 +168,7 @@ Definition bloom_check_int
   := bloomCheck (S := Native.Int)(P := Native.Int)(I := Native.Int).
 
 
-Cd "extraction".
+Cd "example".
 
 Require Import ExtrOcamlBasic.
 
