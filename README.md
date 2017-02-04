@@ -53,6 +53,14 @@ To build ssrbit:
     $ cd $SSRBIT_DIR
     $ make
 
+To benchmark the n-queens code:
+
+    $ cd $SSRBIT_DIR
+    $ make bench
+
+    $ perf record --call-graph=dwarf -- ./queens_driver.native
+    $ perf report
+
 
 ## References
 
