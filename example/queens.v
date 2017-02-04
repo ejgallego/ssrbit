@@ -963,6 +963,12 @@ End Correctness.
 (** ** Extraction                                        *)
 (*********************************************************)
 
+(** Whilst, in principle, we would like to extract and compile
+    [Run.nqueens], its instanciation through functors makes it
+    impractical: the extracted code contains both the actual code and
+    some useless proofs. To side-step this issue, we manually inline
+    its defininition here. *)
+
 Module Extractor (B: BOARDSIZE).
 
 Import B.
