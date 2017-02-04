@@ -402,14 +402,18 @@ apply/setP=> x; rewrite inE; apply/imsetP/idP; last by move=> x_in; exists x.
 by case=> y y_in /f_inj->.
 Qed.
 
+(* =finBK= *)
 Lemma finBK : cancel bitF finB.
+(* =end= *)
 Proof.
 by move=> A; rewrite /finB can_enum setnK (preimsetK _ enum_rank_inj).
 (* move=> A; rewrite /finB /bitF setnK -imset_comp (eq_imset _ (@enum_rankK _)). *)
 (* exact: imset_id. *)
 Qed.
 
+(* =bitFK= *)
 Lemma bitFK : cancel finB bitF.
+(* =end= *)
 Proof.
 by move=> A; rewrite /finB /bitF enum_can (preimsetK _ enum_val_inj) setbK.
 (* move=> b; rewrite /finB /bitF -imset_comp (eq_imset _ (@enum_valK _)) imset_id. *)
