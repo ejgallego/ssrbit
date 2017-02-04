@@ -442,16 +442,20 @@ Definition lsr_test: bool
 
 Axiom lsr_valid: lsr_test.
 
+
+(* Remark: in fact, we need [n <= 64] (as opposed to [n <= w]) since
+           Ocaml's [lsl] is unspecified beyond 64. This test will fail
+           if we were brave enough to extract to machine words beyond
+           64 bits. *)
+
+(* =lsl_valid= *)
 Definition lsl_test: bool
   := forallInt2 (fun i i' =>
           let n := nats (bitsFromInt w i') in 
-
-          (* XXX: in fact, we need [n <= 64] (as opposed to [n <= w])
-             since Ocaml's [lsl] is unspecified beyond 64 *)
-
           (n <= w) ==> 
            Tnative (lsl i i')
                    (shls (bitsFromInt w i) n)).
+(* =end= *)
 
 Axiom lsl_valid: lsl_test.
 
