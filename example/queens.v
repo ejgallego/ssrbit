@@ -141,52 +141,47 @@ Proof. by case: p. Qed.
 
 (** *** Validity predicates *)
 
-Definition is_valid_col b i j :=
-  [forall (x : 'I_n | x < i), ~~ b x j].
+Definition valC p :=
+  [forall (x : rowt | x < p.'i), ~~ p x p.'j].
 
-Definition is_valid_row b i j :=
-  [forall (y : 'I_n | y != j), ~~ b i y].
+Definition valR p :=
+  [forall (y : colt | y != p.'j), ~~ p p.'i y].
 
-Definition is_valid_asc_diag b i j := 
-  [forall (x : 'I_n | x < i),
-      forall (y : 'I_n | (maxn i j - minn i j == maxn x y - minn x y)%N),
-        ~~ b x y ].
+Definition valA p := 
+  [forall (x : rowt | x < p.'i),
+      forall (y : colt | (maxn p.'i p.'j - minn p.'i p.'j == maxn x y - minn x y)%N),
+        ~~ p x y ].
 
-Definition is_valid_desc_diag b i j := 
-  [forall (x : 'I_n | x < i),
-      forall (y : 'I_n | (i + j == x + y)%N),
-        ~~ b x y].
+Definition valD p := 
+  [forall (x : rowt | x < p.'i),
+      forall (y : colt | (p.'i + p.'j == x + y)%N),
+        ~~ p x y].
 
-Definition is_valid_pos b i j :=
-  [&& is_valid_col b i j
-   ,  is_valid_row b i j
-   ,  is_valid_asc_diag b i j
-   &  is_valid_desc_diag b i j ].
+Definition valp p :=
+  [&& valC p, valR p, valA p & valD p ].
 
-Definition is_full_below b i := 
-  [forall (x : 'I_n | x < i),
-      exists y, 
-        b x y && is_valid_pos b x y ].
+(** *** Structural invariants *)
 
-Definition is_empty_above b i :=
-  [forall (x : 'I_n | x > i), forall j, ~~ b x j].
+Definition full_below p := 
+  [forall (x : rowt | x < p.'i), exists j, p x j && valp p ].
+
+Definition empty_above p :=
+  [forall (x : rowt | x > p.'i), forall j, ~~ p x j].
 
 
-Definition Inv (p: pos'): bool :=
+Definition Inv p :=
   [&& 
      (* Current position is valid: *)
-     is_valid_pos p.(p_board) p.(p_curr_row) p.(p_curr_col) 
+     valp p
    , (* One valid queen on each row below [p_curr_row]: *)
-      is_full_below p.(p_board) p.(p_curr_row)
+     full_below p
    & (* No queen on any row above [p_curr_row]: *)
-     is_empty_above p.(p_board) p.(p_curr_row) ].
+     empty_above p ].
 
+(** *** Sets of potential positions *)
 
-
-Definition cols (p: pos): {set 'I_n} :=
-  let b := p.(Spec.p_board) in
-  let i := p.(Spec.p_curr_row) in
-  [set j in 'I_n | is_valid_col b i j].
+Definition cols p: {set 'I_n} :=
+  [set j in 'I_n | valC (upC p j)].
 
 Lemma curr_col_cols: forall p, Inv p ->
     (p.(p_curr_col) : nat) = (n - #| cols p |)%N.
@@ -195,42 +190,28 @@ case=> [b i j]; rewrite /Inv /cols /=; case/and3P => h1 h2 h3.
 (* rewrite cardsE /=. *)
 Admitted.
 
-Definition asc_diag (p: pos): {set 'I_n} :=
-  let b := p.(Spec.p_board) in
-  let i := p.(Spec.p_curr_row) in
-  [set j in 'I_n | Spec.is_valid_asc_diag b i j ].
+Definition asc_diag p :=
+  [set j in colt | valA (upC p j) ].
 
-Definition desc_diag (p: pos): {set 'I_n} :=
-  let b := p.(Spec.p_board) in
-  let i := p.(Spec.p_curr_row) in
-  [set j in 'I_n | Spec.is_valid_desc_diag b i j ].
+Definition desc_diag p :=
+  [set j in colt | valD (upC p j) ].
 
 Definition valid_cols (p: pos): {set 'I_n} :=
-  let b := p.(p_board) in
-  let i := p.(p_curr_row) in
-  let j := p.(p_curr_col) in
-  [set y in 'I_n | (j <= y) && is_valid_pos b i y ].
+  [set j in colt | (p.'j <= j) && valp (upC p p.'j)  ].
 
-Lemma curr_col_valid: forall p, Inv p ->
-    p.(p_curr_col) = [arg min_(j' < p.(p_curr_col) | j' \in valid_cols p ) j' ]%N.
+Lemma curr_col_valid  p : Inv p ->
+    p.'j = [arg min_(j' < p.'j | j' \in valid_cols p ) j' ]%N.
 Proof.
-move=> [b i j] /and3P [Hval_ij Hfull Hemp]; simpl in *.
-case arg_minP.
-- rewrite inE.
-  by apply/and3P; split.
-- rewrite /valid_cols.
-  move=> x H1 H2.
-  rewrite inE in H1.
-  move/and4P: H1=> /= [H11 H12 H13 H14].
-  have H3: (x <= j)
-    by apply H2; rewrite inE; apply/and3P; split.
-  apply /eqP.
-  etransitivity.
-  apply eqn_leq.
-    by apply/andP.
+case/and3P=> [Hval_ij Hfull Hemp]; simpl in *.
+case: arg_minP => [|x]; first by rewrite inE; apply/and3P.
+rewrite !inE; case/and4P=> [H11 H12 H13 H14] H2.
+have H3: (x <= p.'j) by apply H2; rewrite inE; apply/and3P.
+by apply/val_inj/eqP; rewrite /= eqn_leq H12.
 Qed.
 
-Definition initp: pos := mk_pos' (\matrix_(i, j) false) ord0 ord0.
+(** *** Iterator implementation *)
+
+Definition initp : pos := mk_pos' (const_mx false) ord0 ord0.
 
 Lemma inv_initp: Inv initp.
 apply/and3P; split.
@@ -246,43 +227,33 @@ apply/and3P; split.
 + by apply/'forall_implyP=> x hx; apply/forallP=> y; rewrite mxE.
 Qed.
 
-Definition fullp (p: pos): bool := #| cols p | == 0%N.
+Definition fullp p := #| cols p | == 0%N.
 
-Definition validp (p: pos): bool := 
-  (#| valid_cols p | != 0)%N.
+Definition validp p := (#| valid_cols p | != 0)%N.
 
-Definition next_rowN (n i: nat): nat :=
-  if i.+1 == n then i else i.+1.
+Definition nextR i: rowt := insubd ord_max i.+1.
 
-Lemma next_row_proof n (i : 'I_n): next_rowN n i < n.
-Proof.
-rewrite /next_rowN.
-case: ifP=> [/eqP -> | /eqP H ] //.
-case: ltngtP=> // [le_Si_n | eq_Si_n].
-- have le_i_n: (i.+1.-1 < n) 
-    by rewrite -pred_Sn; apply ltn_ord.
-  rewrite ltnNge in le_i_n.
-  by case/negP: le_i_n.
-- by rewrite -eq_Si_n in H.
-Qed.
+(* j is the column *)
+Definition nextb_nosimpl p j :=
+  mk_pos' (\matrix_(x , y) ([&& x == p.'i & y == p.'j] || p x y)) 
+          (nextR p.'i) j.
 
-Definition next_row {n} (i : 'I_n) := Ordinal (next_row_proof n i).
+Definition nextb := nosimpl nextb_nosimpl.
 
-(*
-Lemma le_incO {n}: forall (i: 'I_n) k,
-    i < incO k -> i < k \/ i = k.
-Proof.
-move=> i k. 
-Admitted.
+Lemma nextb_M p k (x y : 'I_n) :
+  (to_board (nextb p k)) x y = [&& x == p.'i & y == p.'j] || p x y.
+Proof. by rewrite mxE. Qed.
 
-Lemma incO_le {n}: forall (i k: 'I_n),
-    incO k < i -> k < i.
-Admitted.
+Lemma nextb_i p j : (nextb p j).'i = nextR p.'i.
+Proof. by []. Qed.
 
-Lemma incO_in {n}: forall(k: 'I_n.+1),
-    k <> ord_max -> incO k <> k.
-Admitted.
-*)
+Lemma nextb_j p j : (nextb p j).'j = j.
+Proof. by []. Qed.
+
+Lemma upC_nextb p j j' : upC (nextb p j) j' = nextb p j'.
+Proof. by []. Qed.
+
+Definition nextbE := (nextb_M, nextb_i, nextb_j, upC_nextb).
 
 Definition nextp (p: pos): pos :=
   let b := p.(p_board) in
@@ -291,10 +262,10 @@ Definition nextp (p: pos): pos :=
   let b := \matrix_(x , y) 
             if (x == i) && (y == j) then true
             else  b x y in
-  let 'row := next_row i in
-  match [pick col in 'I_n | is_valid_pos b row col ] with
+  let row := nextR i in
+  match [pick col in 'I_n | validp (mk_pos' b row col) ] with
   | Some col => 
-    let 'col := [arg min_(j' < col | is_valid_pos b row j' ) j' ]%N in
+    let 'col := [arg min_(j' < col | validp (mk_pos' b row j')) j' ]%N in
     mk_pos' b row col
   | None => p
   end.
@@ -491,9 +462,9 @@ Definition altp (p: pos): pos :=
   let b := p.(p_board) in
   let i := p.(p_curr_row) in
   let j := p.(p_curr_col) in
-  match [pick col in 'I_n | (j < col) && is_valid_pos b i col ] with
+  match [pick col in 'I_n | (j < col) && validp (mk_pos' b i col) ] with
   | Some col => 
-    let 'col := [arg min_(j' < col | (j < j') && is_valid_pos b i j') j' ]%N in
+    let 'col := [arg min_(j' < col | (j < j') && validp (mk_pos' b i j')) j' ]%N in
     mk_pos' b i col
   | None => p
   end.
@@ -554,10 +525,10 @@ case pickP=> [col /and3P [Hcol1 Hcol2 Hcol3]|Hempty].
 - have H0: valid_cols {| p_board := b; p_curr_row := i; p_curr_col := j |} = set0.
   simpl in *.
   apply/setP=> c; rewrite !inE; apply/and3P; case=> [/= _ h1 /and4P /= [h2 h3 h4 h5]].
-  have := Hempty c; move/idP; apply.
-  rewrite /is_valid_pos h2 h3 h4 h5 !andbT.
+(*  have := Hempty c; move/idP; apply.
+  rewrite /is_valid_pos h2 h3 h4 h5 !andbT. *)
   admit.
-  by rewrite H0 set0D.
+(*   by rewrite H0 set0D. *)
 Admitted.
 
 
@@ -709,7 +680,7 @@ Global Instance Rspec_init:
 Proof.
 rewrite refinesE; split.
 - by apply Spec.inv_initp.
-- rewrite /Spec.initp/Spec.is_valid_col/Spec.cols /= /full_op/bitset.full_fin.
+- rewrite /Spec.initp/Spec.valC/Spec.cols /= /full_op/bitset.full_fin.
   move=> k /=.
   rewrite !inE. 
   apply/forallP=> i.
@@ -944,7 +915,7 @@ Module Run := MakeQueens NSet.
 Import B.
 
 Definition valid_board (b: Spec.board): bool :=
-  [forall x, exists y, b x y && Spec.is_valid_pos b x y ].
+  [forall x, exists y, b x y && Spec.validp (Spec.mk_pos' b x y) ].
 
 Definition solutions :=  [set x in Spec.board | valid_board x ].
 
