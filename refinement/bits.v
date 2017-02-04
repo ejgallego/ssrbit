@@ -478,8 +478,8 @@ Proof. by rewrite refinesE=> bs w <-. Qed.
 (* =Rtuple_land= *)
 Global Instance Rtuple_land:
   refines (Rtuple ==> Rtuple ==> Rtuple) (@andB _) ands.
-Proof. by rewrite !refinesE => bs1 w1 <- bs2 w2 <-. Qed.
 (* =end= *)
+Proof. by rewrite !refinesE => bs1 w1 <- bs2 w2 <-. Qed.
 
 Global Instance Rtuple_lor:
   refines (Rtuple ==> Rtuple ==> Rtuple) ||%C ||%C.
