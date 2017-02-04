@@ -116,7 +116,7 @@ Fixpoint bitsFromInt (k: nat) (n: Int) : bitseq :=
     | 0 => [::]
     | k.+1 =>
       let p := bitsFromInt k (n :>>: 1) in
-      (n && 1 == 1) :: p
+      ((n && 1) == 1) :: p
   end)%C.
 (* =end= *)
 
