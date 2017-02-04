@@ -141,7 +141,9 @@ Variable k : nat.
 Notation word := (word k).
 Implicit Type (s : bitseq) (b : 'B_k) (w : word).
 
+(* =orw= *)
 Definition orw  w1 w2 := [ffun i => w1 i || w2 i].
+(* =end= *)
 Definition andw w1 w2 := [ffun i => w1 i && w2 i].
 Definition negw w     := [ffun i => ~~ w i].
 
