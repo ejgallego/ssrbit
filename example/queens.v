@@ -139,10 +139,24 @@ Definition is_empty_above b i :=
   [forall (x : 'I_n | x > i), forall j, ~~ b x j].
 
 
-Record pos' := Mk_pos' { p_board: board  ;
-                         p_curr_row: 'I_n ;
-                         p_curr_col: 'I_n ;
+Record pos' := mk_pos' { p_board    :> board  ;
+                         p_curr_row : rowt ;
+                         p_curr_col : colt ;
                        }.
+
+Definition pos := pos'. 
+
+Implicit Types (p : pos).
+
+Coercion to_board p : 'M_n := p_board p.
+
+Notation "p .'i" := (p_curr_row p)
+  (at level 2, left associativity, format "p .'i") : pair_scope.
+
+Notation "p .'j" := (p_curr_col p)
+  (at level 2, left associativity, format "p .'j") : pair_scope.
+
+
 
 Definition Inv (p: pos'): bool :=
   [&& 
@@ -154,7 +168,6 @@ Definition Inv (p: pos'): bool :=
      is_empty_above p.(p_board) p.(p_curr_row) ].
 
 
-Definition pos := pos'. 
 
 Definition cols (p: pos): {set 'I_n} :=
   let b := p.(Spec.p_board) in
@@ -203,7 +216,7 @@ case arg_minP.
     by apply/andP.
 Qed.
 
-Definition initp: pos := Mk_pos' (\matrix_(i, j) false) ord0 ord0.
+Definition initp: pos := mk_pos' (\matrix_(i, j) false) ord0 ord0.
 
 Lemma inv_initp: Inv initp.
 apply/and3P; split.
@@ -268,7 +281,7 @@ Definition nextp (p: pos): pos :=
   match [pick col in 'I_n | is_valid_pos b row col ] with
   | Some col => 
     let 'col := [arg min_(j' < col | is_valid_pos b row j' ) j' ]%N in
-    Mk_pos' b row col
+    mk_pos' b row col
   | None => p
   end.
 
@@ -467,7 +480,7 @@ Definition altp (p: pos): pos :=
   match [pick col in 'I_n | (j < col) && is_valid_pos b i col ] with
   | Some col => 
     let 'col := [arg min_(j' < col | (j < j') && is_valid_pos b i j') j' ]%N in
-    Mk_pos' b i col
+    mk_pos' b i col
   | None => p
   end.
 
