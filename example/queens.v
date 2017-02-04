@@ -67,13 +67,13 @@ Arguments ffix [_][_] rec a.
 
 Module Type POS.
 
-Parameter Pos: Type.
+Parameter pos: Type.
 
-Parameter init: Pos.
-Parameter is_full: Pos -> bool.
-Parameter has_valid: Pos -> bool.
-Parameter next_valid_with_curr: Pos -> Pos.
-Parameter next_valid_without_curr: Pos -> Pos.
+Parameter initp  : pos.
+Parameter fullp  : pos -> bool.
+Parameter validp : pos -> bool.
+Parameter nextp  : pos -> pos.
+Parameter altp   : pos -> pos.
 
 End POS.
 
@@ -135,12 +135,12 @@ Definition is_empty_above (b: board)(i: 'I_n): bool :=
   [forall (x : 'I_n | x > i), forall j, ~~ b x j].
 
 
-Record Pos' := Mk_pos' { p_board: board  ;
+Record pos' := Mk_pos' { p_board: board  ;
                          p_curr_row: 'I_n ;
                          p_curr_col: 'I_n ;
                        }.
 
-Definition Inv (p: Pos'): bool :=
+Definition Inv (p: pos'): bool :=
   [&& 
      (* Current position is valid: *)
      is_valid_pos p.(p_board) p.(p_curr_row) p.(p_curr_col) 
@@ -150,10 +150,9 @@ Definition Inv (p: Pos'): bool :=
      is_empty_above p.(p_board) p.(p_curr_row) ].
 
 
-Definition Pos := Pos'. 
-(* XXX: Why couldn't I directly declare [Pos] as a [record]? *)
+Definition pos := pos'. 
 
-Definition cols (p: Pos): {set 'I_n} :=
+Definition cols (p: pos): {set 'I_n} :=
   let b := p.(Spec.p_board) in
   let i := p.(Spec.p_curr_row) in
   [set j in 'I_n | is_valid_col b i j].
@@ -165,17 +164,17 @@ case=> [b i j]; rewrite /Inv /cols /=; case/and3P => h1 h2 h3.
 (* rewrite cardsE /=. *)
 Admitted.
 
-Definition asc_diag (p: Spec.Pos): {set 'I_n} :=
+Definition asc_diag (p: pos): {set 'I_n} :=
   let b := p.(Spec.p_board) in
   let i := p.(Spec.p_curr_row) in
   [set j in 'I_n | Spec.is_valid_asc_diag b i j ].
 
-Definition desc_diag (p: Spec.Pos): {set 'I_n} :=
+Definition desc_diag (p: pos): {set 'I_n} :=
   let b := p.(Spec.p_board) in
   let i := p.(Spec.p_curr_row) in
   [set j in 'I_n | Spec.is_valid_desc_diag b i j ].
 
-Definition valid_cols (p: Pos): {set 'I_n} :=
+Definition valid_cols (p: pos): {set 'I_n} :=
   let b := p.(p_board) in
   let i := p.(p_curr_row) in
   let j := p.(p_curr_col) in
@@ -200,9 +199,9 @@ case arg_minP.
     by apply/andP.
 Qed.
 
-Definition init: Pos := Mk_pos' (\matrix_(i, j) false) ord0 ord0.
+Definition initp: pos := Mk_pos' (\matrix_(i, j) false) ord0 ord0.
 
-Lemma inv_init: Inv init.
+Lemma inv_initp: Inv initp.
 apply/and3P; split.
 (* XXX: no is_valid_posP ?? *)
 + apply/and4P; split.
@@ -216,9 +215,9 @@ apply/and3P; split.
 + by apply/'forall_implyP=> x hx; apply/forallP=> y; rewrite mxE.
 Qed.
 
-Definition is_full (p: Pos): bool := #| cols p | == 0%N.
+Definition fullp (p: pos): bool := #| cols p | == 0%N.
 
-Definition has_valid (p: Pos): bool := 
+Definition validp (p: pos): bool := 
   (#| valid_cols p | != 0)%N.
 
 Definition next_rowN (n i: nat): nat :=
@@ -254,7 +253,7 @@ Lemma incO_in {n}: forall(k: 'I_n.+1),
 Admitted.
 *)
 
-Definition next_valid_with_curr (p: Pos): Pos :=
+Definition nextp (p: pos): pos :=
   let b := p.(p_board) in
   let i := p.(p_curr_row) in
   let j := p.(p_curr_col) in
@@ -270,7 +269,7 @@ Definition next_valid_with_curr (p: Pos): Pos :=
   end.
 
 
-Lemma inv_next_valid_with_curr: forall p, Inv p -> Inv (next_valid_with_curr p).
+Lemma inv_nextp: forall p, Inv p -> Inv (nextp p).
 
 (*
 Next Obligation.
@@ -424,12 +423,12 @@ Admitted.
 *)
 Admitted.
 
-Lemma next_with_cols: forall p, Inv p ->
-    cols (next_valid_with_curr p) = cols p :\ p.(p_curr_col).
+Lemma nextp_cols: forall p, Inv p ->
+    cols (nextp p) = cols p :\ p.(p_curr_col).
 Proof.
 (* XXX: The andP should go to a __P lemma *)
 move=> p hinv.
-have/inv_next_valid_with_curr/and3P[/and4P [hi11 hi12 hi13 hi14] hi2 hi3] := hinv.
+have/inv_nextp/and3P[/and4P [hi11 hi12 hi13 hi14] hi2 hi3] := hinv.
 have/and3P[/and4P [h11 h12 h13 h14] h2 h3] := hinv.
 apply/setP=> c; rewrite !inE /=.
 (* EJGA: Not correct *)
@@ -438,26 +437,26 @@ case: eqP => heq //=.
 + admit.
 Admitted.
    
-Lemma next_with_asc_diag: forall p, Inv p ->
+Lemma nextp_asc_diag: forall p, Inv p ->
     p.(p_curr_row) < n ->
-    asc_diag (next_valid_with_curr p) = shrS (p.(p_curr_col) |: asc_diag p) (inord 1).
+    asc_diag (nextp p) = shrS (p.(p_curr_col) |: asc_diag p) (inord 1).
 Admitted.
 
-Lemma next_with_desc_diag: forall p, Inv p ->
+Lemma nextp_desc_diag: forall p, Inv p ->
     p.(p_curr_row) < n ->
-    desc_diag (next_valid_with_curr p) = shlS (p.(p_curr_col) |: desc_diag p) (inord 1).
+    desc_diag (nextp p) = shlS (p.(p_curr_col) |: desc_diag p) (inord 1).
 Admitted.
 
-Lemma next_with_valid_cols': forall p,
-    valid_cols (next_valid_with_curr p) = valid_cols p :\ p.(p_curr_col).
+Lemma nextp_cols': forall p,
+    valid_cols (nextp p) = valid_cols p :\ p.(p_curr_col).
 Admitted.
 
-Lemma next_with_valid_cols: forall p p', Inv p ->
-    p' = next_valid_with_curr p ->
+Lemma nextp_valid_cols: forall p p', Inv p ->
+    p' = nextp p ->
     valid_cols p' = cols p' :&: ~: (asc_diag p' :|: desc_diag p').
 Admitted.
 
-Definition next_valid_without_curr (p: Pos): Pos :=
+Definition altp (p: pos): pos :=
   let b := p.(p_board) in
   let i := p.(p_curr_row) in
   let j := p.(p_curr_col) in
@@ -468,36 +467,36 @@ Definition next_valid_without_curr (p: Pos): Pos :=
   | None => p
   end.
 
-Lemma inv_next_valid_without_curr: forall p, Inv p -> Inv (next_valid_without_curr p).
+Lemma inv_altp: forall p, Inv p -> Inv (altp p).
 Admitted.
 
-Lemma next_without_cols: forall p, Inv p ->
-    cols (next_valid_without_curr p) = cols p.
+Lemma altp_cols: forall p, Inv p ->
+    cols (altp p) = cols p.
 Proof.
 move=> [b i j] /and3P[Hv Hf Hb] //=.
-rewrite /next_valid_without_curr.
+rewrite /altp.
 by case pickP=> [col /and3P [Hcol1 Hcol2 Hcol3]|Hempty].
 Qed.
 
-Lemma next_without_asc_diag: forall p, Inv p ->
-    asc_diag (next_valid_without_curr p) = asc_diag p.
+Lemma altp_asc_diag: forall p, Inv p ->
+    asc_diag (altp p) = asc_diag p.
 move=> [b i j] /and3P[Hv Hf Hb] //=.
-rewrite /next_valid_without_curr.
+rewrite /altp.
 by case: pickP=> [col /and3P [Hcol1 Hcol2 Hcol3]|Hempty].
 Qed.
 
-Lemma next_without_desc_diag: forall p, Inv p ->
-    desc_diag (next_valid_without_curr p) = desc_diag p.
+Lemma altp_desc_diag: forall p, Inv p ->
+    desc_diag (altp p) = desc_diag p.
 move=> [b i j] /and3P[Hv Hf Hb] //=.
-rewrite /next_valid_without_curr.
+rewrite /altp.
 by case pickP=> [col /and3P [Hcol1 Hcol2 Hcol3]|Hempty].
 Qed.
 
-Lemma next_without_valid_cols: forall p, Inv p ->
-    valid_cols (next_valid_without_curr p) = valid_cols p :\ p.(p_curr_col).
+Lemma altp_valid_cols: forall p, Inv p ->
+    valid_cols (altp p) = valid_cols p :\ p.(p_curr_col).
 Proof.
 move=> [b i j] /and3P[Hv Hf Hb].
-rewrite /next_valid_without_curr.
+rewrite /altp.
 case pickP=> [col /and3P [Hcol1 Hcol2 Hcol3]|Hempty].
 - simpl in *.
   apply/setP=> y; rewrite !inE /=.
@@ -558,16 +557,16 @@ Context `{keep_min_of int}.
 Context `{succ_of int}.
 Context `{pred_of int}.
 
-Record Pos := Mk_pos { p_cols: int ; 
+Record pos := Mk_pos { p_cols: int ; 
                        p_asc_diag: int;
                        p_desc_diag: int;
                        p_valid: int }.
 
-Definition init := Mk_pos full_op full_op full_op full_op.
-Definition is_full p := eq_op p.(p_cols) empty_op.
-Definition has_valid p := negb (eq_op p.(p_valid) empty_op).
+Definition initp := Mk_pos full_op full_op full_op full_op.
+Definition fullp p := eq_op p.(p_cols) empty_op.
+Definition validp p := negb (eq_op p.(p_valid) empty_op).
 
-Definition next_valid_with_curr p :=
+Definition nextp p :=
   let d := keep_min_op p.(p_valid) in
   let cols := (p.(p_cols) :&: (compl_op d))%C in
   let asc_diag := succ_op (p.(p_asc_diag) :|: d)%C in
@@ -575,7 +574,7 @@ Definition next_valid_with_curr p :=
   let valid := (cols :&: compl_op (asc_diag :|: desc_diag))%C in
   Mk_pos cols asc_diag desc_diag valid.
 
-Definition next_valid_without_curr p :=
+Definition altp p :=
   let d := keep_min_op p.(p_valid) in
   let valid := (p.(p_valid) :&: (compl_op d))%C in
   Mk_pos p.(p_cols) p.(p_asc_diag) p.(p_desc_diag) valid.
@@ -588,12 +587,12 @@ Arguments p_asc_diag [_] p.
 Arguments p_desc_diag [_] p.
 Arguments p_valid [_] p.
 
-Parametricity Pos.
-Parametricity init.
-Parametricity is_full.
-Parametricity has_valid.
-Parametricity next_valid_with_curr.
-Parametricity next_valid_without_curr.
+Parametricity pos.
+Parametricity initp.
+Parametricity fullp.
+Parametricity validp.
+Parametricity nextp.
+Parametricity altp.
 
 (*************************************************)
 (** *** Abstract machine board                   *)
@@ -606,13 +605,13 @@ Module FSet (B: BOARDSIZE) <: POS.
 
 Import B.
 
-Definition Pos := Pos {set 'I_n}.
+Definition pos := pos {set 'I_n}.
 
-Definition init := init {set 'I_n}.
-Definition is_full := is_full {set 'I_n}.
-Definition has_valid := has_valid {set 'I_n}.
-Definition next_valid_with_curr := next_valid_with_curr {set 'I_n}.
-Definition next_valid_without_curr := next_valid_without_curr {set 'I_n}.
+Definition initp := initp {set 'I_n}.
+Definition fullp := fullp {set 'I_n}.
+Definition validp := validp {set 'I_n}.
+Definition nextp := nextp {set 'I_n}.
+Definition altp := altp {set 'I_n}.
 
 End FSet.
 
@@ -636,13 +635,13 @@ End Fintype.
 Module R  := Make(Fintype).
 Module Native := R.Native.
 
-Definition Pos := Pos Native.Int.
+Definition pos := pos Native.Int.
 
-Definition init := init Native.Int.
-Definition is_full := is_full Native.Int.
-Definition has_valid := has_valid Native.Int.
-Definition next_valid_with_curr := next_valid_with_curr Native.Int.
-Definition next_valid_without_curr := next_valid_without_curr Native.Int.
+Definition initp := initp Native.Int.
+Definition fullp := fullp Native.Int.
+Definition validp := validp Native.Int.
+Definition nextp := nextp Native.Int.
+Definition altp := altp Native.Int.
 
 End NSet.
 
@@ -667,7 +666,7 @@ Import B.
 
 Local Open Scope ring_scope.
 
-Definition Rspec (p_spec: Spec.Pos)(p_word: FSet.Pos): Type :=
+Definition Rspec (p_spec: Spec.pos)(p_word: FSet.pos): Type :=
   [/\ Spec.Inv p_spec
    ,  Spec.cols p_spec =i p_word.(p_cols)
    ,  Spec.asc_diag p_spec =i p_word.(p_asc_diag)
@@ -675,11 +674,11 @@ Definition Rspec (p_spec: Spec.Pos)(p_word: FSet.Pos): Type :=
    &  Spec.valid_cols p_spec =i p_word.(p_valid) ].
   
 Global Instance Rspec_init: 
-  refines Rspec Spec.init FSet.init.
+  refines Rspec Spec.initp FSet.initp.
 Proof.
 rewrite refinesE; split.
-- by apply Spec.inv_init.
-- rewrite /Spec.init/Spec.is_valid_col/Spec.cols /= /full_op/bitset.full_fin.
+- by apply Spec.inv_initp.
+- rewrite /Spec.initp/Spec.is_valid_col/Spec.cols /= /full_op/bitset.full_fin.
   move=> k /=.
   rewrite !inE. 
   apply/forallP=> i.
@@ -708,26 +707,26 @@ rewrite refinesE; split.
 Qed.
 
 Global Instance Rspec_is_full: 
-  refines (Rspec ==> param.bool_R) Spec.is_full FSet.is_full.
+  refines (Rspec ==> param.bool_R) Spec.fullp FSet.fullp.
 Proof.
 rewrite refinesE.
 move=> x y [Hinv Hcols Hasc_diag Hdesc_diag Hvalid].
-suff ->: (Spec.is_full x = FSet.is_full y)
+suff ->: (Spec.fullp x = FSet.fullp y)
   by apply bool_Rxx.
-rewrite /Spec.is_full/FSet.is_full/is_full
+rewrite /Spec.fullp/FSet.fullp/fullp
         /empty_op/bitset.empty_fin/eq_op/bitset.eq_fin.
 move/setP: Hcols=> ->.
 apply cards_eq0.
 Qed.
 
 Global Instance Rspec_has_valid: 
-  refines (Rspec ==> param.bool_R) Spec.has_valid FSet.has_valid.
+  refines (Rspec ==> param.bool_R) Spec.validp FSet.validp.
 Proof.
 rewrite refinesE.
 move=> x y [Hinv Hcols Hasc_diag Hdesc_diag Hvalid].
-suff ->: (Spec.has_valid x = FSet.has_valid y)
+suff ->: (Spec.validp x = FSet.validp y)
   by apply bool_Rxx.
-rewrite /Spec.has_valid/FSet.has_valid/has_valid
+rewrite /Spec.validp/FSet.validp/validp
         /empty_op/bitset.empty_fin/eq_op/bitset.eq_fin.
 rewrite -lt0n.
 move/setP: Hvalid=> ->.
@@ -735,29 +734,29 @@ apply card_gt0.
 Qed.
 
 Global Instance Rspec_next_valid_with_curr: 
-  refines (Rspec ==> Rspec) Spec.next_valid_with_curr FSet.next_valid_with_curr.
+  refines (Rspec ==> Rspec) Spec.nextp FSet.nextp.
 Proof.
 rewrite refinesE.
 move=> x y [Hinv Hcols Hasc_diag Hdesc_diag Hvalid].
 have Hspec_curr: [set Spec.p_curr_col x] = keep_min_op (p_valid y) 
   by admit. (* XXX: Need good spec for [keep_min_op] *)
 split=> //=;
-  first by apply Spec.inv_next_valid_with_curr.
-- rewrite Spec.next_with_cols ?Hspec_curr //.
+  first by apply Spec.inv_nextp.
+- rewrite Spec.nextp_cols ?Hspec_curr //.
   move/setP: Hcols=> ->.
   by rewrite setDE.
-- rewrite (Spec.next_with_asc_diag x) //.
+- rewrite (Spec.nextp_asc_diag x) //.
   rewrite /succ_op/succ_fin.
   move/setP: Hasc_diag=> ->.
   by rewrite Hspec_curr setUC.
-- rewrite (Spec.next_with_desc_diag x) //.
+- rewrite (Spec.nextp_desc_diag x) //.
   rewrite /succ_op/succ_fin.
   move/setP: Hdesc_diag=> ->.
   by rewrite Hspec_curr setUC.
-- rewrite (Spec.next_with_valid_cols x) 
-          ?Spec.next_with_cols ?Hspec_curr
-          ?(Spec.next_with_asc_diag x)
-          ?(Spec.next_with_desc_diag x) //.
+- rewrite (Spec.nextp_valid_cols x) 
+          ?Spec.nextp_cols ?Hspec_curr
+          ?(Spec.nextp_asc_diag x)
+          ?(Spec.nextp_desc_diag x) //.
   move/setP: Hcols=> ->.
   move/setP: Hasc_diag=> ->.
   move/setP: Hdesc_diag=> ->.
@@ -769,19 +768,19 @@ split=> //=;
 Admitted.
 
 Global Instance Rspec_next_valid_without_curr: 
-  refines (Rspec ==> Rspec) Spec.next_valid_without_curr FSet.next_valid_without_curr.
+  refines (Rspec ==> Rspec) Spec.altp FSet.altp.
 Proof.
 rewrite refinesE.
 move=> x y [Hinv Hcols Hasc_diag Hdesc_diag Hvalid].
 have Hspec_curr: [set Spec.p_curr_col x] = keep_min_op (p_valid y) 
   by admit. (* XXX: Need good spec for [keep_min_op] *)
 split=> //=;
-rewrite ?Spec.next_without_cols
-        ?Spec.next_without_asc_diag 
-        ?Spec.next_without_desc_diag 
-        ?Spec.next_without_valid_cols
+rewrite ?Spec.altp_cols
+        ?Spec.altp_asc_diag 
+        ?Spec.altp_desc_diag 
+        ?Spec.altp_valid_cols
         ?Hspec_curr //;
- try now apply Spec.inv_next_valid_without_curr.
+ try now apply Spec.inv_altp.
 move/setP: Hvalid=> ->.
 rewrite /inter_op/inter_fin/compl_op/compl_fin.
 by rewrite setDE.
@@ -793,32 +792,32 @@ Admitted.
 
 (** From the specification of machine words to native integers. *)
 
-Definition Rword (wp: FSet.Pos)(np: NSet.Pos): Type
-  := Pos_R _ _ NSet.R.Rbitset wp np.
+Definition Rword (wp: FSet.pos)(np: NSet.pos): Type
+  := pos_R _ _ NSet.R.Rbitset wp np.
 
 Global Instance Rword_init: 
-  refines Rword FSet.init NSet.init.
-Proof. param init_R. Qed.
+  refines Rword FSet.initp NSet.initp.
+Proof. param initp_R. Qed.
 
-Global Instance Rword_is_full: 
-  refines (Rword ==> param.bool_R) FSet.is_full NSet.is_full.
-Proof. param is_full_R. Qed.
+Global Instance Rword_fullp: 
+  refines (Rword ==> param.bool_R) FSet.fullp NSet.fullp.
+Proof. param fullp_R. Qed.
 
-Global Instance Rword_has_valid: 
-  refines (Rword ==> param.bool_R) FSet.has_valid NSet.has_valid.
-Proof. param has_valid_R. Qed.
+Global Instance Rword_validp: 
+  refines (Rword ==> param.bool_R) FSet.validp NSet.validp.
+Proof. param validp_R. Qed.
 
-Global Instance Rword_next_valid_with_curr: 
-  refines (Rword ==> Rword) FSet.next_valid_with_curr NSet.next_valid_with_curr.
-Proof. param next_valid_with_curr_R. 
+Global Instance Rword_nextp: 
+  refines (Rword ==> Rword) FSet.nextp NSet.nextp.
+Proof. param nextp_R. 
 - admit. (* XXX: refinement for [keep_min] *)
 - admit. (* XXX: refinement for [succ] *)
 - admit. (* XXX: refinement for [pred] *)
 Admitted.
 
-Global Instance Rword_next_valid_without_curr: 
-  refines (Rword ==> Rword) FSet.next_valid_without_curr NSet.next_valid_without_curr.
-Proof. param next_valid_without_curr_R. 
+Global Instance Rword_altp:
+  refines (Rword ==> Rword) FSet.altp NSet.altp.
+Proof. param altp_R. 
 - admit. (* XXX: refinement for [keep_min] *)
 Admitted. 
 
@@ -828,27 +827,27 @@ Admitted.
 
 (** Composition of the previous refinements *)
 
-Definition RPos: Spec.Pos -> NSet.Pos -> Type := Rspec \o Rword.
+Definition RPos: Spec.pos -> NSet.pos -> Type := Rspec \o Rword.
 
 
-Global Instance RPos_init: 
-  refines RPos Spec.init NSet.init.
+Global Instance RPos_initp: 
+  refines RPos Spec.initp NSet.initp.
 Proof. eapply refines_trans; tc. Qed.
 
-Global Instance RPos_is_full: 
-  refines (RPos ==> param.bool_R) Spec.is_full NSet.is_full.
+Global Instance RPos_fullp: 
+  refines (RPos ==> param.bool_R) Spec.fullp NSet.fullp.
 Proof. eapply refines_trans; tc. Qed.
 
-Global Instance RPos_has_valid: 
-  refines (RPos ==> param.bool_R) Spec.has_valid NSet.has_valid.
+Global Instance RPos_validp: 
+  refines (RPos ==> param.bool_R) Spec.validp NSet.validp.
 Proof. eapply refines_trans; tc. Qed.
 
-Global Instance RPos_next_valid_with_curr: 
-  refines (RPos ==> RPos) Spec.next_valid_with_curr NSet.next_valid_with_curr.
+Global Instance RPos_nextp: 
+  refines (RPos ==> RPos) Spec.nextp NSet.nextp.
 Proof. eapply refines_trans; tc. Qed.
 
-Global Instance RPos_next_valid_without_curr: 
-  refines (RPos ==> RPos) Spec.next_valid_without_curr NSet.next_valid_without_curr.
+Global Instance RPos_altp:
+  refines (RPos ==> RPos) Spec.altp NSet.altp.
 Proof. eapply refines_trans; tc. Qed.
 
 Local Close Scope rel.
@@ -861,29 +860,29 @@ End Refinement.
 
 Section Queen_generic.
 
-Variable Pos: Type.
+Variable pos: Type.
 
-Variable init: Pos.
-Variable is_full: Pos -> bool.
-Variable has_valid: Pos -> bool.
-Variable next_valid_with_curr: Pos -> Pos.
-Variable next_valid_without_curr: Pos -> Pos.
+Variable initp: pos.
+Variable fullp: pos -> bool.
+Variable validp: pos -> bool.
+Variable nextp: pos -> pos.
+Variable altp: pos -> pos.
 
-Definition nqueens_loop: Pos -> nat ->  nat :=
+Definition nqueens_loop: pos -> nat ->  nat :=
   ffix (fun p nqueens_loop score  =>
-          match has_valid p with
+          match validp p with
           | false => score 
           | true => 
             let score' := 
-                let p' := next_valid_with_curr p in
-                if is_full p' then S score
+                let p' := nextp p in
+                if fullp p' then S score
                 else nqueens_loop p' score            
             in
-            let p' := next_valid_without_curr p in
+            let p' := altp p in
             nqueens_loop p' score'
           end).
 
-Definition nqueens := nqueens_loop init 0.
+Definition nqueens := nqueens_loop initp 0.
 
 End Queen_generic.
 
@@ -893,9 +892,9 @@ Parametricity nqueens.
 Module MakeQueens (P: POS).
 
 Definition nqueens 
-  := nqueens P.Pos 
-             P.init P.is_full P.has_valid 
-             P.next_valid_with_curr P.next_valid_without_curr.
+  := nqueens P.pos 
+             P.initp P.fullp P.validp 
+             P.nextp P.altp.
 
 End MakeQueens.
 
@@ -933,22 +932,22 @@ have Href_eq: refines Logic.eq Prove.nqueens Run.nqueens.
   rewrite !refinesE.
   apply: nqueens_R.
   - intros. eapply refinesP.
-    apply RPos_init.
+    apply RPos_initp.
   - intros. eapply refinesP.
     eapply refines_apply; eauto.
-    apply RPos_is_full. 
+    apply RPos_fullp. 
     rewrite refinesE. auto.
   - intros. eapply refinesP.
     eapply refines_apply; eauto.
-    apply RPos_has_valid.
+    apply RPos_validp.
     rewrite refinesE. auto.
   - intros. eapply refinesP.
     eapply refines_apply; eauto.
-    apply RPos_next_valid_with_curr.
+    apply RPos_nextp.
     rewrite refinesE; auto.
   - intros. eapply refinesP.
     eapply refines_apply; eauto.
-    apply RPos_next_valid_without_curr.
+    apply RPos_altp.
     rewrite refinesE; auto.
 }
 by rewrite refinesE in Href_eq.
@@ -979,7 +978,7 @@ End Wordsize.
 
 Module Nat := axioms.MakeOps(Wordsize).
 
-Record Pos := Mk_pos { p_cols      : Nat.Int ;
+Record pos := Mk_pos { p_cols      : Nat.Int ;
                        p_asc_diag  : Nat.Int ;
                        p_desc_diag : Nat.Int ;
                        p_valid     : Nat.Int }.
@@ -994,15 +993,15 @@ Definition machine_of_nat (n: nat) := machine_of_nat' n Nat.zero.
 
 Definition machine_n := machine_of_nat n.
 
-Definition init := 
+Definition initp := 
   let full_op := Nat.sub (Nat.lsl Nat.one machine_n) Nat.one in
   Mk_pos full_op Nat.zero Nat.zero full_op.
 
-Definition is_full p := Nat.eq p.(p_cols) Nat.zero.
-Definition has_valid p := negb (Nat.eq p.(p_valid) Nat.zero).
+Definition fullp p := Nat.eq p.(p_cols) Nat.zero.
+Definition validp p := negb (Nat.eq p.(p_valid) Nat.zero).
 Definition keep_min bs := Nat.land bs (Nat.opp bs).
 
-Definition next_valid_with_curr p :=
+Definition nextp p :=
   let d := keep_min p.(p_valid) in
   let cols := Nat.land p.(p_cols) (Nat.lnot d) in
   let asc_diag := Nat.lsr (Nat.lor p.(p_asc_diag) d) Nat.one in
@@ -1010,26 +1009,26 @@ Definition next_valid_with_curr p :=
   let valid := Nat.land cols (Nat.lnot (Nat.lor asc_diag desc_diag)) in
   Mk_pos cols asc_diag desc_diag valid.
 
-Definition next_valid_without_curr p :=
+Definition altp p :=
   let d := keep_min p.(p_valid) in
   let valid := Nat.land p.(p_valid) (Nat.lnot d) in
   Mk_pos p.(p_cols) p.(p_asc_diag) p.(p_desc_diag) valid.
 
-Definition nqueens_loop: Pos -> nat ->  nat :=
+Definition nqueens_loop: pos -> nat ->  nat :=
   ffix (fun p nqueens_loop score  =>
-          match has_valid p with
+          match validp p with
           | false => score 
           | true => 
             let score := 
-                let p := next_valid_with_curr p in
-                if is_full p then S score
+                let p := nextp p in
+                if fullp p then S score
                 else nqueens_loop p score            
             in
-            let p := next_valid_without_curr p in
+            let p := altp p in
             nqueens_loop p score
           end).
 
-Definition nqueens := nqueens_loop init 0.
+Definition nqueens := nqueens_loop initp 0.
 
 End Extractor.
 
