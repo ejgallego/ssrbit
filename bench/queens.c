@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+int max = 16;
+
 int solutions[] = { 1, 0, 0, 2, 10, 4, 40, 92, 352, 724, 
                     2680, 14200, 73712, 365596, 2279184, 14772512,
                     95815104, 666090624 };
@@ -52,13 +54,13 @@ int main()
     exit(1);
   }
 
-  for (int i = 1; i <= 15; i++){
+  for (int i = 1; i <= max; i++){
     clock_gettime(CLOCK_MONOTONIC, &ts_start);
     int solution = queens(i);
     clock_gettime(CLOCK_MONOTONIC, &ts_end);
     struct timespec time = diff(ts_start, ts_end); 
-    double t = (double) time.tv_sec + (double)time.tv_nsec / 1000000000.0;
-    printf("%d queens: %lf s.\n", i, t);
+    double t = (double) time.tv_sec * 1000.0 + (double)time.tv_nsec / 1000000.0;
+    printf("%d queens: %lf ms.\n", i, t);
     fprintf(fp, "%d\t%lf\n", i, t);
     if (solutions[i-1] != solution){
       printf("Invalid result!\n");

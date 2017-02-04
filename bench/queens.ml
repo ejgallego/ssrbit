@@ -1,3 +1,4 @@
+let max = 16
 let output = open_out "queens_ml.dat"
 
 let solutions =
@@ -26,11 +27,11 @@ let nqueens n =
   t (1 lsl n - 1) 0 0
 
 let _ = 
-  for i = 1 to 15 do
+  for i = 1 to 16 do
     let time = Unix.gettimeofday() in
     let solution = nqueens i in
-    let time = Unix.gettimeofday() -. time in
-    Printf.printf "%d queens: %f s.\n%!" i time;
+    let time = 1000. *. (Unix.gettimeofday() -. time) in
+    Printf.printf "%d queens: %f ms.\n%!" i time;
     Printf.fprintf output "%d\t%f\n" i time;
     assert (solutions.(i-1) = solution)
   done

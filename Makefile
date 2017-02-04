@@ -22,7 +22,7 @@ extraction/STAMP: build extraction/axioms.v
 	touch extraction/STAMP
 
 queens: example/QUEENS example/queens_driver.ml
-	$(OCB) example/queens_driver.native
+	$(OCB) -pkg unix example/queens_driver.native
 
 example/QUEENS: build example/queens.v
 	rm -f queens.ml queens.mli example/queens.vo
@@ -30,7 +30,7 @@ example/QUEENS: build example/queens.v
 	mv queens.ml* example/
 	touch example/QUEENS
 
-bench: example/QUEENS bench/queens.ml bench/queens.c
+bench: example/queens_driver.ml example/queens.v bench/queens.ml bench/queens.c
 	rm -f queens_*.dat
 	$(OCB) -pkg unix bench/queens.native
 	$(CC) -o queens bench/queens.c
