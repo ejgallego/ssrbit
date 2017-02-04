@@ -169,8 +169,10 @@ rewrite inE val_mem_seq !map_mask val_enum_ord.
 by rewrite mem_mask_iota ?subn0 ?ltn_ord ?size_tuple.
 Qed.
 
+(* =mem_setB= *)
 Lemma mem_setB k (b : 'B_k) (i : 'I_k) :
   (i \in setB b) = tnth b i.
+(* =end= *)
 Proof. by rewrite mem_setb (tnth_nth false). Qed.
 
 (* XXX: Needs fixing *)
