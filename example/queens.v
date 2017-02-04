@@ -103,35 +103,39 @@ Local Open Scope ring_scope.
 Import B.
 
 Definition board := 'M[bool]_n.
+Definition rowt  := 'I_n.
+Definition colt  := 'I_n.
 
-Definition is_valid_col (b: board)(i j: 'I_n): bool :=
+Implicit Types (b : board) (i : rowt) (j : colt).
+
+Definition is_valid_col b i j :=
   [forall (x : 'I_n | x < i), ~~ b x j].
 
-Definition is_valid_row (b: board)(i j: 'I_n): bool :=
+Definition is_valid_row b i j :=
   [forall (y : 'I_n | y != j), ~~ b i y].
 
-Definition is_valid_asc_diag (b: board)(i j: 'I_n): bool := 
+Definition is_valid_asc_diag b i j := 
   [forall (x : 'I_n | x < i),
       forall (y : 'I_n | (maxn i j - minn i j == maxn x y - minn x y)%N),
         ~~ b x y ].
 
-Definition is_valid_desc_diag (b: board)(i j: 'I_n): bool := 
+Definition is_valid_desc_diag b i j := 
   [forall (x : 'I_n | x < i),
       forall (y : 'I_n | (i + j == x + y)%N),
         ~~ b x y].
 
-Definition is_valid_pos (b: board)(i j: 'I_n): bool :=
+Definition is_valid_pos b i j :=
   [&& is_valid_col b i j
    ,  is_valid_row b i j
    ,  is_valid_asc_diag b i j
    &  is_valid_desc_diag b i j ].
 
-Definition is_full_below (b: board)(i: 'I_n): bool := 
+Definition is_full_below b i := 
   [forall (x : 'I_n | x < i),
       exists y, 
         b x y && is_valid_pos b x y ].
 
-Definition is_empty_above (b: board)(i: 'I_n): bool :=
+Definition is_empty_above b i :=
   [forall (x : 'I_n | x > i), forall j, ~~ b x j].
 
 
