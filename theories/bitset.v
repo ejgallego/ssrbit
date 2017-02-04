@@ -205,14 +205,29 @@ rewrite !(tnth_nth false) /seqn /setB /= nth_ors0 nth_from_set ?ltn_ord //.
 by rewrite map_mask val_enum_ord mem_mask_iota ?subn0 ?ltn_ord ?size_tuple.
 Qed.
 
-Lemma setnK k : cancel (@setn k) (@setB _).
+
+Section SetK.
+
+Variable k: nat.
+
+Local Notation setB := (@setB k).
+Local Notation setn := (@setn k).
+
+(* =setnK= *)
+Lemma setnK : cancel setn setB.
+(* =end= *)
 Proof. by move=> x; apply/setP=> i; rewrite inE seqnK mem_enum. Qed.
 
-Lemma setbK k : cancel (@setB k) (@setn _).
+(* =setbK= *)
+Lemma setbK : cancel setB setn.
+(* =end= *)
 Proof.
 move=> t; rewrite -{2}[t]seqbK; apply/eq_seqn; rewrite ?mask_uniq ?enum_uniq //.
 by move => i; rewrite mem_enum inE.
 Qed.
+
+End SetK.
+
 
 Prenex Implicits setnK setbK.
 
