@@ -141,7 +141,7 @@ Definition setn k (s : {set 'I_k}): 'B_k
   := seqn (enum s).
 
 Definition seqB k (m : 'B_k) := mask m (enum 'I_k).
-(* =setn= *)
+(* =setB= *)
 Definition setB k (m : 'B_k): {set 'I_k}
 (* =end= *)
   := [set x in seqB m].
