@@ -108,6 +108,39 @@ Definition colt  := 'I_n.
 
 Implicit Types (b : board) (i : rowt) (j : colt).
 
+Record pos' := mk_pos' { p_board    :> board  ;
+                         p_curr_row : rowt ;
+                         p_curr_col : colt ;
+                       }.
+
+Definition pos := pos'. 
+
+Implicit Types (p : pos).
+
+(** *** Getters *) 
+
+Coercion to_board p : 'M_n := p_board p.
+
+Notation "p .'i" := (p_curr_row p)
+  (at level 2, left associativity, format "p .'i") : pair_scope.
+
+Notation "p .'j" := (p_curr_col p)
+  (at level 2, left associativity, format "p .'j") : pair_scope.
+
+(** *** Setters *) 
+
+Definition upC p j := mk_pos' p p.'i j.
+
+Definition upC_id p : upC p p.'j = p.
+Proof. by case: p. Qed.
+
+Definition upR p i := mk_pos' p i p.'j.
+
+Definition upR_id p j : upR p p.'i = p.
+Proof. by case: p. Qed.
+
+(** *** Validity predicates *)
+
 Definition is_valid_col b i j :=
   [forall (x : 'I_n | x < i), ~~ b x j].
 
@@ -137,25 +170,6 @@ Definition is_full_below b i :=
 
 Definition is_empty_above b i :=
   [forall (x : 'I_n | x > i), forall j, ~~ b x j].
-
-
-Record pos' := mk_pos' { p_board    :> board  ;
-                         p_curr_row : rowt ;
-                         p_curr_col : colt ;
-                       }.
-
-Definition pos := pos'. 
-
-Implicit Types (p : pos).
-
-Coercion to_board p : 'M_n := p_board p.
-
-Notation "p .'i" := (p_curr_row p)
-  (at level 2, left associativity, format "p .'i") : pair_scope.
-
-Notation "p .'j" := (p_curr_col p)
-  (at level 2, left associativity, format "p .'j") : pair_scope.
-
 
 
 Definition Inv (p: pos'): bool :=
