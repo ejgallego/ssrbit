@@ -255,188 +255,64 @@ Proof. by []. Qed.
 
 Definition nextbE := (nextb_M, nextb_i, nextb_j, upC_nextb).
 
-Definition nextp (p: pos): pos :=
-  let b := p.(p_board) in
-  let i := p.(p_curr_row) in
-  let j := p.(p_curr_col) in
-  let b := \matrix_(x , y) 
-            if (x == i) && (y == j) then true
-            else  b x y in
-  let row := nextR i in
-  match [pick col in 'I_n | validp (mk_pos' b row col) ] with
-  | Some col => 
-    let 'col := [arg min_(j' < col | validp (mk_pos' b row j')) j' ]%N in
-    mk_pos' b row col
-  | None => p
+Definition nextC p : option colt :=
+  match [pick col in colt | valp (nextb p col) ] with
+  | None     => None
+  | Some col => Some [arg min_(j < col | valp (nextb p j)) j ]%N
   end.
 
+Definition nextp p :=
+  match nextC p with
+  | None    => p
+  | Some j  => nextb p j
+  end.
+
+CoInductive nextp_spec p : pos -> Prop :=
+ | NP_Same   : (forall j, ~ valp (nextb p j)) ->
+                nextp_spec p p
+ | NP_Update : forall j,    
+                 valp (nextb p j) ->
+                (forall y, valp (nextb p y) -> j <= y) ->
+                nextp_spec p (nextb p j)
+ .
+
+Lemma nextpP p : nextp_spec p (nextp p).
+Proof.
+rewrite /nextp /nextb /nextC. case: pickP => [w /andP [hw1 hw2] |hwN].
+by case arg_minP=> //; constructor 2.
+by constructor 1 => j hj; have/negP := hwN j.
+Qed.
 
 Lemma inv_nextp: forall p, Inv p -> Inv (nextp p).
-
-(*
-Next Obligation.
-(*
-apply/forallP=> i.
-apply/implyP=> Hi.
-have {Hi} [Hle | Heq]: (i < p.(p_curr_row) \/ i = p.(p_curr_row))
-  by apply: le_incO.
-
-- have H: (\sum_(j < n)
-            (row i
-              (\matrix_(i0, j0) p.(p_board) i0 j0)) ord0 j == 1)%N.
-  {
-    destruct p as [ ? ? ? ? He ?]. simpl in *.
-    move: He=> /forallP /(_ i).
-    move/implyP=> /(_ Hle).
-    move=> H.
-    erewrite eq_bigr.
-    apply: H=> //. move=> i' _.
-    by rewrite !mxE.
-  }
-
-  erewrite eq_bigr; first by apply H.
-  move=> i' _ /=.
-  rewrite !mxE.
-  case: ifP=> // /andP [/eqP H1 H2].
-  by rewrite H1 ltnn in Hle.
-- rewrite Heq. 
-  have H1: (\sum_(j < n)
-            (\row_j0 
-              (if (j0 == p_curr_col p) then true
-               else false)) ord0 j == 1)%N.
-  {
-    admit. (* by def. *)
-  }
-  have H2: (\sum_(j < n)
-            (\row_j0 
-              (if (j0 == p_curr_col p) then true
-               else p.(p_board) (p_curr_row p) j0)) ord0 j == 1)%N.
-  {
-    erewrite eq_bigr; first by apply H1.
-    move=> j _ /=.
-    rewrite !mxE.
-    case: ifP=> // _.
-    destruct p as [? ? ? ? ? ? Hcurr_row]. simpl in *.
-    rewrite - Heq_anonymous0 in Hcurr_row.
-    admit. (* by the sum on row [p_curr_row0] being [0] *)
-  }
-  erewrite eq_bigr; first by apply H2.
-  move=> j _ //=.
-  rewrite !mxE eq_refl /=.
-  by case: ifP.
-*)
-Admitted.
-Next Obligation.
-(*
-apply/forallP=> i.
-apply/implyP=> Hi.
-apply/forallP=> j.
-rewrite mxE.
-have -> /=:((i == p_curr_row p) = false).
-{
-  apply incO_le in Hi.
-  rewrite ltn_neqAle in Hi.
-  move/andP: Hi=> [/eqP Hi _].
-  apply/eqP=> Heq.
-  apply Hi.
-  by rewrite Heq.
-}
-destruct p as [b curr_i curr_j finished Hin Hex Hlast].
-simpl in *.
-move/forallP: Hex => /(_ i).
-have Hcurr_i: curr_i < i.
-{
-  rewrite /inc_bounded in Hi.
-  destruct (curr_i.+1 == n) eqn:Hc=> //.
-  by apply ltnW.
-}
-move/implyP=> /(_ Hcurr_i).
-by move/forallP=> /(_ j).
-Qed.*)
-Admitted.
-Next Obligation.
-(*
-case (eqP (x := p.(p_curr_row))(y := ord_max))=> [Heq | Hneq].
-- (* p_curr_row p = ord_max *)
-  rewrite Heq.
-  have -> : (incO ord_max = ord_max) by admit. (* def. *)
-  have H0: forall j, ~~ p.(p_board) ord_max j.
-  {
-    destruct p as [b curr_i curr_j finished Hin Hex Hlast]; simpl in *.
-    rewrite -Heq_anonymous0 Heq in Hlast.
-    admit. (* by [Hlast] sums to [0] *)
-  }
-  
-  have H1: (\sum_(j < n)
-              (\row_j0 
-                (if (j0 == p_curr_col p) then true
-                 else false)) ord0 j == 1)%N.
-  { 
-    admit. (* by rearranging the sum *)
-  }
-
-  have H2: (\sum_(j < n)
-              (\row_j0 
-                (if (j0 == p_curr_col p) then true
-                 else p.(p_board) ord_max j0)) ord0 j == 1)%N.
-  {
-    erewrite eq_bigr; first by apply H1.
-    move=> j ? /=.
-    rewrite !mxE.
-    case eqP=> // ?.
-    by move: H0=> /(_ j) /negPf ->.
-  }
-
-  erewrite eq_bigr; first by apply H2.
-  move=> j ? /=.
-  by rewrite !mxE eq_refl.
-
-- (* p_curr_row p <> ord_max *)
-  have Hinc: incO (p_curr_row p) != p_curr_row p
-    by apply/eqP; apply incO_in.
-
-  have H0: forall j, ~~ p.(p_board) (incO (p_curr_row p)) j.
-  {
-    move=> j.
-    destruct p as [b curr_i curr_j finished Hin Hex Hlast]; simpl in *.
-    move/forallP: Hex=> /(_ (incO curr_i)).
-    have Hcurr_i: (curr_i < incO curr_i).
-    {
-      admit. (* by def. of [incO] on [curr_i < ord_max] *)
-    }
-    move/implyP=> /(_ Hcurr_i).
-    by move/forallP=> /(_ j).
-  }
-
-  have H1: (\sum_(j < n)
-             (\row_j0 p.(p_board) (incO (p_curr_row p)) j0) ord0 j)%N == false.
-  { 
-    admit. (* by H0 *) 
-  }
-
-  erewrite eq_bigr; first by apply H1.
-  move=> i ? /=.
-  rewrite !mxE.
-  apply (congr1 nat_of_bool).
-  erewrite Bool.andb_if.
-  by etransitivity; first by apply ifN_eq.
-*)
-Admitted.
-*)
 Admitted.
 
-Lemma nextp_cols: forall p, Inv p ->
+Lemma nextp_cols p (Hinv: Inv p):
     cols (nextp p) = cols p :\ p.(p_curr_col).
 Proof.
-(* XXX: The andP should go to a __P lemma *)
-move=> p hinv.
-have/inv_nextp/and3P[/and4P [hi11 hi12 hi13 hi14] hi2 hi3] := hinv.
-have/and3P[/and4P [h11 h12 h13 h14] h2 h3] := hinv.
-apply/setP=> c; rewrite !inE /=.
-(* EJGA: Not correct *)
-case: eqP => heq //=.
-+ admit.
-+ admit.
+case/and3P: Hinv => hi1 hi2 hi3; case: nextpP => //= [hvalN | j hval].
+  rewrite /cols; apply/setP=> j0; rewrite !inE /= andb_idl //.
+  move=> _; apply/negP=> _ {j0}.
+  apply: (hvalN p.'j) => {hvalN}.
+  move/'forall_implyP: hi2 => hi2.
+  rewrite /nextb /nextb_nosimpl /=.
+  admit.
+move=> Hmin; rewrite /cols; apply/setP=> j0; rewrite !inE /= upC_nextb.
+case: eqP => [->| hjneq] //=.
++ apply/negbTE; rewrite /valC -negb_exists_in negbK !nextbE.
+  apply/existsP; exists (p.'i); rewrite !nextbE !eqxx /= andbT.
+  (* Ummm. *)
+  case/and4P: hval => h11 h12 h13 h14.
+  admit.
+rewrite /valC -!negb_exists_in; congr negb.
+apply/existsP/existsP=> -[j1]; rewrite 2!nextbE /=.
+  case/andP=> hj /orP[ /andP[/eqP h1 /eqP h2 //]|hp].
+(*   rewrite leq_next_row in hj. *)
+  exists j1.
+  (* Does this mean that we need to add a side condition on p.'i ?? *)
+  admit.
+case/andP => hj hpj.
+exists j1; rewrite mxE hpj orbT andbT.
+(* by rewrite leq_next_row ltnW. *)
 Admitted.
    
 Lemma nextp_asc_diag: forall p, Inv p ->
@@ -449,25 +325,53 @@ Lemma nextp_desc_diag: forall p, Inv p ->
     desc_diag (nextp p) = shlS (p.(p_curr_col) |: desc_diag p) (inord 1).
 Admitted.
 
+(*
 Lemma nextp_cols': forall p,
     valid_cols (nextp p) = valid_cols p :\ p.(p_curr_col).
 Admitted.
+*)
 
 Lemma nextp_valid_cols: forall p p', Inv p ->
     p' = nextp p ->
     valid_cols p' = cols p' :&: ~: (asc_diag p' :|: desc_diag p').
 Admitted.
 
-Definition altp (p: pos): pos :=
-  let b := p.(p_board) in
-  let i := p.(p_curr_row) in
-  let j := p.(p_curr_col) in
-  match [pick col in 'I_n | (j < col) && validp (mk_pos' b i col) ] with
-  | Some col => 
-    let 'col := [arg min_(j' < col | (j < j') && validp (mk_pos' b i j')) j' ]%N in
-    mk_pos' b i col
-  | None => p
+
+(** *** Compute an alternative, same-row/different-column position *)
+
+Definition altC p : option colt :=
+  match [pick col in colt | (p.'j < col) && valp (upC p col) ] with
+  | None     => None
+  | Some col => Some [arg min_(j < col | (p.'j < col) && valp (upC p j)) j ]%N
   end.
+
+Definition altp p :=
+  match altC p with
+  | None => p
+  | Some col => upC p col
+  end.
+
+CoInductive altp_spec p : pos -> Prop :=
+ | AP_Same   : (forall j, p.'j < j -> ~ valp (upC p j)) ->
+                altp_spec p p
+ | AP_Update : forall j,
+                 valp (upC p j) ->
+                (forall y : rowt, p.'j < y -> valp (upC p y) -> j <= y) ->
+                altp_spec p (upC p j)
+ .
+
+Lemma altpP p : altp_spec p (altp p).
+Proof.
+rewrite /altp /altC.
+case: pickP=> [j /and3P [hj1 hj2 hj3] | hjN].
+case: arg_minP=> [|y /andP [hy1 hy2] hlow];
+    first by apply /andP.
+- constructor 2=> // z hz1 hz2. 
+  apply hlow. by apply/andP.
+- constructor 1 => j hj.
+  have/negP := hjN j.
+  by rewrite hj inE.
+Qed.
 
 Lemma inv_altp: forall p, Inv p -> Inv (altp p).
 Admitted.
@@ -476,29 +380,31 @@ Lemma altp_cols: forall p, Inv p ->
     cols (altp p) = cols p.
 Proof.
 move=> [b i j] /and3P[Hv Hf Hb] //=.
-rewrite /altp.
+rewrite /altp /altC.
 by case pickP=> [col /and3P [Hcol1 Hcol2 Hcol3]|Hempty].
 Qed.
 
 Lemma altp_asc_diag: forall p, Inv p ->
     asc_diag (altp p) = asc_diag p.
 move=> [b i j] /and3P[Hv Hf Hb] //=.
-rewrite /altp.
+rewrite /altp /altC.
 by case: pickP=> [col /and3P [Hcol1 Hcol2 Hcol3]|Hempty].
 Qed.
 
 Lemma altp_desc_diag: forall p, Inv p ->
     desc_diag (altp p) = desc_diag p.
 move=> [b i j] /and3P[Hv Hf Hb] //=.
-rewrite /altp.
+rewrite /altp /altC.
 by case pickP=> [col /and3P [Hcol1 Hcol2 Hcol3]|Hempty].
 Qed.
 
 Lemma altp_valid_cols: forall p, Inv p ->
     valid_cols (altp p) = valid_cols p :\ p.(p_curr_col).
 Proof.
+Admitted.
+(*
 move=> [b i j] /and3P[Hv Hf Hb].
-rewrite /altp.
+rewrite /altp /altC.
 case pickP=> [col /and3P [Hcol1 Hcol2 Hcol3]|Hempty].
 - simpl in *.
   apply/setP=> y; rewrite !inE /=.
@@ -530,7 +436,7 @@ case pickP=> [col /and3P [Hcol1 Hcol2 Hcol3]|Hempty].
   admit.
 (*   by rewrite H0 set0D. *)
 Admitted.
-
+*)
 
 Local Close Scope ring_scope.
 
@@ -670,10 +576,10 @@ Local Open Scope ring_scope.
 
 Definition Rspec (p_spec: Spec.pos)(p_word: FSet.pos): Type :=
   [/\ Spec.Inv p_spec
-   ,  Spec.cols p_spec =i p_word.(p_cols)
-   ,  Spec.asc_diag p_spec =i p_word.(p_asc_diag)
-   ,  Spec.desc_diag p_spec =i p_word.(p_desc_diag)
-   &  Spec.valid_cols p_spec =i p_word.(p_valid) ].
+   , Spec.cols p_spec =i p_word.(p_cols)
+   , Spec.asc_diag p_spec =i p_word.(p_asc_diag)
+   , Spec.desc_diag p_spec =i p_word.(p_desc_diag)
+   & Spec.valid_cols p_spec =i p_word.(p_valid) ].
   
 Global Instance Rspec_init: 
   refines Rspec Spec.initp FSet.initp.
