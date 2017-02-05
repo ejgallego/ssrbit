@@ -67,12 +67,22 @@ Arguments ffix [_][_] rec a.
 
 Module Type POS.
 
+(** Position = board + cursor *)
 Parameter pos: Type.
 
+(** Initial position: *)
 Parameter initp  : pos.
+
+(** Board full (true = sucess): *)
 Parameter fullp  : pos -> bool.
+
+(** Board valid (false = failure): *)
 Parameter validp : pos -> bool.
+
+(** Next valid position, one row ahead: *)
 Parameter nextp  : pos -> pos.
+
+(** Next valid position on the same row: *)
 Parameter altp   : pos -> pos.
 
 End POS.
@@ -211,6 +221,8 @@ Qed.
 
 (** *** Iterator implementation *)
 
+(** **** Initial position *) 
+
 Definition initp : pos := mk_pos' (const_mx false) ord0 ord0.
 
 Lemma inv_initp: Inv initp.
@@ -227,9 +239,15 @@ apply/and3P; split.
 + by apply/'forall_implyP=> x hx; apply/forallP=> y; rewrite mxE.
 Qed.
 
+(** *** Test whether the board is full *)
+
 Definition fullp p := #| cols p | == 0%N.
 
+(** *** Test whether the board is valid *)
+
 Definition validp p := (#| valid_cols p | != 0)%N.
+
+(** *** Compute the next position, after selecting the current position *)
 
 Definition nextR i: rowt := insubd ord_max i.+1.
 
