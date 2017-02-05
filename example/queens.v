@@ -193,11 +193,29 @@ Definition Inv p :=
 Definition cols p: {set 'I_n} :=
   [set j in 'I_n | valC (upC p j)].
 
-Lemma curr_col_cols: forall p, Inv p ->
-    (p.(p_curr_col) : nat) = (n - #| cols p |)%N.
+Lemma curr_col_cols p (hinv: Inv p) (hocc: p p.'i p.'j): 
+    p.'i.+1 = (n - #| cols p |)%N.
 Proof.
-case=> [b i j]; rewrite /Inv /cols /=; case/and3P => h1 h2 h3.
-(* rewrite cardsE /=. *)
+(* Proof sketch:
+
+   By [Inv p], [p p.'i p.'j] is a valid position. By assumption, we
+   also know that [p p.'i p.'j] is filled. We therefore have that
+   there is a single queen on row [p.'i], solely occupying column
+   [p.'j].
+
+   By [Inv p], we know that there are no queen on any row above
+   [p.'i].
+
+   By [Inv p], every row strictly below [p.'i] contains a valid queen.
+   For these queens to be valid, they must each occupy a distinct
+   column. There are therefore [p.'i] occupied columns, all distinct
+   from [p.'j].
+
+   Since [cols p] is the set of spare columns, we have
+
+   [[ #| cols p | = n - (p.'i + 1) ]]
+
+*)
 Admitted.
 
 Definition asc_diag p :=
@@ -301,8 +319,66 @@ by case arg_minP=> //; constructor 2.
 by constructor 1 => j hj; have/negP := hwN j.
 Qed.
 
-Lemma inv_nextp: forall p, Inv p -> Inv (nextp p).
+Lemma lt_nextR: forall i j, nextR i < j -> i < j.
+Proof.
+move=> i j. rewrite /nextR val_insubd.
+case: ifP.
+- move=> ? hi1.
+  eapply ltn_trans; last by apply hi1. 
+  apply ltnSn.
+- rewrite -[val ord_max]/n.-1.
+  move=> hle ?.
+  have <-: (n.-1 = i); last by done.
+  apply /eqP. 
+  rewrite eqn_leq.
+  apply /andP; split=> //.
+  + apply negbT in hle.
+    rewrite leqNgt in hle.
+    have /negPn := hle.
+    rewrite ltnS.
+    move=> h.
+    by rewrite (pred_Sn i) -!subn1 leq_sub2r.
+  + have := ltn_ord i.
+    by rewrite /leq -subn1 subnBA ?addn1.
+Qed.
+
+Lemma inv_nextp p (hinv: Inv p): Inv (nextp p).
+Proof.
+case: nextpP=> // j hj ?.
+apply/and3P; split=> //.
+- (* Assume: /\. [valp (nextb p j)]
+             /\. [inv p]
+     Prove:  [full_below (nextb p j)] *)
+
+  (* Proof sketch:
+
+     By [Inv p], we know that [p p.'i p.'k] was a valid position. By
+     definition of [nextb], the only difference between [p] and [nextb
+     p j] is that we have positioned a queen at [(p.'i, p.'k)].
+
+     Therefore, there is still a valid queen on each row strictly
+     below [p.'i] and the queen we have positioned on row [p.'i] is
+     itself valid. *)
+  admit.
+- apply/forallP=> x.
+  rewrite !nextbE.
+  apply/implyP=> hx.
+  have  hx': p.'i < x by apply lt_nextR.
+  apply/forallP=> y.
+  rewrite nextbE.
+  move: hinv=> /and3P [? ? he].
+  rewrite /empty_above in he.
+  have/forallP/(_ x)/implyP/(_ hx')/forallP/(_ y) := he.
+  move=> hn.
+  rewrite negb_or negb_and.
+  apply /andP; split=> //.
+  suff have ->: (x != p.'i); first by done.
+  apply.
+  rewrite ltn_neqAle in hx'.
+  apply/eqP=> hnx. rewrite hnx in hx'. 
+  by rewrite eq_refl in hx'.
 Admitted.
+
 
 Lemma nextp_cols p (Hinv: Inv p):
     cols (nextp p) = cols p :\ p.(p_curr_col).
